@@ -12,9 +12,10 @@ import { PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { client } from "../../../config/s3Config";
 
+const userNumber = "5566556656";
+
 // Upload the file to Supabase S3
 const uploadFileToCloud = async (myFile) => {
-  const userNumber = "5566556656";
   const myPath = `propertyDocs/${userNumber}/${myFile.name}`;
   try {
     const uploadParams = {
@@ -77,6 +78,7 @@ function PropertyForm({ editData }) {
     size: "",
     nature: "",
     status: "",
+    user : userNumber,
     documents: {
       type: "",
       files: [],
@@ -193,6 +195,7 @@ function PropertyForm({ editData }) {
         addData.size !== "" &&
         addData.nature !== "" &&
         addData.status !== "" &&
+        addData.user !== "" &&
         addData.applicationStatus !== "" &&
         addData.documents.type !== "" &&
         addData.documents.files.length > 0
@@ -230,6 +233,7 @@ function PropertyForm({ editData }) {
                   size: "",
                   nature: "",
                   status: "",
+                  user : "",
                   documents: {
                     type: "",
                     files: [],
@@ -288,6 +292,7 @@ function PropertyForm({ editData }) {
         unit: editData.unit,
         size: editData.size,
         nature: editData.nature,
+        user : editData.user,
         status: editData.status,
         documents: {
           type: editData.documents.type,
