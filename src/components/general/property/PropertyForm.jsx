@@ -8,50 +8,14 @@ import axios from "axios";
 import { getNameList } from "../../../MyFunctions";
 import { getUniqueItems } from "../../../MyFunctions";
 
-import { PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { client } from "../../../config/s3Config";
 
-// Upload the file to Supabase S3
-const uploadFileToCloud = async (myFile) => {
-  const userNumber = "5566556656";
-  const myPath = `propertyDocs/${userNumber}/${myFile.name}`;
-  try {
-    const uploadParams = {
-      Bucket: process.env.REACT_APP_PROPERTY_BUCKET,
-      Key: myPath,
-      Body: myFile, // The file content
-      ContentType: myFile.type, // The MIME type of the file
-    };
-    const command = new PutObjectCommand(uploadParams);
-    await client.send(command);
-    return myPath; //  return the file path
-  } catch (error) {
-    console.error("Error uploading file:", error);
-    throw error;
-  }
-};
+import heic2any from "heic2any";
 
-//get signed url---will be used sooon
-const getSignedUrlForPrivateFile = async (path) => {
-  try {
-    const getParams = {
-      Bucket: process.env.REACT_APP_PROPERTY_BUCKET,
-      Key: path,
-    };
+ 
 
-    const command = new GetObjectCommand(getParams);
-    const signedUrl = await getSignedUrl(client, command, { expiresIn: 3600 }); // URL valid for 1 hour
-
-    console.log("Signed URL:", signedUrl);
-    return signedUrl;
-  } catch (error) {
-    console.error("Error getting signed URL:", error);
-    throw error;
-  }
-};
-
-function PropertyForm({ editData }) {
+function PropertyForm({ editData, setModeToDisplay  }) {
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
   const [builders, setBuilders] = useState([]);
@@ -61,6 +25,8 @@ function PropertyForm({ editData }) {
   const [uploadStatus, setUploadStatus] = useState(false);
 
   const [uploadFiles, setUploadFiles] = useState([]);
+
+  const [isUploading, setIsUploading] = useState(false);
 
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -77,46 +43,120 @@ function PropertyForm({ editData }) {
     size: "",
     nature: "",
     status: "",
+    customerNumber: "",
+    customerName: "",
+    isDeleted : "no",
     documents: {
       type: "",
       files: [],
     },
-    addedBy: "Unknown",
+    addedBy: "admin",
   });
 
-  // handles file upload
-  const handleFileAdding = (e) => {
-    const files = e.target.files;
+  // Upload the file to Supabase S3
+  const uploadFileToCloud = async (myFile) => {
+     
+      const myPath = `propertyDocs/${addData.customerNumber}/${myFile.name}`;
+      try {
+        const uploadParams = {
+          Bucket: process.env.REACT_APP_PROPERTY_BUCKET,
+          Key: myPath,
+          Body: myFile, // The file content
+          ContentType: myFile.type, // The MIME type of the file
+        };
+        const command = new PutObjectCommand(uploadParams);
+        await client.send(command);
+        return myPath; //  return the file path
+      } catch (error) {
+        console.error("Error uploading file:", error);
+        throw error;
+      }
+    
+  };
 
-    if (files) {
-      // Convert the FileList object into an array and update the state
-      setUploadFiles((prevFiles) => [...prevFiles, ...Array.from(files)]);
+  // handles file upload
+  // const handleFileAdding = (e) => {
+  //   const files = e.target.files;
+
+  //   if (files) {
+  //     // Convert the FileList object into an array and update the state
+  //     setUploadFiles((prevFiles) => [...prevFiles, ...Array.from(files)]);
+  //   }
+  // };
+
+  const handleFileAdding = async (event) => {
+    const files = event.target.files;
+
+    // Loop over each selected file
+    for (const file of files) {
+
+      // checking for .heic files and converting it into jpeg before adding
+      if (file.type === "image/heic") {
+        try {
+          // Convert .heic file to .png
+          const convertedBlob = await heic2any({
+            blob: file,
+            toType: "image/jpeg",
+          });
+
+          // Create a new File object from the Blob
+          const convertedFile = new File([convertedBlob], file.name.replace(/\.heic$/i, ".jpeg"), {
+            type: "image/jpeg",
+          });
+
+          setUploadFiles((prevFiles) => [...prevFiles, convertedFile]);
+
+        } catch (error) {
+          console.error("Error converting HEIC file:", error);
+        }
+      }else{
+        // if file is not jpeg..adding directly
+        setUploadFiles((prevFiles) => [...prevFiles, file]);
+      }
     }
   };
 
   const handleFileUpload = (e) => {
     e.preventDefault();
-    try {
-      toast("Uploading files!");
-      uploadFiles.length > 0 &&
-        uploadFiles.map(async (item) => {
-          let cloudFilePath = await uploadFileToCloud(item);
-          setAddData((prevData) => ({
-            ...prevData,
-            documents: {
-              ...prevData.documents,
-              files: [...prevData.documents.files, cloudFilePath], // Append new files
-            },
-          }));
-        });
-      setTimeout(() => {
-        toast.success("Files Uploaded!");
-        setUploadStatus(true);
-        setUploadFiles([]);
-      }, 3000);
-    } catch (error) {
-      toast.error("Some error occured while uploading.");
-      console.log(error.message);
+    if(addData.customerNumber.length === 10 ){
+      const isNumeric = /^[0-9]*$/.test(addData.customerNumber);
+      if(!isNumeric){
+        toast.error("Customer number should contain only number")
+      }else{
+        try {
+          setIsUploading(true);
+          uploadFiles.length > 0 &&
+            uploadFiles.map(async (item, index) => {
+              let cloudFilePath = await uploadFileToCloud(item);
+              setAddData((prevData) => ({
+                ...prevData,
+                documents: {
+                  ...prevData.documents,
+                  files: [...prevData.documents.files, cloudFilePath], // Append new files
+                },
+              }));
+    
+              // when in last iteration
+              if (index === uploadFiles.length - 1) {
+                // when last file has been uploaded
+                if (cloudFilePath) {
+                  setIsUploading(false);
+                  setUploadStatus(true);
+                  setUploadFiles([]);
+                }
+              }
+            });
+        } catch (error) {
+          setIsUploading(false);
+          toast.error("Some error occured while uploading.");
+          console.log(error.message);
+        }
+      }
+      
+    }else{
+      toast.error("Enter valid customer number");
+      return
+      
     }
   };
 
@@ -179,7 +219,7 @@ function PropertyForm({ editData }) {
   };
 
   const handleSubmit = (addData) => {
-    if (uploadFiles.length > 0) {
+    if (uploadFiles.length > 0 || addData.documents.files.length === 0) {
       toast.error("Upload files before submitting form.");
     } else {
       if (
@@ -193,6 +233,7 @@ function PropertyForm({ editData }) {
         addData.size !== "" &&
         addData.nature !== "" &&
         addData.status !== "" &&
+        addData.user !== "" &&
         addData.applicationStatus !== "" &&
         addData.documents.type !== "" &&
         addData.documents.files.length > 0
@@ -206,6 +247,9 @@ function PropertyForm({ editData }) {
             .then((response) => {
               if (response) {
                 toast("Property updated!");
+                setTimeout(() => {
+                  setModeToDisplay();
+                }, 2000);
               }
             })
             .catch((error) => {
@@ -218,25 +262,10 @@ function PropertyForm({ editData }) {
             .then((response) => {
               if (response) {
                 toast("Property added!");
-                setAddData({
-                  name: "",
-                  applicationStatus: "under-review",
-                  state: "",
-                  city: "",
-                  builder: "",
-                  project: "",
-                  tower: "",
-                  unit: "",
-                  size: "",
-                  nature: "",
-                  status: "",
-                  documents: {
-                    type: "",
-                    files: [],
-                  },
-                  addedBy: "Unknown",
-                });
-                setUploadStatus(false);
+                setTimeout(() => {
+                  setModeToDisplay();
+                }, 2000);
+               
               }
             })
             .catch((error) => {
@@ -288,12 +317,16 @@ function PropertyForm({ editData }) {
         unit: editData.unit,
         size: editData.size,
         nature: editData.nature,
+        enable : editData.enable,
+        customerName : editData.customerName,
+        customerNumber: editData.customerNumber,
         status: editData.status,
+        isDeleted : editData.isDeleted,
         documents: {
           type: editData.documents.type,
           files: editData.documents.files,
         },
-        addedBy: editData.addedBy,
+        addedBy: "admin",
       });
     }
   }, [editData]);
@@ -351,6 +384,51 @@ function PropertyForm({ editData }) {
       <div className="flex items-center justify-center">
         <div className="w-full">
           <form>
+
+             {/* // customer name and number  */}
+             <div className="flex flex-col md:flex-row -mx-3">
+              <div className="w-full px-3 md:w-1/2">
+                <div className="mb-5">
+                  <label
+                    htmlFor="c-name"
+                    className="mb-3 block text-base font-medium"
+                  >
+                    Customer name
+                  </label>
+                  <input
+                    type="text"
+                    name="name"
+                    id="c-name"
+                    value={addData.customerName}
+                    onChange={(e) => changeField("customerName", e.target.value)}
+                    placeholder="Customer name"
+                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  />
+                </div>
+              </div>
+
+              <div className="w-full px-3 md:w-1/2">
+                <div className="mb-5">
+                  <label
+                    htmlFor="c-num"
+                    className="mb-3 block text-base font-medium"
+                  >
+                    Customer number
+                  </label>
+                  <input
+                    type="tel"
+                    name="name"
+                    id="c-num"
+                    value={addData.customerNumber}
+                    onChange={(e) => changeField("customerNumber", e.target.value)}
+                    placeholder="Customer number"
+                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  />
+                </div>
+              </div>
+            </div>
+
+
             {/* Basic property name and state  */}
             <div className="flex flex-col md:flex-row -mx-3">
               <div className="w-full px-3 md:w-1/2">
@@ -359,7 +437,7 @@ function PropertyForm({ editData }) {
                     htmlFor="name"
                     className="mb-3 block text-base font-medium"
                   >
-                    Name
+                    Property name
                   </label>
                   <input
                     type="text"
@@ -375,7 +453,9 @@ function PropertyForm({ editData }) {
 
               <div className="w-full px-3 md:w-1/2">
                 <div className="mb-5">
-                  <label className="text-lg font-medium">Choose a state:</label>
+                  <label className="text-lg font-medium">
+                    Choose a state 
+                  </label>
                   <input
                     list="states"
                     name="myState"
@@ -394,11 +474,13 @@ function PropertyForm({ editData }) {
               </div>
             </div>
 
+           
+
             {/*  City and builder */}
             <div className="flex flex-col md:flex-row -mx-3">
               <div className="w-full px-3 md:w-1/2">
                 <div className="mb-5">
-                  <label className="text-lg font-medium">Choose a city:</label>
+                  <label className="text-lg font-medium">Choose a city</label>
                   <input
                     list="cities"
                     disabled={addData.state.length > 0 ? false : true}
@@ -420,7 +502,7 @@ function PropertyForm({ editData }) {
               <div className="w-full px-3 md:w-1/2">
                 <div className="mb-5">
                   <label className="text-lg font-medium">
-                    Choose a Builder:
+                    Choose a Builder
                   </label>
                   <input
                     list="builders"
@@ -446,7 +528,7 @@ function PropertyForm({ editData }) {
               <div className="w-full px-3 md:w-1/2">
                 <div className="mb-5">
                   <label className="text-lg font-medium">
-                    Choose a Project:
+                    Choose a Project
                   </label>
                   <input
                     list="projects"
@@ -537,7 +619,7 @@ function PropertyForm({ editData }) {
                     className="mb-3 block text-base font-medium"
                   >
                     Nature
-                  </label>
+                  </label> 
                   <select
                     id="dropdown2"
                     value={addData.nature}
@@ -633,7 +715,7 @@ function PropertyForm({ editData }) {
                               className="text-sm mb-1"
                               key={`${index}-${item}`}
                             >
-                              {item}
+                              {item.split("/")[item.split("/").length - 1]}
                             </li>
                           );
                         })}
@@ -676,12 +758,31 @@ function PropertyForm({ editData }) {
                             })}
                         </ul>
 
-                        <button
-                          className="border-2 mt-2  border-blue-600 rounded-lg px-3 py-2 text-blue-400 cursor-pointer hover:bg-blue-600 hover:text-blue-200"
-                          onClick={handleFileUpload}
-                        >
-                          Upload
-                        </button>
+                        <div className="flex items-center ">
+                          <button
+                            className={`border-2 mt-2  ${
+                              isUploading === true
+                                ? "border-transparent text-blue-500"
+                                : "border-blue-600  hover:bg-blue-600 hover:text-blue-200"
+                            } rounded-lg px-3 py-2 text-blue-400 cursor-pointer  flex`}
+                            onClick={handleFileUpload}
+                            disabled={(uploadFiles.length === 0 ||isUploading === true )? true : false}
+                          >
+                            {isUploading === true ? "Uploading" : "Upload"}
+                          </button>
+
+                          {isUploading === true && (
+                            <img
+                              className="ml-2 mt-2 h-8 w-7"
+                              src={`${
+                                theme.palette.mode === "dark"
+                                  ? "/spinner-white.svg"
+                                  : "/spinner.svg"
+                              }`}
+                              alt="upload-spinner"
+                            />
+                          )}
+                        </div>
                       </div>
                     </div>
                   ) : (
@@ -701,7 +802,7 @@ function PropertyForm({ editData }) {
                       htmlFor="applicationStatus"
                       className="mb-3 block text-base font-medium"
                     >
-                      Nature
+                      Application Status
                     </label>
                     <select
                       id="applicationStatus"
@@ -724,17 +825,64 @@ function PropertyForm({ editData }) {
               </div>
             )}
 
+            {editData && <div className="mb-5">
+              <label className="mb-3 block text-base font-medium">
+                Delete Property?
+              </label>
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    name="enable"
+                    value="yes"
+                    className="h-5 w-5"
+                    id="radioButton1"
+                    checked={addData.isDeleted === "yes"}
+                    onChange={(e) => changeField("isDeleted", e.target.value)}
+                  />
+                  <label
+                    htmlFor="radioButton1"
+                    className="pl-3 text-base font-medium"
+                  >
+                    Yes
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    name="enable"
+                    value="no"
+                    className="h-5 w-5"
+                    id="radioButton2"
+                    checked={addData.isDeleted === "no"}
+                    onChange={(e) => changeField("isDeleted", e.target.value)}
+                  />
+                  <label
+                    htmlFor="radioButton2"
+                    className="pl-3 text-base font-medium"
+                  >
+                    No
+                  </label>
+                </div>
+              </div>
+            </div>}
+
             <div className="flex justify-center mt-5">
               <button
                 type="button"
                 onClick={() => handleSubmit(addData)}
-                className="px-8 py-3 bg-[#6A64F1] text-white font-medium text-lg rounded-md shadow-md hover:bg-[#5a52e0] focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50"
+                className={`px-8 py-3 ${
+                  isUploading === true ? "bg-gray-600" : "bg-[#6A64F1]"
+                }  text-white font-medium text-lg rounded-md shadow-md ${
+                  isUploading === true ? "bg-gray-600" : "hover:bg-[#5a52e0]"
+                }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
+                disabled={isUploading === true ? true : false}
               >
                 {editData ? "Update Property" : "Add Property"}
               </button>
             </div>
           </form>
-          <ToastContainer position="top-right" autoClose={2000} />
+          <ToastContainer position="top-center" autoClose={2000} />
         </div>
       </div>
     </Box>
