@@ -4,6 +4,7 @@ import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "../../theme";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -17,13 +18,13 @@ function Index() {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
-  const [mode, setMode] = useState("display");
+  const [mode, setMode] = useState("display"); //display add edit showDetails
   const [data, setData] = useState([]);
 
   const [editData, setEditData] = useState();
 
   const columns = [
-    { field: "_id", headerName: "ID", flex: 1 },
+    { field: "_id", headerName: "ID", flex: 0.1 },
     {
       field: "name",
       headerName: "Property",
@@ -54,8 +55,8 @@ function Index() {
     },
 
     {
-      field: "enable",
-      headerName: "Enabled",
+      field: "isDeleted",
+      headerName: "Deleted",
       headerAlign: "left",
       align: "left",
       flex: 0.5,
@@ -77,9 +78,17 @@ function Index() {
     {
       field: "action",
       headerName: "Action",
-      flex: 1,
+      flex: 2,
       renderCell: (params) => (
         <Box>
+          <IconButton
+            onClick={() => handleShowDetails(params.row._id)}
+            // color="primary"
+            className="text-grey-400"
+          >
+            <VisibilityIcon/>
+          </IconButton>
+
           <IconButton
             onClick={() => handleEdit(params.row._id)}
             // color="primary"
@@ -154,6 +163,7 @@ function Index() {
     fetchAllProperties();
   };
 
+
   // Click handler for the edit button
   const handleEdit = (id) => {
     fetchProperty(id);
@@ -161,7 +171,22 @@ function Index() {
     setTimeout(() => {
       setMode("edit");
     }, 500);
-  };
+  }; 
+
+  // to show the details of property
+  const handleShowDetails = (id) => {
+    fetchProperty(id);
+
+    setTimeout(() => {
+      setMode("showDetails");
+    }, 500);
+  }; 
+
+
+  const setModeToDisplay = () =>{
+    setMode("display");
+    fetchAllProperties();
+  }
 
   // Click handler for the delete button
   const handleDelete = (id) => {
@@ -174,7 +199,7 @@ function Index() {
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header
           title="Properties"
-          subtitle={mode === "add" ? "Add a property" : (mode === "edit" ? "Edit the property details" : "Manage properties here")}
+          subtitle={mode === "add" ? "Add a property" : (mode === "edit" ? "Edit the property details" : (mode === "showDetails" ? "See property details" : "Manage properties here"))}
         />
 
         <Box>
@@ -198,46 +223,24 @@ function Index() {
 
       {/* Render form or DataGrid based on mode */}
       {mode === "add" ? (
-        <PropertyForm  />
+        <PropertyForm  setModeToDisplay = {setModeToDisplay}/>
       ) : mode === "edit" ? (
-        editData && (
-          <Box
-            m="40px 0 0 0"
-            height="75vh"
-            sx={{
-              "& .MuiDataGrid-root": {
-                border: "none",
-              },
-              "& .MuiDataGrid-cell": {
-                borderBottom: "none",
-              },
-              "& .name-column--cell": {
-                color: colors.greenAccent[300],
-              },
-              "& .MuiDataGrid-columnHeaders": {
-                backgroundColor: colors.blueAccent[700],
-                borderBottom: "none",
-              },
-              "& .MuiDataGrid-virtualScroller": {
-                backgroundColor: colors.primary[400],
-              },
-              "& .MuiDataGrid-footerContainer": {
-                borderTop: "none",
-                backgroundColor: colors.blueAccent[700],
-              },
-              "& .MuiCheckbox-root": {
-                color: `${colors.greenAccent[200]} !important`,
-              },
-              "& .MuiDataGrid-toolbarContainer .MuiButton-text": {
-                color: `${colors.grey[100]} !important`,
-              },
-            }}
-          >
-            {/* <ShowPropertDetails data={editData} /> */}
-            <PropertyForm editData={editData} />{" "}
-          </Box>
+        editData && (<>
+        {/* <ShowPropertDetails data={editData} /> */}
+        <PropertyForm editData={editData} setModeToDisplay = {setModeToDisplay} />
+      
+        </>
+          
+            
         )
-      ) : (
+      ) : mode === "showDetails" ? (
+        editData && (<>
+        <ShowPropertDetails data={editData} />
+      
+        </>
+            
+        )
+      )  :(
         <Box
           m="40px 0 0 0"
           height="75vh"

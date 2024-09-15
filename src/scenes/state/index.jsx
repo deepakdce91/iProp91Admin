@@ -138,6 +138,8 @@ function Index() {
     setMode("display");
   };
 
+
+
   // Click handler for the edit button
   const handleEdit = (id) => {
     fetchState(id);
