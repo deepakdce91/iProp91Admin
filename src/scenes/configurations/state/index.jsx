@@ -1,19 +1,18 @@
 import { Box, IconButton, useTheme } from "@mui/material";
 import { useState, useEffect } from "react";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
-import { tokens } from "../../theme";
+import { tokens } from "../../../theme";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Header from "../../components/Header";
-import BuildersForm from "../../components/configurations/BuildersForm";
-import {formatDate} from "../../MyFunctions"
+import Header from "../../../components/Header";
+import StateForm from "../../../components/configurations/StateForm";
+import {formatDate} from "../../../MyFunctions"
 
 
 function Index() {
-
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -26,19 +25,9 @@ function Index() {
     { field: "_id", headerName: "ID", flex: 1 },
     {
       field: "name",
-      headerName: "City",
-      flex: 1,
-      cellClassName: "name-column--cell",
-    },
-    {
-      field: "state",
       headerName: "State",
       flex: 1,
-    },
-    {
-      field: "city",
-      headerName: "City",
-      flex: 1,
+      cellClassName: "name-column--cell",
     },
     {
       field: "addedBy",
@@ -93,10 +82,10 @@ function Index() {
     },
   ];
 
-  const fetchBuilder = async (id) => {
+  const fetchState = async (id) => {
     // Make the DELETE request
     await axios
-      .get(`http://localhost:3700/api/builders/fetchbuilder/${id}`)
+      .get(`http://localhost:3700/api/state/fetchState/${id}`)
       .then((response) => {
         if (response) {
           setEditData(response.data);
@@ -108,9 +97,9 @@ function Index() {
       });
   };
 
-  const fetchAllBuilders = () => {
+  const fetchAllStates = () => {
     axios
-      .get("http://localhost:3700/api/builders/fetchallbuilders")
+      .get("http://localhost:3700/api/state/fetchallstates")
       .then((response) => {
         setData(response.data);
       })
@@ -119,14 +108,14 @@ function Index() {
       });
   };
 
-  const deleteBuilderById = async (id) => {
+  const deleteStateById = async (id) => {
     // Make the DELETE request
     await axios
-      .delete(`http://localhost:3700/api/builders/deletebuilder/${id}`)
+      .delete(`http://localhost:3700/api/state/deletestate/${id}`)
       .then((response) => {
         if (response) {
-          toast("Builder deleted!");
-          fetchAllBuilders();
+          toast("State deleted!");
+          fetchAllStates();
         }
       })
       .catch((error) => {
@@ -137,7 +126,7 @@ function Index() {
 
   // useeffecttt
   useEffect(() => {
-    fetchAllBuilders();
+    fetchAllStates();
   }, []);
 
   const handleAddMore = () => {
@@ -145,13 +134,15 @@ function Index() {
   };
 
   const handleCancel = () => {
+    fetchAllStates();
     setMode("display");
-    fetchAllBuilders();
   };
+
+
 
   // Click handler for the edit button
   const handleEdit = (id) => {
-    fetchBuilder(id);
+    fetchState(id);
 
     setTimeout(() => {
       setMode("edit");
@@ -160,17 +151,16 @@ function Index() {
 
   // Click handler for the delete button
   const handleDelete = (id) => {
-    deleteBuilderById(id);
+    deleteStateById(id);
   };
-
 
   return (
     <Box m="20px">
       {/* HEADER */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header
-          title="Builders"
-          subtitle={mode === "add" ? "Add a Builder" : (mode === "edit" ? "Edit the builder details" : "Manage builders here")}
+          title="State"
+          subtitle={mode === "add" ? "Add a State" : (mode === "edit" ? "Edit the state " : "Manage States here")}
         />
 
         <Box>
@@ -194,7 +184,7 @@ function Index() {
 
       {/* Render form or DataGrid based on mode */}
       {mode === "add" ? (
-        <BuildersForm  />
+        <StateForm  />
       ) : mode === "edit" ? (
         editData && (
           <Box
@@ -229,7 +219,7 @@ function Index() {
               },
             }}
           >
-            <BuildersForm editData={editData} />{" "}
+            <StateForm editData={editData}  />{" "}
           </Box>
         )
       ) : (
@@ -276,7 +266,7 @@ function Index() {
       )}
       <ToastContainer position="top-right" autoClose={2000} />
     </Box>
-  )
+  );
 }
 
-export default Index
+export default Index;

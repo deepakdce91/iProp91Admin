@@ -12,11 +12,11 @@ import { MdOutlineRealEstateAgent } from "react-icons/md";
 import { FaCity } from "react-icons/fa";
 import { SiElectronbuilder } from "react-icons/si";
 import { FaProjectDiagram } from "react-icons/fa";
-
 import { IoDocumentTextSharp } from "react-icons/io5";
 import { TbInfoTriangleFilled } from "react-icons/tb";
 import { BsFillInfoSquareFill } from "react-icons/bs";
 import { MdLandscape } from "react-icons/md";
+import { FaUsers } from "react-icons/fa";
 
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
@@ -142,6 +142,14 @@ const Sidebar = () => {
                 General
               </Typography>
             )}
+             <Item
+              title="Users"
+              to="/users"
+              icon={<FaUsers className="h-5 w-5" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
             <Item
               title="Property"
               to="/property"

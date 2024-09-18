@@ -1,32 +1,33 @@
 import { Box, IconButton, useTheme } from "@mui/material";
 import { useState, useEffect } from "react";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
-import { tokens } from "../../theme";
+import { tokens } from "../../../theme";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Header from "../../components/Header";
-import CityForm from "../../components/configurations/CityForm";
-import {formatDate} from "../../MyFunctions"
+import Header from "../../../components/Header";
+import UsersForm from "../../../components/general/users/UsersForm";
+import ShowPropertDetails from "../../../components/general/property/ShowPropertDetails";
+import {formatDate} from "../../../MyFunctions"
 
 
 function Index() {
-
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
-  const [mode, setMode] = useState("display");
+  const [mode, setMode] = useState("display"); //display add edit showDetails
   const [data, setData] = useState([]);
 
   const [editData, setEditData] = useState();
 
   const columns = [
-    { field: "_id", headerName: "ID", flex: 1 },
+    { field: "_id", headerName: "ID", flex: 0.1 },
     {
       field: "name",
-      headerName: "City",
+      headerName: "Property",
       flex: 1,
       cellClassName: "name-column--cell",
     },
@@ -35,7 +36,16 @@ function Index() {
       headerName: "State",
       flex: 1,
     },
-    
+    {
+      field: "city",
+      headerName: "City",
+      flex: 1,
+    },
+    {
+      field: "builder",
+      headerName: "Builder",
+      flex: 1,
+    },
     {
       field: "addedBy",
       headerName: "Added By",
@@ -45,8 +55,8 @@ function Index() {
     },
 
     {
-      field: "enable",
-      headerName: "Enabled",
+      field: "isDeleted",
+      headerName: "Deleted",
       headerAlign: "left",
       align: "left",
       flex: 0.5,
@@ -56,20 +66,29 @@ function Index() {
       field: "createdAt",
       headerName: "Created",
       flex: 1,
-      valueGetter: (params) => formatDate(params.value), // Format the createdAt date
+      valueGetter: (params) => formatDate(params.value), 
     },
     {
       field: "updatedAt",
       headerName: "Updated",
       flex: 1,
-      valueGetter: (params) => formatDate(params.value), // Format the updatedAt date
+      valueGetter: (params) => formatDate(params.value), 
     },
+
     {
       field: "action",
       headerName: "Action",
-      flex: 1,
+      flex: 2,
       renderCell: (params) => (
         <Box>
+          <IconButton
+            onClick={() => handleShowDetails(params.row._id)}
+            // color="primary"
+            className="text-grey-400"
+          >
+            <VisibilityIcon/>
+          </IconButton>
+
           <IconButton
             onClick={() => handleEdit(params.row._id)}
             // color="primary"
@@ -88,10 +107,10 @@ function Index() {
     },
   ];
 
-  const fetchCity = async (id) => {
+  const fetchProperty = async (id) => {
     // Make the DELETE request
-    await axios
-      .get(`http://localhost:3700/api/city/fetchcity/${id}`)
+     await axios
+      .get(`http://localhost:3700/api/property/fetchproperty/${id}`)
       .then((response) => {
         if (response) {
           setEditData(response.data);
@@ -103,9 +122,9 @@ function Index() {
       });
   };
 
-  const fetchAllCities = () => {
+  const fetchAllProperties = () => {
     axios
-      .get("http://localhost:3700/api/city/fetchallcities")
+      .get("http://localhost:3700/api/property/fetchallproperties")
       .then((response) => {
         setData(response.data);
       })
@@ -114,14 +133,14 @@ function Index() {
       });
   };
 
-  const deleteCityById = async (id) => {
+  const deletePropertyById = async (id) => {
     // Make the DELETE request
     await axios
-      .delete(`http://localhost:3700/api/city/deletecity/${id}`)
+      .delete(`http://localhost:3700/api/property/deleteproperty/${id}`)
       .then((response) => {
         if (response) {
-          toast("City deleted!");
-          fetchAllCities();
+          toast("Property deleted!");
+          fetchAllProperties();
         }
       })
       .catch((error) => {
@@ -132,7 +151,7 @@ function Index() {
 
   // useeffecttt
   useEffect(() => {
-    fetchAllCities();
+    fetchAllProperties();
   }, []);
 
   const handleAddMore = () => {
@@ -141,31 +160,46 @@ function Index() {
 
   const handleCancel = () => {
     setMode("display");
-    fetchAllCities();
+    fetchAllProperties();
   };
+
 
   // Click handler for the edit button
   const handleEdit = (id) => {
-    fetchCity(id);
+    fetchProperty(id);
 
     setTimeout(() => {
       setMode("edit");
     }, 500);
-  };
+  }; 
+
+  // to show the details of property
+  const handleShowDetails = (id) => {
+    fetchProperty(id);
+
+    setTimeout(() => {
+      setMode("showDetails");
+    }, 500);
+  }; 
+
+
+  const setModeToDisplay = () =>{
+    setMode("display");
+    fetchAllProperties();
+  }
 
   // Click handler for the delete button
   const handleDelete = (id) => {
-    deleteCityById(id);
+    deletePropertyById(id);
   };
-
 
   return (
     <Box m="20px">
       {/* HEADER */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header
-          title="City"
-          subtitle={mode === "add" ? "Add a City" : (mode === "edit" ? "Edit the city details" : "Manage Cities here")}
+          title="Users"
+          subtitle={mode === "add" ? "Add a user" : (mode === "edit" ? "Edit the user details" :  "Manage users here")}
         />
 
         <Box>
@@ -189,45 +223,24 @@ function Index() {
 
       {/* Render form or DataGrid based on mode */}
       {mode === "add" ? (
-        <CityForm  />
+        <UsersForm  setModeToDisplay = {setModeToDisplay}/>
       ) : mode === "edit" ? (
-        editData && (
-          <Box
-            m="40px 0 0 0"
-            height="75vh"
-            sx={{
-              "& .MuiDataGrid-root": {
-                border: "none",
-              },
-              "& .MuiDataGrid-cell": {
-                borderBottom: "none",
-              },
-              "& .name-column--cell": {
-                color: colors.greenAccent[300],
-              },
-              "& .MuiDataGrid-columnHeaders": {
-                backgroundColor: colors.blueAccent[700],
-                borderBottom: "none",
-              },
-              "& .MuiDataGrid-virtualScroller": {
-                backgroundColor: colors.primary[400],
-              },
-              "& .MuiDataGrid-footerContainer": {
-                borderTop: "none",
-                backgroundColor: colors.blueAccent[700],
-              },
-              "& .MuiCheckbox-root": {
-                color: `${colors.greenAccent[200]} !important`,
-              },
-              "& .MuiDataGrid-toolbarContainer .MuiButton-text": {
-                color: `${colors.grey[100]} !important`,
-              },
-            }}
-          >
-            <CityForm editData={editData} />{" "}
-          </Box>
+        editData && (<>
+        {/* <ShowPropertDetails data={editData} /> */}
+        <UsersForm editData={editData} setModeToDisplay = {setModeToDisplay} />
+      
+        </>
+          
+            
         )
-      ) : (
+      ) : mode === "showDetails" ? (
+        editData && (<>
+        <ShowPropertDetails data={editData} />
+      
+        </>
+            
+        )
+      )  :(
         <Box
           m="40px 0 0 0"
           height="75vh"

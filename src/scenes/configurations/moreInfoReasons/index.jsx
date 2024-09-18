@@ -1,50 +1,33 @@
 import { Box, IconButton, useTheme } from "@mui/material";
 import { useState, useEffect } from "react";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
-import { tokens } from "../../theme";
+import { tokens } from "../../../theme";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Header from "../../components/Header";
-import PropertyForm from "../../components/general/property/PropertyForm";
-import ShowPropertDetails from "../../components/general/property/ShowPropertDetails";
-import {formatDate} from "../../MyFunctions"
+import Header from "../../../components/Header";
+import MoreInfoReasonsForm from "../../../components/configurations/MoreInfoReasonsForm";
+import {formatDate} from "../../../MyFunctions"
 
 
 function Index() {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
-  const [mode, setMode] = useState("display"); //display add edit showDetails
+  const [mode, setMode] = useState("display");
   const [data, setData] = useState([]);
 
   const [editData, setEditData] = useState();
 
   const columns = [
-    { field: "_id", headerName: "ID", flex: 0.1 },
+    { field: "_id", headerName: "ID", flex: 1 },
     {
       field: "name",
-      headerName: "Property",
+      headerName: "More Info Reason",
       flex: 1,
       cellClassName: "name-column--cell",
-    },
-    {
-      field: "state",
-      headerName: "State",
-      flex: 1,
-    },
-    {
-      field: "city",
-      headerName: "City",
-      flex: 1,
-    },
-    {
-      field: "builder",
-      headerName: "Builder",
-      flex: 1,
     },
     {
       field: "addedBy",
@@ -55,8 +38,8 @@ function Index() {
     },
 
     {
-      field: "isDeleted",
-      headerName: "Deleted",
+      field: "enable",
+      headerName: "Enabled",
       headerAlign: "left",
       align: "left",
       flex: 0.5,
@@ -78,17 +61,9 @@ function Index() {
     {
       field: "action",
       headerName: "Action",
-      flex: 2,
+      flex: 1,
       renderCell: (params) => (
         <Box>
-          <IconButton
-            onClick={() => handleShowDetails(params.row._id)}
-            // color="primary"
-            className="text-grey-400"
-          >
-            <VisibilityIcon/>
-          </IconButton>
-
           <IconButton
             onClick={() => handleEdit(params.row._id)}
             // color="primary"
@@ -107,10 +82,10 @@ function Index() {
     },
   ];
 
-  const fetchProperty = async (id) => {
+  const fetchReason = async (id) => {
     // Make the DELETE request
      await axios
-      .get(`http://localhost:3700/api/property/fetchproperty/${id}`)
+      .get(`http://localhost:3700/api/moreInfoReasons/fetchReason/${id}`)
       .then((response) => {
         if (response) {
           setEditData(response.data);
@@ -122,9 +97,9 @@ function Index() {
       });
   };
 
-  const fetchAllProperties = () => {
+  const fetchAllReasons = () => {
     axios
-      .get("http://localhost:3700/api/property/fetchallproperties")
+      .get("http://localhost:3700/api/moreInfoReasons/fetchAllReasons")
       .then((response) => {
         setData(response.data);
       })
@@ -133,14 +108,14 @@ function Index() {
       });
   };
 
-  const deletePropertyById = async (id) => {
+  const deleteMoreInfoReasonById = async (id) => {
     // Make the DELETE request
     await axios
-      .delete(`http://localhost:3700/api/property/deleteproperty/${id}`)
+      .delete(`http://localhost:3700/api/moreInfoReasons/deleteReason/${id}`)
       .then((response) => {
         if (response) {
-          toast("Property deleted!");
-          fetchAllProperties();
+          toast("More info reason deleted!");
+          fetchAllReasons();
         }
       })
       .catch((error) => {
@@ -151,7 +126,7 @@ function Index() {
 
   // useeffecttt
   useEffect(() => {
-    fetchAllProperties();
+    fetchAllReasons();
   }, []);
 
   const handleAddMore = () => {
@@ -159,38 +134,22 @@ function Index() {
   };
 
   const handleCancel = () => {
+    fetchAllReasons();
     setMode("display");
-    fetchAllProperties();
   };
-
 
   // Click handler for the edit button
   const handleEdit = (id) => {
-    fetchProperty(id);
+    fetchReason(id);
 
     setTimeout(() => {
       setMode("edit");
     }, 500);
-  }; 
-
-  // to show the details of property
-  const handleShowDetails = (id) => {
-    fetchProperty(id);
-
-    setTimeout(() => {
-      setMode("showDetails");
-    }, 500);
-  }; 
-
-
-  const setModeToDisplay = () =>{
-    setMode("display");
-    fetchAllProperties();
-  }
+  };
 
   // Click handler for the delete button
   const handleDelete = (id) => {
-    deletePropertyById(id);
+    deleteMoreInfoReasonById(id);
   };
 
   return (
@@ -198,10 +157,10 @@ function Index() {
       {/* HEADER */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header
-          title="Properties"
-          subtitle={mode === "add" ? "Add a property" : (mode === "edit" ? "Edit the property details" : (mode === "showDetails" ? "See property details" : "Manage properties here"))}
-        />
-
+          title="More Info Reasons"
+          subtitle={mode === "add" ? "Add More Info Reasons" : (mode === "edit" ? "Edit the More Info Reason" : "Manage More Info Reason here")}
+          />
+ 
         <Box>
           {mode === "display" ? (
             <div
@@ -223,24 +182,45 @@ function Index() {
 
       {/* Render form or DataGrid based on mode */}
       {mode === "add" ? (
-        <PropertyForm  setModeToDisplay = {setModeToDisplay}/>
+        <MoreInfoReasonsForm  />
       ) : mode === "edit" ? (
-        editData && (<>
-        {/* <ShowPropertDetails data={editData} /> */}
-        <PropertyForm editData={editData} setModeToDisplay = {setModeToDisplay} />
-      
-        </>
-          
-            
+        editData && (
+          <Box
+            m="40px 0 0 0"
+            height="75vh"
+            sx={{
+              "& .MuiDataGrid-root": {
+                border: "none",
+              },
+              "& .MuiDataGrid-cell": {
+                borderBottom: "none",
+              },
+              "& .name-column--cell": {
+                color: colors.greenAccent[300],
+              },
+              "& .MuiDataGrid-columnHeaders": {
+                backgroundColor: colors.blueAccent[700],
+                borderBottom: "none",
+              },
+              "& .MuiDataGrid-virtualScroller": {
+                backgroundColor: colors.primary[400],
+              },
+              "& .MuiDataGrid-footerContainer": {
+                borderTop: "none",
+                backgroundColor: colors.blueAccent[700],
+              },
+              "& .MuiCheckbox-root": {
+                color: `${colors.greenAccent[200]} !important`,
+              },
+              "& .MuiDataGrid-toolbarContainer .MuiButton-text": {
+                color: `${colors.grey[100]} !important`,
+              },
+            }}
+          >
+            <MoreInfoReasonsForm editData={editData}  />{" "}
+          </Box>
         )
-      ) : mode === "showDetails" ? (
-        editData && (<>
-        <ShowPropertDetails data={editData} />
-      
-        </>
-            
-        )
-      )  :(
+      ) : (
         <Box
           m="40px 0 0 0"
           height="75vh"
@@ -284,7 +264,7 @@ function Index() {
       )}
       <ToastContainer position="top-right" autoClose={2000} />
     </Box>
-  )
+  );
 }
 
-export default Index
+export default Index;

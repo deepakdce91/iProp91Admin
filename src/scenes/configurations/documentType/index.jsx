@@ -1,15 +1,15 @@
 import { Box, IconButton, useTheme } from "@mui/material";
 import { useState, useEffect } from "react";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
-import { tokens } from "../../theme";
+import { tokens } from "../../../theme";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Header from "../../components/Header";
-import StateForm from "../../components/configurations/StateForm";
-import {formatDate} from "../../MyFunctions"
+import Header from "../../../components/Header";
+import DocumentTypeForm from "../../../components/configurations/DocumentTypeForm";
+import {formatDate} from "../../../MyFunctions"
 
 
 function Index() {
@@ -25,7 +25,7 @@ function Index() {
     { field: "_id", headerName: "ID", flex: 1 },
     {
       field: "name",
-      headerName: "State",
+      headerName: "Document",
       flex: 1,
       cellClassName: "name-column--cell",
     },
@@ -82,10 +82,10 @@ function Index() {
     },
   ];
 
-  const fetchState = async (id) => {
+  const fetchDocumentType = async (id) => {
     // Make the DELETE request
     await axios
-      .get(`http://localhost:3700/api/state/fetchState/${id}`)
+      .get(`http://localhost:3700/api/documentType/fetchDocumentType/${id}`)
       .then((response) => {
         if (response) {
           setEditData(response.data);
@@ -97,9 +97,9 @@ function Index() {
       });
   };
 
-  const fetchAllStates = () => {
+  const fetchAllDocumentTypes = () => {
     axios
-      .get("http://localhost:3700/api/state/fetchallstates")
+      .get("http://localhost:3700/api/documentType/fetchallDocumentTypes")
       .then((response) => {
         setData(response.data);
       })
@@ -108,14 +108,14 @@ function Index() {
       });
   };
 
-  const deleteStateById = async (id) => {
+  const deleteDocumentTypeById = async (id) => {
     // Make the DELETE request
     await axios
-      .delete(`http://localhost:3700/api/state/deletestate/${id}`)
+      .delete(`http://localhost:3700/api/documentType/deleteDocumentType/${id}`)
       .then((response) => {
         if (response) {
-          toast("State deleted!");
-          fetchAllStates();
+          toast("Document Type deleted!");
+          fetchAllDocumentTypes();
         }
       })
       .catch((error) => {
@@ -126,7 +126,7 @@ function Index() {
 
   // useeffecttt
   useEffect(() => {
-    fetchAllStates();
+    fetchAllDocumentTypes();
   }, []);
 
   const handleAddMore = () => {
@@ -134,15 +134,13 @@ function Index() {
   };
 
   const handleCancel = () => {
-    fetchAllStates();
+    fetchAllDocumentTypes();
     setMode("display");
   };
 
-
-
   // Click handler for the edit button
   const handleEdit = (id) => {
-    fetchState(id);
+    fetchDocumentType(id);
 
     setTimeout(() => {
       setMode("edit");
@@ -151,7 +149,7 @@ function Index() {
 
   // Click handler for the delete button
   const handleDelete = (id) => {
-    deleteStateById(id);
+    deleteDocumentTypeById(id);
   };
 
   return (
@@ -159,9 +157,9 @@ function Index() {
       {/* HEADER */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header
-          title="State"
-          subtitle={mode === "add" ? "Add a State" : (mode === "edit" ? "Edit the state " : "Manage States here")}
-        />
+          title="Document Type"
+          subtitle={mode === "add" ? "Add a Document Type" : (mode === "edit" ? "Edit the Document Type " : "Manage Document Types here")}
+          />
 
         <Box>
           {mode === "display" ? (
@@ -184,7 +182,7 @@ function Index() {
 
       {/* Render form or DataGrid based on mode */}
       {mode === "add" ? (
-        <StateForm  />
+        <DocumentTypeForm  />
       ) : mode === "edit" ? (
         editData && (
           <Box
@@ -219,7 +217,7 @@ function Index() {
               },
             }}
           >
-            <StateForm editData={editData}  />{" "}
+            <DocumentTypeForm editData={editData}  />{" "}
           </Box>
         )
       ) : (
