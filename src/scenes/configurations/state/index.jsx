@@ -1,15 +1,15 @@
 import { Box, IconButton, useTheme } from "@mui/material";
 import { useState, useEffect } from "react";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
-import { tokens } from "../../theme";
+import { tokens } from "../../../theme";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Header from "../../components/Header";
-import StateForm from "../../components/configurations/StateForm";
-import {formatDate} from "../../MyFunctions"
+import Header from "../../../components/Header";
+import StateForm from "../../../components/configurations/StateForm";
+import {formatDate} from "../../../MyFunctions"
 
 
 function Index() {

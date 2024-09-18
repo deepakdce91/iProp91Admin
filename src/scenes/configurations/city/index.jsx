@@ -1,18 +1,19 @@
 import { Box, IconButton, useTheme } from "@mui/material";
 import { useState, useEffect } from "react";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
-import { tokens } from "../../theme";
+import { tokens } from "../../../theme";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Header from "../../components/Header";
-import RejectedReasonsForm from "../../components/configurations/RejectedReasonsForm";
-import {formatDate} from "../../MyFunctions"
+import Header from "../../../components/Header";
+import CityForm from "../../../components/configurations/CityForm";
+import {formatDate} from "../../../MyFunctions"
 
 
 function Index() {
+
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -25,10 +26,16 @@ function Index() {
     { field: "_id", headerName: "ID", flex: 1 },
     {
       field: "name",
-      headerName: "Rejected Reason",
-      flex: 1.5,
+      headerName: "City",
+      flex: 1,
       cellClassName: "name-column--cell",
     },
+    {
+      field: "state",
+      headerName: "State",
+      flex: 1,
+    },
+    
     {
       field: "addedBy",
       headerName: "Added By",
@@ -49,15 +56,14 @@ function Index() {
       field: "createdAt",
       headerName: "Created",
       flex: 1,
-      valueGetter: (params) => formatDate(params.value), 
+      valueGetter: (params) => formatDate(params.value), // Format the createdAt date
     },
     {
       field: "updatedAt",
       headerName: "Updated",
       flex: 1,
-      valueGetter: (params) => formatDate(params.value), 
+      valueGetter: (params) => formatDate(params.value), // Format the updatedAt date
     },
-
     {
       field: "action",
       headerName: "Action",
@@ -82,10 +88,10 @@ function Index() {
     },
   ];
 
-  const fetchReason = async (id) => {
+  const fetchCity = async (id) => {
     // Make the DELETE request
     await axios
-      .get(`http://localhost:3700/api/rejectedReasons/fetchReason/${id}`)
+      .get(`http://localhost:3700/api/city/fetchcity/${id}`)
       .then((response) => {
         if (response) {
           setEditData(response.data);
@@ -97,9 +103,9 @@ function Index() {
       });
   };
 
-  const fetchAllReasons = () => {
+  const fetchAllCities = () => {
     axios
-      .get("http://localhost:3700/api/rejectedReasons/fetchAllReasons")
+      .get("http://localhost:3700/api/city/fetchallcities")
       .then((response) => {
         setData(response.data);
       })
@@ -108,14 +114,14 @@ function Index() {
       });
   };
 
-  const deleteRejectedReasonById = async (id) => {
+  const deleteCityById = async (id) => {
     // Make the DELETE request
     await axios
-      .delete(`http://localhost:3700/api/rejectedReasons/deleteReason/${id}`)
+      .delete(`http://localhost:3700/api/city/deletecity/${id}`)
       .then((response) => {
         if (response) {
-          toast("Rejected Reason deleted!");
-          fetchAllReasons();
+          toast("City deleted!");
+          fetchAllCities();
         }
       })
       .catch((error) => {
@@ -126,7 +132,7 @@ function Index() {
 
   // useeffecttt
   useEffect(() => {
-    fetchAllReasons();
+    fetchAllCities();
   }, []);
 
   const handleAddMore = () => {
@@ -134,13 +140,13 @@ function Index() {
   };
 
   const handleCancel = () => {
-    fetchAllReasons();
     setMode("display");
+    fetchAllCities();
   };
 
   // Click handler for the edit button
   const handleEdit = (id) => {
-    fetchReason(id);
+    fetchCity(id);
 
     setTimeout(() => {
       setMode("edit");
@@ -149,17 +155,18 @@ function Index() {
 
   // Click handler for the delete button
   const handleDelete = (id) => {
-    deleteRejectedReasonById(id);
+    deleteCityById(id);
   };
+
 
   return (
     <Box m="20px">
       {/* HEADER */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header
-          title="Rejected Reasons"
-          subtitle={mode === "add" ? "Add a Rejected Reason" : (mode === "edit" ? "Edit the Rejected Reason " : "Manage Rejected Reasons here")}
-          />
+          title="City"
+          subtitle={mode === "add" ? "Add a City" : (mode === "edit" ? "Edit the city details" : "Manage Cities here")}
+        />
 
         <Box>
           {mode === "display" ? (
@@ -182,7 +189,7 @@ function Index() {
 
       {/* Render form or DataGrid based on mode */}
       {mode === "add" ? (
-        <RejectedReasonsForm  />
+        <CityForm  />
       ) : mode === "edit" ? (
         editData && (
           <Box
@@ -217,7 +224,7 @@ function Index() {
               },
             }}
           >
-            <RejectedReasonsForm editData={editData}  />{" "}
+            <CityForm editData={editData} />{" "}
           </Box>
         )
       ) : (
@@ -264,7 +271,7 @@ function Index() {
       )}
       <ToastContainer position="top-right" autoClose={2000} />
     </Box>
-  );
+  )
 }
 
-export default Index;
+export default Index

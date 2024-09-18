@@ -1,15 +1,15 @@
 import { Box, IconButton, useTheme } from "@mui/material";
 import { useState, useEffect } from "react";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
-import { tokens } from "../../theme";
+import { tokens } from "../../../theme";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Header from "../../components/Header";
-import ProjectsForm from "../../components/configurations/ProjectsForm";
-import {formatDate} from "../../MyFunctions"
+import Header from "../../../components/Header";
+import DocumentTypeForm from "../../../components/configurations/DocumentTypeForm";
+import {formatDate} from "../../../MyFunctions"
 
 
 function Index() {
@@ -25,24 +25,9 @@ function Index() {
     { field: "_id", headerName: "ID", flex: 1 },
     {
       field: "name",
-      headerName: "City",
+      headerName: "Document",
       flex: 1,
       cellClassName: "name-column--cell",
-    },
-    {
-      field: "state",
-      headerName: "State",
-      flex: 1,
-    },
-    {
-      field: "city",
-      headerName: "City",
-      flex: 1,
-    },
-    {
-      field: "builder",
-      headerName: "Builder",
-      flex: 1,
     },
     {
       field: "addedBy",
@@ -97,10 +82,10 @@ function Index() {
     },
   ];
 
-  const fetchProject = async (id) => {
+  const fetchDocumentType = async (id) => {
     // Make the DELETE request
     await axios
-      .get(`http://localhost:3700/api/projects/fetchproject/${id}`)
+      .get(`http://localhost:3700/api/documentType/fetchDocumentType/${id}`)
       .then((response) => {
         if (response) {
           setEditData(response.data);
@@ -112,9 +97,9 @@ function Index() {
       });
   };
 
-  const fetchAllProjects = () => {
+  const fetchAllDocumentTypes = () => {
     axios
-      .get("http://localhost:3700/api/projects/fetchallprojects")
+      .get("http://localhost:3700/api/documentType/fetchallDocumentTypes")
       .then((response) => {
         setData(response.data);
       })
@@ -123,14 +108,14 @@ function Index() {
       });
   };
 
-  const deleteProjectById = async (id) => {
+  const deleteDocumentTypeById = async (id) => {
     // Make the DELETE request
     await axios
-      .delete(`http://localhost:3700/api/projects/deleteproject/${id}`)
+      .delete(`http://localhost:3700/api/documentType/deleteDocumentType/${id}`)
       .then((response) => {
         if (response) {
-          toast("Project deleted!");
-          fetchAllProjects();
+          toast("Document Type deleted!");
+          fetchAllDocumentTypes();
         }
       })
       .catch((error) => {
@@ -141,7 +126,7 @@ function Index() {
 
   // useeffecttt
   useEffect(() => {
-    fetchAllProjects();
+    fetchAllDocumentTypes();
   }, []);
 
   const handleAddMore = () => {
@@ -149,13 +134,13 @@ function Index() {
   };
 
   const handleCancel = () => {
+    fetchAllDocumentTypes();
     setMode("display");
-    fetchAllProjects();
   };
 
   // Click handler for the edit button
   const handleEdit = (id) => {
-    fetchProject(id);
+    fetchDocumentType(id);
 
     setTimeout(() => {
       setMode("edit");
@@ -164,7 +149,7 @@ function Index() {
 
   // Click handler for the delete button
   const handleDelete = (id) => {
-    deleteProjectById(id);
+    deleteDocumentTypeById(id);
   };
 
   return (
@@ -172,9 +157,9 @@ function Index() {
       {/* HEADER */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header
-          title="Builders"
-          subtitle={mode === "add" ? "Add a Builder" : (mode === "edit" ? "Edit the builder details" : "Manage builders here")}
-        />
+          title="Document Type"
+          subtitle={mode === "add" ? "Add a Document Type" : (mode === "edit" ? "Edit the Document Type " : "Manage Document Types here")}
+          />
 
         <Box>
           {mode === "display" ? (
@@ -197,7 +182,7 @@ function Index() {
 
       {/* Render form or DataGrid based on mode */}
       {mode === "add" ? (
-        <ProjectsForm  />
+        <DocumentTypeForm  />
       ) : mode === "edit" ? (
         editData && (
           <Box
@@ -232,7 +217,7 @@ function Index() {
               },
             }}
           >
-            <ProjectsForm editData={editData} />{" "}
+            <DocumentTypeForm editData={editData}  />{" "}
           </Box>
         )
       ) : (
@@ -279,7 +264,7 @@ function Index() {
       )}
       <ToastContainer position="top-right" autoClose={2000} />
     </Box>
-  )
+  );
 }
 
-export default Index
+export default Index;

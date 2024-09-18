@@ -1,19 +1,18 @@
 import { Box, IconButton, useTheme } from "@mui/material";
 import { useState, useEffect } from "react";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
-import { tokens } from "../../theme";
+import { tokens } from "../../../theme";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Header from "../../components/Header";
-import CityForm from "../../components/configurations/CityForm";
-import {formatDate} from "../../MyFunctions"
+import Header from "../../../components/Header";
+import MoreInfoReasonsForm from "../../../components/configurations/MoreInfoReasonsForm";
+import {formatDate} from "../../../MyFunctions"
 
 
 function Index() {
-
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -26,16 +25,10 @@ function Index() {
     { field: "_id", headerName: "ID", flex: 1 },
     {
       field: "name",
-      headerName: "City",
+      headerName: "More Info Reason",
       flex: 1,
       cellClassName: "name-column--cell",
     },
-    {
-      field: "state",
-      headerName: "State",
-      flex: 1,
-    },
-    
     {
       field: "addedBy",
       headerName: "Added By",
@@ -56,14 +49,15 @@ function Index() {
       field: "createdAt",
       headerName: "Created",
       flex: 1,
-      valueGetter: (params) => formatDate(params.value), // Format the createdAt date
+      valueGetter: (params) => formatDate(params.value), 
     },
     {
       field: "updatedAt",
       headerName: "Updated",
       flex: 1,
-      valueGetter: (params) => formatDate(params.value), // Format the updatedAt date
+      valueGetter: (params) => formatDate(params.value), 
     },
+
     {
       field: "action",
       headerName: "Action",
@@ -88,10 +82,10 @@ function Index() {
     },
   ];
 
-  const fetchCity = async (id) => {
+  const fetchReason = async (id) => {
     // Make the DELETE request
-    await axios
-      .get(`http://localhost:3700/api/city/fetchcity/${id}`)
+     await axios
+      .get(`http://localhost:3700/api/moreInfoReasons/fetchReason/${id}`)
       .then((response) => {
         if (response) {
           setEditData(response.data);
@@ -103,9 +97,9 @@ function Index() {
       });
   };
 
-  const fetchAllCities = () => {
+  const fetchAllReasons = () => {
     axios
-      .get("http://localhost:3700/api/city/fetchallcities")
+      .get("http://localhost:3700/api/moreInfoReasons/fetchAllReasons")
       .then((response) => {
         setData(response.data);
       })
@@ -114,14 +108,14 @@ function Index() {
       });
   };
 
-  const deleteCityById = async (id) => {
+  const deleteMoreInfoReasonById = async (id) => {
     // Make the DELETE request
     await axios
-      .delete(`http://localhost:3700/api/city/deletecity/${id}`)
+      .delete(`http://localhost:3700/api/moreInfoReasons/deleteReason/${id}`)
       .then((response) => {
         if (response) {
-          toast("City deleted!");
-          fetchAllCities();
+          toast("More info reason deleted!");
+          fetchAllReasons();
         }
       })
       .catch((error) => {
@@ -132,7 +126,7 @@ function Index() {
 
   // useeffecttt
   useEffect(() => {
-    fetchAllCities();
+    fetchAllReasons();
   }, []);
 
   const handleAddMore = () => {
@@ -140,13 +134,13 @@ function Index() {
   };
 
   const handleCancel = () => {
+    fetchAllReasons();
     setMode("display");
-    fetchAllCities();
   };
 
   // Click handler for the edit button
   const handleEdit = (id) => {
-    fetchCity(id);
+    fetchReason(id);
 
     setTimeout(() => {
       setMode("edit");
@@ -155,19 +149,18 @@ function Index() {
 
   // Click handler for the delete button
   const handleDelete = (id) => {
-    deleteCityById(id);
+    deleteMoreInfoReasonById(id);
   };
-
 
   return (
     <Box m="20px">
       {/* HEADER */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header
-          title="City"
-          subtitle={mode === "add" ? "Add a City" : (mode === "edit" ? "Edit the city details" : "Manage Cities here")}
-        />
-
+          title="More Info Reasons"
+          subtitle={mode === "add" ? "Add More Info Reasons" : (mode === "edit" ? "Edit the More Info Reason" : "Manage More Info Reason here")}
+          />
+ 
         <Box>
           {mode === "display" ? (
             <div
@@ -189,7 +182,7 @@ function Index() {
 
       {/* Render form or DataGrid based on mode */}
       {mode === "add" ? (
-        <CityForm  />
+        <MoreInfoReasonsForm  />
       ) : mode === "edit" ? (
         editData && (
           <Box
@@ -224,7 +217,7 @@ function Index() {
               },
             }}
           >
-            <CityForm editData={editData} />{" "}
+            <MoreInfoReasonsForm editData={editData}  />{" "}
           </Box>
         )
       ) : (
@@ -271,7 +264,7 @@ function Index() {
       )}
       <ToastContainer position="top-right" autoClose={2000} />
     </Box>
-  )
+  );
 }
 
-export default Index
+export default Index;
