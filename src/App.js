@@ -13,7 +13,10 @@ import DocumentType from "./scenes/configurations/documentType";
 import RejectedReasons from "./scenes/configurations/rejectedReasons";
 import MoreInfoReasons from "./scenes/configurations/moreInfoReasons";
 import Property from "./scenes/general/property";
+import Users from "./scenes/general/users";
 import Auth from "./scenes/auth";
+
+
 
 import { CssBaseline, ThemeProvider } from "@mui/material";
 import { ColorModeContext, useMode } from "./theme";
@@ -73,6 +76,7 @@ function App() {
               <Route path="/rejectedReasons" element={<RejectedReasons />} />
               <Route path="/moreInfoReasons" element={<MoreInfoReasons />} />
               <Route path="/property" element={<Property />} />
+              <Route path="/users" element={<Users />} />
             </Routes>
           </main>
           
