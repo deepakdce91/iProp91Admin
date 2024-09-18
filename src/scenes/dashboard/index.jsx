@@ -81,7 +81,7 @@ const getSignedUrlForPrivateFile = async(path) => {
         <Header title="DASHBOARD" subtitle="Welcome to your dashboard" /> 
       </Box>
 
-      <div>
+      {/* <div>
       <h2>Upload a File</h2>
       <input type="file" onChange={handleFileChange} />
       <button onClick={()=>{
@@ -106,7 +106,7 @@ const getSignedUrlForPrivateFile = async(path) => {
 
     <button onClick={()=>{
       console.log(getSignedUrlForPrivateFile(filePath))
-    }}>GET PUBLIC URL</button>
+    }}>GET PUBLIC URL</button> */}
 
     </Box>
   );
