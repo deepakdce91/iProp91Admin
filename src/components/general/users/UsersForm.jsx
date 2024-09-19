@@ -8,21 +8,42 @@ import axios from "axios";
 import { getNameList } from "../../../MyFunctions";
 import { getUniqueItems } from "../../../MyFunctions";
 
-import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { client } from "../../../config/s3Config";
-
 import heic2any from "heic2any";
 import { MdEdit } from "react-icons/md";
 
- 
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
-function PropertyForm({ editData, setModeToDisplay  }) {
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { client } from "../../../config/s3Config";
+// import { Preview } from "@mui/icons-material";
 
+//get signed url---will be used sooon
+const getSignedUrlForPrivateFile = async (path) => {
+  try {
+    const getParams = {
+      Bucket: process.env.REACT_APP_PROPERTY_BUCKET,
+      Key: path,
+      ResponseContentDisposition: "inline",
+    };
+
+    const command = new GetObjectCommand(getParams);
+    const signedUrl = await getSignedUrl(client, command, { expiresIn: 3600 }); // URL valid for 1 hour
+
+    return signedUrl;
+  } catch (error) {
+    console.error("Error getting signed URL:", error);
+    throw error;
+  }
+};
+
+function PropertyForm({ editData, setModeToDisplay }) {
   const fileInputRef = useRef(null);
 
-  const [uploadedFile, setuploadedFile] = useState();
-
   const [isUploading, setIsUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(
+    process.env.REACT_APP_DEFAULT_PROFILE_URL
+  );
 
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -32,9 +53,9 @@ function PropertyForm({ editData, setModeToDisplay  }) {
     phone: "",
     email: "",
     password: "",
-    profile : "",
-    lastLogin : new Date(),
-    visible: true,
+    profilePicture: "",
+    lastLogin: new Date(),
+    visible: "true",
   });
 
   const handleDivClick = () => {
@@ -43,91 +64,54 @@ function PropertyForm({ editData, setModeToDisplay  }) {
   };
 
   // Upload the file to Supabase S3
-  const uploadedFileToCloud = async (myFile) => {
-     
-      const myPath = `propertyDocs/${addData.customerNumber}/${myFile.name}`;
-      try {
-        const uploadParams = {
-          Bucket: process.env.REACT_APP_PROPERTY_BUCKET,
-          Key: myPath,
-          Body: myFile, // The file content
-          ContentType: myFile.type, // The MIME type of the file
-        };
-        const command = new PutObjectCommand(uploadParams);
-        await client.send(command);
+  const uploadFileToCloud = async (myFile) => {
+    const myPath = `usersProfilePic/${myFile.name}`;
+    try {
+      const uploadParams = {
+        Bucket: process.env.REACT_APP_PROPERTY_BUCKET,
+        Key: myPath,
+        Body: myFile, // The file content
+        ContentType: myFile.type, // The MIME type of the file
+      };
+      const command = new PutObjectCommand(uploadParams);
+      let success = await client.send(command);
+      if (success) {
+        changeField("profilePicture", myPath);
         return myPath; //  return the file path
-      } catch (error) {
-        console.error("Error uploading file:", error);
-        throw error;
       }
-    
+      return;
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      throw error;
+    }
   };
 
-
-  const handleFileAdding = async (event) => {
+  const handleFileUpload = async (event) => {
     event.preventDefault();
+
+    setIsUploading(true);
+    toast("Uploading Image.");
     const file = event.target.files[0];
-    console.log(file.name)
 
-    setuploadedFile(file);
+    try {
+      let cloudFilePath = await uploadFileToCloud(file);
 
-      // checking for .heic files and converting it into jpeg before adding
-      // if (file.type === "image/heic") {
-      //   try {
-      //     // Convert .heic file to .png
-      //     const convertedBlob = await heic2any({
-      //       blob: file,
-      //       toType: "image/jpeg",
-      //     });
-
-      //     // Create a new File object from the Blob
-      //     const convertedFile = new File([convertedBlob], file.name.replace(/\.heic$/i, ".jpeg"), {
-      //       type: "image/jpeg",
-      //     });
-
-      //     setuploadedFiles((prevFiles) => [...prevFiles, convertedFile]);
-
-      //   } catch (error) {
-      //     console.error("Error converting HEIC file:", error);
-      //   }
-      // }else{
-      //   // if file is not jpeg..adding directly
-      //   setuploadedFiles((prevFiles) => [...prevFiles, file]);
-      // }
-   
-  };
-
-  const handleFileUpload = async(e) => {
-    e.preventDefault();
-    if(addData.phone.length === 10 ){
-      const isNumeric = /^[0-9]*$/.test(addData.phone);
-      if(!isNumeric){
-        toast.error("Phone number should contain only number")
-      }else{
-        try {
-          
-              let cloudFilePath = await uploadedFileToCloud(uploadedFile);
-
-              if(cloudFilePath){
-                setAddData((prevData) => ({
-                  ...prevData,
-                  profile : cloudFilePath
-                }));
-                setuploadedFile();
-              }
-             
-    
-        } catch (error) {
+      if (cloudFilePath) {
+        setAddData((prevData) => ({
+          ...prevData,
+          profilePicture: cloudFilePath,
+        }));
+        let signedUrl = await getSignedUrlForPrivateFile(cloudFilePath);
+        if (signedUrl) {
+          toast.success("Profile picture changed!");
           setIsUploading(false);
-          toast.error("Some error occured while uploading.");
-          console.log(error.message);
+          setPreviewUrl(signedUrl);
         }
       }
-      
-    }else{
-      toast.error("Enter valid customer number");
-      return
-      
+    } catch (error) {
+      setIsUploading(true);
+      toast.error("Some error occured while uploading.");
+      console.log(error.message);
     }
   };
 
@@ -136,93 +120,76 @@ function PropertyForm({ editData, setModeToDisplay  }) {
       ...prevData,
       [field]: value,
     }));
-
-   
   };
 
   const handleSubmit = (addData) => {
-    
-      if (
-        addData.name !== "" &&
-        addData.phone !== "" 
-      ) {
-        if (editData) {
-          axios
-            .put(
-              `http://localhost:3700/api/property/updateproperty/${editData._id}`,
-              addData
-            )
-            .then((response) => {
-              if (response) {
-                toast("User updated!");
-                setTimeout(() => {
-                  setModeToDisplay();
-                }, 2000);
-              }
-            })
-            .catch((error) => {
-              console.error("Error:", error);
-              toast.error("Some ERROR occurred.");
-            });
-        } else {
-          const myData = {
-            name : "",
-            phone : "",
-            email : "",
-            profile : "",
-            password : "",
-            lastLogin : new Date(),
-            visible : addData.visible || true
-          }
-          axios
-            .post("http://localhost:3700/api/property/addproperty", myData)
-            .then((response) => {
-              if (response) {
-                toast("User added!");
-                setTimeout(() => {
-                  setModeToDisplay();
-                }, 2000);
-               
-              }
-            })
-            .catch((error) => {
-              console.error("Error:", error);
-              toast.error("Some ERROR occurred.");
-            });
-        }
+    if (addData.name !== "" && addData.phone !== "") {
+      if (editData) {
+        console.log(addData);
+        axios
+          .put(
+            `http://localhost:3700/api/users/updateuser/${editData._id}`,
+            addData
+          )
+          .then((response) => {
+            if (response) {
+              toast("User updated!");
+              setTimeout(() => {
+                setModeToDisplay();
+              }, 2000);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            toast.error("Some ERROR occurred.");
+          });
       } else {
-        toast.error("Fill all the fields.");
+        console.log(addData);
+        // const myData = {
+        //   name : "",
+        //   phone : "",
+        //   email : "",
+        //   profilePicture : "",
+        //   password : "",
+        //   lastLogin : new Date(),
+        //   visible : addData.visible || "true"
+        // }
+        axios
+          .post("http://localhost:3700/api/users/adduser", addData)
+          .then((response) => {
+            if (response) {
+              toast("User added!");
+              setTimeout(() => {
+                setModeToDisplay();
+              }, 2000);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            toast.error("Some ERROR occurred.");
+          });
       }
-    
+    } else {
+      toast.error("Fill all the fields.");
+    }
   };
 
-
-
   useEffect(() => {
-
     if (editData) {
+      console.log(editData)
       setAddData({
         name: editData.name,
-        applicationStatus: editData.applicationStatus,
-        state: editData.state,
-        city: editData.city,
-        builder: editData.builder,
-        project: editData.project,
-        tower: editData.tower,
-        unit: editData.unit,
-        size: editData.size,
-        nature: editData.nature,
-        enable : editData.enable,
-        customerName : editData.customerName,
-        customerNumber: editData.customerNumber,
-        status: editData.status,
-        isDeleted : editData.isDeleted,
-        documents: {
-          type: editData.documents.type,
-          files: editData.documents.files,
-        },
-        addedBy: "admin",
+        phone: editData.phone,
+        email: editData.email ,
+        password: editData.password ,
+        profilePicture: editData.profilePicture || "",
+        lastLogin: editData.lastLogin || new Date(),
+        visible: editData.visible || "true",
       });
+
+      if (editData.profilePicture !== "") {
+        setPreviewUrl(getSignedUrlForPrivateFile(editData.profilePicture));
+      }
     }
   }, [editData]);
 
@@ -279,37 +246,46 @@ function PropertyForm({ editData, setModeToDisplay  }) {
       <div className="flex items-center justify-center">
         <div className="w-full">
           <form>
+            <div className="relative w-fit">
+              <img
+                src={previewUrl}
+                className="h-32 w-32 rounded-full mb-5"
+                alt="profile-picture"
+              />
 
-          <div className="relative w-fit">
-          
-          <img src="/logo192.png" className="h-40 w-40" />
-          <div 
-          onClick={handleDivClick}
-          className="flex text-gray-400 hover:text-white absolute bottom-0 -right-8 items-end">
-          <MdEdit className="w-6 h-6  rounded-full  "/>
-          <span>Change</span>
-          </div>
-          <input
-        type="file"
-        ref={fileInputRef}
-        style={{ display: 'none' }}
-        onChange={handleFileAdding}
-      />
+{isUploading === true ? (
+                            <img
+                              className="ml-2 mt-2 h-8 w-7 absolute bottom-0 -right-6 "
+                              src={`${
+                                theme.palette.mode === "dark"
+                                  ? "/spinner-white.svg"
+                                  : "/spinner.svg"
+                              }`}
+                              alt="upload-spinner"
+                            />
+                          ) : <div
+                          onClick={handleDivClick}
+                          className="flex text-gray-400 hover:text-white absolute bottom-0 -right-12 items-end"
+                        >
+                          <MdEdit className="w-6 h-6  rounded-full  " />
+                          <span>Change</span>
+                        </div>}
 
-          
+              
 
-  
+              <input
+                type="file"
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                onChange={handleFileUpload}
+              />
             </div>
 
             <div className="flex flex-col md:flex-row gap-2">
-
-            <div className="flex flex-col w-full md:w-1/2 pr-0 md:pr-5 ">
+              <div className="flex flex-col w-full md:w-1/2 pr-0 md:pr-5 ">
                 <div className="w-full pr-3">
                   <div className="mb-5">
-                    <label
-                      htmlFor="fName"
-                      className="text-lg font-medium"
-                    >
+                    <label htmlFor="fName" className="text-lg font-medium">
                       Name
                     </label>
                     <input
@@ -325,13 +301,10 @@ function PropertyForm({ editData, setModeToDisplay  }) {
                 </div>
               </div>
 
-            <div className="flex flex-col w-full md:w-1/2 pr-0 md:pr-5 pb-6">
+              <div className="flex flex-col w-full md:w-1/2 pr-0 md:pr-5 pb-6">
                 <div className="w-full pr-3">
                   <div className="mb-5">
-                    <label
-                      htmlFor="phone"
-                      className="text-lg font-medium"
-                    >
+                    <label htmlFor="phone" className="text-lg font-medium">
                       Phone number
                     </label>
                     <input
@@ -346,41 +319,13 @@ function PropertyForm({ editData, setModeToDisplay  }) {
                   </div>
                 </div>
               </div>
-
-              
-
-              {/* <div className="flex flex-col w-full md:w-1/2 pr-0 md:pr-5 pb-6">
-                <div className="w-full pr-3">
-                  <div className="mb-5">
-                    <label
-                      htmlFor="profile"
-                      className="text-lg font-medium"
-                    >
-                      Profile picture
-                    </label>
-                    <input
-                      type="file"
-                      name="profile"
-                      id="profile"
-                      value={uploadedFile}
-                      multiple={false}
-                      onChange={handleFileAdding}
-                      className="w-full mt-[18px] text-gray-700 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                    />
-                  </div>
-                </div>
-              </div> */}
-             
             </div>
 
             <div className="flex flex-col md:flex-row gap-2">
-            <div className="flex flex-col w-full md:w-1/2 pr-0 md:pr-5 pb-6">
+              <div className="flex flex-col w-full md:w-1/2 pr-0 md:pr-5 pb-6">
                 <div className="w-full pr-3">
                   <div className="mb-5">
-                    <label
-                      htmlFor="email"
-                      className="text-lg font-medium"
-                    >
+                    <label htmlFor="email" className="text-lg font-medium">
                       Email
                     </label>
                     <input
@@ -399,10 +344,7 @@ function PropertyForm({ editData, setModeToDisplay  }) {
               <div className="flex flex-col w-full md:w-1/2 pr-0 md:pr-5 pb-6">
                 <div className="w-full pr-3">
                   <div className="mb-5">
-                    <label
-                      htmlFor="password"
-                      className="text-lg font-medium"
-                    >
+                    <label htmlFor="password" className="text-lg font-medium">
                       Password
                     </label>
                     <input
@@ -418,9 +360,6 @@ function PropertyForm({ editData, setModeToDisplay  }) {
                 </div>
               </div>
             </div>
-            
-             
-           
 
             <div className="mb-5">
               <label className="mb-3 block text-base font-medium">
@@ -431,11 +370,11 @@ function PropertyForm({ editData, setModeToDisplay  }) {
                   <input
                     type="radio"
                     name="enable"
-                    value="yes"
+                    value={"true"}
                     className="h-5 w-5"
                     id="radioButton1"
-                    checked={addData.isDeleted === "yes"}
-                    onChange={(e) => changeField("isDeleted", e.target.value)}
+                    checked={addData.visible === "true"}
+                    onChange={(e) => changeField("visible", e.target.value)}
                   />
                   <label
                     htmlFor="radioButton1"
@@ -448,11 +387,11 @@ function PropertyForm({ editData, setModeToDisplay  }) {
                   <input
                     type="radio"
                     name="enable"
-                    value="no"
+                    value={"false"}
                     className="h-5 w-5"
                     id="radioButton2"
-                    checked={addData.isDeleted === "no"}
-                    onChange={(e) => changeField("isDeleted", e.target.value)}
+                    checked={addData.visible === "false"}
+                    onChange={(e) => changeField("visible", e.target.value)}
                   />
                   <label
                     htmlFor="radioButton2"
@@ -475,7 +414,7 @@ function PropertyForm({ editData, setModeToDisplay  }) {
                 }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
                 disabled={isUploading === true ? true : false}
               >
-                {editData ? "Update Property" : "Add Property"}
+                {editData ? "Update User" : "Add User"}
               </button>
             </div>
           </form>
