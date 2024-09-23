@@ -21,6 +21,10 @@ export function getUniqueItems(arr) {
     return [...new Set(arr)];
   };
 
+export function removeSpaces(str) {
+  return str.replace(/\s+/g, '');
+}
+
 ///// supabase upload and fetch functions
 
 

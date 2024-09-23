@@ -47,22 +47,23 @@ const ShowPropertyDetails = ({ data }) => {
       [field]: value,
     }));
 
-    setTimeout(() => {
-      axios
-        .put(
-          `http://localhost:3700/api/property/updateproperty/${data._id}`,
-          updateData
-        )
-        .then((response) => {
-          if (response) {
-            toast.success("Field updated!");
-          }
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-          toast.error("Some ERROR occurred.");
-        });
-    }, 200);
+    axios
+    .put(
+      `http://localhost:3700/api/property/updateproperty/${data._id}`,
+      {
+        applicationStatus: value 
+      }
+    )
+    .then((response) => {
+      if (response) {
+        console.log(response)
+        toast.success("Field updated!");
+      }
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+      toast.error("Some ERROR occurred.");
+    });
   };
 
 
@@ -79,24 +80,24 @@ const ShowPropertyDetails = ({ data }) => {
       <div className="flex flex-wrap -mx-3 mb-6">
         <div className="w-full md:w-1/2 px-3 mb-6 md:mb-0">
           <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
-            Customer Name
+            Customer Id
           </label>
-          <p className="text-gray-900">{data.customerName}</p>
+          <p className="text-gray-900">{data.customerId}</p>
         </div>
         <div className="w-full md:w-1/2 px-3 mb-6 md:mb-0">
           <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
-            Customer Number
+            House Number
           </label>
-          <p className="text-gray-900">{data.customerNumber}</p>
+          <p className="text-gray-900">{data.houseNumber}</p>
         </div>
       </div>
 
       <div className="flex flex-wrap -mx-3 mb-6">
         <div className="w-full md:w-1/2 px-3 mb-6 md:mb-0">
           <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
-            Property Name
+            Floor Number
           </label>
-          <p className="text-gray-900">{data.name}</p>
+          <p className="text-gray-900">{data.floorNumber}</p>
         </div>
         <div className="w-full md:w-1/2 px-3 mb-6 md:mb-0">
           <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
@@ -195,10 +196,11 @@ const ShowPropertyDetails = ({ data }) => {
               className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
             >
               <option value="">Select...</option>
-              <option value="under-review">Under Review</option>
+            
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
-              <option value="more-info-required">More info required</option>
+              {data.applicationStatus === "approved" ? null : <><option value="under-review">Under Review</option>
+                <option value="more-info-required">More info required</option> </>}
             </select>
           </div>
         </div>

@@ -55,7 +55,8 @@ function PropertyForm({ editData, setModeToDisplay }) {
     password: "",
     profilePicture: "",
     lastLogin: new Date(),
-    visible: "true",
+    suspended: "false",
+    fraud: "false",
   });
 
   const handleDivClick = () => {
@@ -144,16 +145,6 @@ function PropertyForm({ editData, setModeToDisplay }) {
             toast.error("Some ERROR occurred.");
           });
       } else {
-        console.log(addData);
-        // const myData = {
-        //   name : "",
-        //   phone : "",
-        //   email : "",
-        //   profilePicture : "",
-        //   password : "",
-        //   lastLogin : new Date(),
-        //   visible : addData.visible || "true"
-        // }
         axios
           .post("http://localhost:3700/api/users/adduser", addData)
           .then((response) => {
@@ -176,15 +167,16 @@ function PropertyForm({ editData, setModeToDisplay }) {
 
   useEffect(() => {
     if (editData) {
-      console.log(editData)
+      console.log(editData);
       setAddData({
         name: editData.name,
         phone: editData.phone,
-        email: editData.email ,
-        password: editData.password ,
+        email: editData.email,
+        password: editData.password,
         profilePicture: editData.profilePicture || "",
         lastLogin: editData.lastLogin || new Date(),
-        visible: editData.visible || "true",
+        suspended: editData.suspended || "false",
+        fraud: editData.fraud || "false",
       });
 
       if (editData.profilePicture !== "") {
@@ -253,25 +245,25 @@ function PropertyForm({ editData, setModeToDisplay }) {
                 alt="profile-picture"
               />
 
-{isUploading === true ? (
-                            <img
-                              className="ml-2 mt-2 h-8 w-7 absolute bottom-0 -right-6 "
-                              src={`${
-                                theme.palette.mode === "dark"
-                                  ? "/spinner-white.svg"
-                                  : "/spinner.svg"
-                              }`}
-                              alt="upload-spinner"
-                            />
-                          ) : <div
-                          onClick={handleDivClick}
-                          className="flex text-gray-400 hover:text-white absolute bottom-0 -right-12 items-end"
-                        >
-                          <MdEdit className="w-6 h-6  rounded-full  " />
-                          <span>Change</span>
-                        </div>}
-
-              
+              {isUploading === true ? (
+                <img
+                  className="ml-2 mt-2 h-8 w-7 absolute bottom-0 -right-6 "
+                  src={`${
+                    theme.palette.mode === "dark"
+                      ? "/spinner-white.svg"
+                      : "/spinner.svg"
+                  }`}
+                  alt="upload-spinner"
+                />
+              ) : (
+                <div
+                  onClick={handleDivClick}
+                  className="flex text-gray-400 hover:text-white absolute bottom-0 -right-12 items-end"
+                >
+                  <MdEdit className="w-6 h-6  rounded-full  " />
+                  <span>Change</span>
+                </div>
+              )}
 
               <input
                 type="file"
@@ -363,18 +355,60 @@ function PropertyForm({ editData, setModeToDisplay }) {
 
             <div className="mb-5">
               <label className="mb-3 block text-base font-medium">
-                Make user visible?
+                Mark user as fraud?
               </label>
               <div className="flex items-center space-x-6">
                 <div className="flex items-center">
                   <input
                     type="radio"
-                    name="enable"
+                    name="fraud"
+                    value={"true"}
+                    className="h-5 w-5"
+                    id="radioButton11"
+                    checked={addData.fraud === "true"}
+                    onChange={(e) => changeField("fraud", e.target.value)}
+                  />
+                  <label
+                    htmlFor="radioButton11"
+                    className="pl-3 text-base font-medium"
+                  >
+                    Yes
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    name="fraud"
+                    value={"false"}
+                    className="h-5 w-5"
+                    id="radioButton22"
+                    checked={addData.fraud === "false"}
+                    onChange={(e) => changeField("fraud", e.target.value)}
+                  />
+                  <label
+                    htmlFor="radioButton22"
+                    className="pl-3 text-base font-medium"
+                  >
+                    No
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-5">
+              <label className="mb-3 block text-base font-medium">
+                Suspend user account?
+              </label>
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    name="suspended"
                     value={"true"}
                     className="h-5 w-5"
                     id="radioButton1"
-                    checked={addData.visible === "true"}
-                    onChange={(e) => changeField("visible", e.target.value)}
+                    checked={addData.suspended === "true"}
+                    onChange={(e) => changeField("suspended", e.target.value)}
                   />
                   <label
                     htmlFor="radioButton1"
@@ -386,12 +420,12 @@ function PropertyForm({ editData, setModeToDisplay }) {
                 <div className="flex items-center">
                   <input
                     type="radio"
-                    name="enable"
+                    name="suspended"
                     value={"false"}
                     className="h-5 w-5"
                     id="radioButton2"
-                    checked={addData.visible === "false"}
-                    onChange={(e) => changeField("visible", e.target.value)}
+                    checked={addData.suspended === "false"}
+                    onChange={(e) => changeField("suspended", e.target.value)}
                   />
                   <label
                     htmlFor="radioButton2"

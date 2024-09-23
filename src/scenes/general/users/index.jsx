@@ -4,13 +4,11 @@ import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "../../../theme";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import VisibilityIcon from "@mui/icons-material/Visibility";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Header from "../../../components/Header";
 import UsersForm from "../../../components/general/users/UsersForm";
-import ShowPropertDetails from "../../../components/general/property/ShowPropertDetails";
 import { formatDate } from "../../../MyFunctions";
 
 function Index() {
@@ -23,7 +21,7 @@ function Index() {
   const [editData, setEditData] = useState();
 
   const columns = [
-    { field: "_id", headerName: "ID", flex: 0.1 },
+    { field: "_id", headerName: "ID", flex: 1 },
     {
       field: "name",
       headerName: "Property",
@@ -46,8 +44,13 @@ function Index() {
       flex: 1,
     },
     {
-      field: "visible",
-      headerName: "Profile visible",
+      field: "fraud",
+      headerName: "Fraud",
+      flex: 1,
+    },
+    {
+      field: "suspended",
+      headerName: "Suspended",
       headerAlign: "left",
       align: "left",
       flex: 1,

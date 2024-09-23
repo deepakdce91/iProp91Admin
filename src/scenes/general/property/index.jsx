@@ -24,7 +24,7 @@ function Index() {
   const [editData, setEditData] = useState();
 
   const columns = [
-    { field: "_id", headerName: "ID", flex: 0.1 },
+    { field: "_id", headerName: "ID", flex: 1 },
     {
       field: "name",
       headerName: "Property",
@@ -70,7 +70,7 @@ function Index() {
     },
     {
       field: "updatedAt",
-      headerName: "Updated",
+      headerName: "Updated", 
       flex: 1,
       valueGetter: (params) => formatDate(params.value), 
     },

@@ -55,11 +55,11 @@ function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         
-        <div className="app">
+        <div className="app ">
 
           {!(location.pathname === "/auth") && (
             <Sidebar isSidebar={isSidebar} />
-          )}
+          )} 
 
           <main className="content h-full  overflow-scroll">
             {!(location.pathname === "/auth") && (
