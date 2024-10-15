@@ -4,17 +4,19 @@ import { tokens } from "../../theme";
 import { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import axios from "axios";
+import axios from "axios"; 
+import {sortArrayByName} from "../../MyFunctions"
 
-
-function StatehtmlForm({ editData }) {
+function StatehtmlForm({ editData, userId, userToken }) {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+
+  const [statesArray, setStatesArray] = useState([]);
 
   const [addData, setAddData] = useState({
     name: "",
     enable: "no",
-    addedBy: "Unknown",
+    addedBy: "admin",
   });
 
   const changeName = (value) => {
@@ -31,13 +33,18 @@ function StatehtmlForm({ editData }) {
     }));
   };
 
+
   const handleSubmit = (addData) => {
     if (addData.name !== "") {
       if (editData) {
         axios
           .put(
-            `http://localhost:3700/api/state/updatestate/${editData._id}`,
-            addData
+            `${process.env.REACT_APP_BACKEND_URL}/api/state/updatestate/${editData._id}?userId=${userId}`,
+            addData, {
+              headers: {
+                "auth-token" : userToken
+              },
+            }
           )
           .then((response) => {
             if (response) {
@@ -50,7 +57,11 @@ function StatehtmlForm({ editData }) {
           });
       } else {
         axios
-          .post("http://localhost:3700/api/state/addstate", addData)
+          .post(`${process.env.REACT_APP_BACKEND_URL}/api/state/addstate?userId=${userId}`, addData, {
+            headers: {
+              "auth-token" : userToken
+            }, 
+          })
           .then((response) => {
             if (response) {
               toast("State added!");
@@ -67,6 +78,25 @@ function StatehtmlForm({ editData }) {
       toast.error("Enter a name.");
     }
   };
+
+  useEffect(() => {
+    axios
+    .get(`https://api.countrystatecity.in/v1/countries/IN/states`,{
+      headers: {
+        'X-CSCAPI-KEY': process.env.REACT_APP_CSC_API,
+      }
+    })
+    .then((response) => {
+      setStatesArray(sortArrayByName(response.data));
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+    });
+
+    // getting userId and Token
+    
+  }, [])
+  
 
   useEffect(() => {
     if (editData) {
@@ -137,17 +167,28 @@ function StatehtmlForm({ editData }) {
                     htmlFor="fName"
                     className="mb-3 block text-base font-medium"
                   >
-                    Name
+                    State
                   </label>
                   <input
                     type="text"
                     name="name"
                     id="name"
+                    autoComplete="off"
+                    list="mystates"
                     value={addData.name}
-                    onChange={(e) => changeName(e.target.value)}
-                    placeholder="Name"
+                    onChange={(e) => {
+                      changeName(e.target.value);
+                    
+                    }}
+                    placeholder="State"
                     className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                   />
+                  <datalist id="mystates">
+                    {statesArray.length > 0 &&
+                      statesArray.map((item, index) => (
+                        <option key={index} value={item.name}/> 
+                      ))}
+                  </datalist>
                 </div>
               </div>
             </div>

@@ -7,14 +7,14 @@ import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 
 
-function DocumentTypeForm({ editData }) {
+function DocumentTypeForm({ editData, userId , userToken }) {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
   const [addData, setAddData] = useState({
     name: "",
     enable: "no",
-    addedBy: "Unknown",
+    addedBy: "admin",
   });
 
   const changeName = (value) => {
@@ -36,8 +36,12 @@ function DocumentTypeForm({ editData }) {
       if (editData) {
         axios
           .put(
-            `http://localhost:3700/api/documentType/updateDocumentType/${editData._id}`,
-            addData
+            `${process.env.REACT_APP_BACKEND_URL}/api/documentType/updateDocumentType/${editData._id}?userId=${userId}`,
+            addData, {
+              headers: {
+                "auth-token" : userToken
+              },
+            }
           )
           .then((response) => {
             if (response) {
@@ -50,7 +54,11 @@ function DocumentTypeForm({ editData }) {
           });
       } else {
         axios
-          .post("http://localhost:3700/api/documentType/addDocumentType", addData)
+          .post(`${process.env.REACT_APP_BACKEND_URL}/api/documentType/addDocumentType?userId=${userId}`, addData, {
+              headers: {
+                "auth-token" : userToken
+              },
+            })
           .then((response) => {
             if (response) {
               toast("Document Type added!");

@@ -4,19 +4,22 @@ import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "../../../theme";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Header from "../../../components/Header";
 import PropertyForm from "../../../components/general/property/PropertyForm";
 import ShowPropertDetails from "../../../components/general/property/ShowPropertDetails";
-import {formatDate} from "../../../MyFunctions"
-
+import { formatDate } from "../../../MyFunctions";
+import { jwtDecode } from "jwt-decode";
 
 function Index() {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+
+  const [userId, setUserId] = useState("");
+  const [userToken, setUserToken] = useState("");
 
   const [mode, setMode] = useState("display"); //display add edit showDetails
   const [data, setData] = useState([]);
@@ -26,24 +29,20 @@ function Index() {
   const columns = [
     { field: "_id", headerName: "ID", flex: 1 },
     {
-      field: "name",
-      headerName: "Property",
+      field: "customerName",
+      headerName: "House No.",
+      flex: 1,
+      cellClassName: "name-column--cell",
+    },
+    {
+      field: "customerNumber",
+      headerName: "Customer No.",
       flex: 1,
       cellClassName: "name-column--cell",
     },
     {
       field: "state",
       headerName: "State",
-      flex: 1,
-    },
-    {
-      field: "city",
-      headerName: "City",
-      flex: 1,
-    },
-    {
-      field: "builder",
-      headerName: "Builder",
       flex: 1,
     },
     {
@@ -63,16 +62,11 @@ function Index() {
     },
 
     {
-      field: "createdAt",
-      headerName: "Created",
+      field: "applicationStatus",
+      headerName: "Status",
+      headerAlign: "left",
+      align: "left",
       flex: 1,
-      valueGetter: (params) => formatDate(params.value), 
-    },
-    {
-      field: "updatedAt",
-      headerName: "Updated", 
-      flex: 1,
-      valueGetter: (params) => formatDate(params.value), 
     },
 
     {
@@ -86,7 +80,7 @@ function Index() {
             // color="primary"
             className="text-grey-400"
           >
-            <VisibilityIcon/>
+            <VisibilityIcon />
           </IconButton>
 
           <IconButton
@@ -109,8 +103,15 @@ function Index() {
 
   const fetchProperty = async (id) => {
     // Make the DELETE request
-     await axios
-      .get(`http://localhost:3700/api/property/fetchproperty/${id}`)
+    await axios
+      .get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/property/fetchproperty/${id}?userId=${userId}`,
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
       .then((response) => {
         if (response) {
           setEditData(response.data);
@@ -122,9 +123,16 @@ function Index() {
       });
   };
 
-  const fetchAllProperties = () => {
+  const fetchAllProperties = (userId, userToken) => {
     axios
-      .get("http://localhost:3700/api/property/fetchallproperties")
+      .get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/property/fetchallproperties?userId=${userId}`,
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
       .then((response) => {
         setData(response.data);
       })
@@ -136,7 +144,14 @@ function Index() {
   const deletePropertyById = async (id) => {
     // Make the DELETE request
     await axios
-      .delete(`http://localhost:3700/api/property/deleteproperty/${id}`)
+      .delete(
+        `${process.env.REACT_APP_BACKEND_URL}/api/property/deleteproperty/${id}?userId=${userId}`,
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
       .then((response) => {
         if (response) {
           toast("Property deleted!");
@@ -151,7 +166,19 @@ function Index() {
 
   // useeffecttt
   useEffect(() => {
-    fetchAllProperties();
+    try {
+      // getting userId and userToken
+      let token = localStorage.getItem("iProp-token");
+      if (token) {
+        const decoded = jwtDecode(token);
+        setUserId(decoded.userId);
+        setUserToken(token);
+        fetchAllProperties(decoded.userId, token);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+
   }, []);
 
   const handleAddMore = () => {
@@ -160,9 +187,8 @@ function Index() {
 
   const handleCancel = () => {
     setMode("display");
-    fetchAllProperties();
+    fetchAllProperties(userId, userToken);
   };
-
 
   // Click handler for the edit button
   const handleEdit = (id) => {
@@ -171,7 +197,7 @@ function Index() {
     setTimeout(() => {
       setMode("edit");
     }, 500);
-  }; 
+  };
 
   // to show the details of property
   const handleShowDetails = (id) => {
@@ -180,13 +206,12 @@ function Index() {
     setTimeout(() => {
       setMode("showDetails");
     }, 500);
-  }; 
+  };
 
-
-  const setModeToDisplay = () =>{
+  const setModeToDisplay = () => {
     setMode("display");
-    fetchAllProperties();
-  }
+    fetchAllProperties(userId, userToken);
+  };
 
   // Click handler for the delete button
   const handleDelete = (id) => {
@@ -199,7 +224,15 @@ function Index() {
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header
           title="Properties"
-          subtitle={mode === "add" ? "Add a property" : (mode === "edit" ? "Edit the property details" : (mode === "showDetails" ? "See property details" : "Manage properties here"))}
+          subtitle={
+            mode === "add"
+              ? "Add a property"
+              : mode === "edit"
+              ? "Edit the property details"
+              : mode === "showDetails"
+              ? "See property details"
+              : "Manage properties here"
+          }
         />
 
         <Box>
@@ -223,24 +256,25 @@ function Index() {
 
       {/* Render form or DataGrid based on mode */}
       {mode === "add" ? (
-        <PropertyForm  setModeToDisplay = {setModeToDisplay}/>
+        <PropertyForm setModeToDisplay={setModeToDisplay} userId={userId} userToken={userToken} />
       ) : mode === "edit" ? (
-        editData && (<>
-        {/* <ShowPropertDetails data={editData} /> */}
-        <PropertyForm editData={editData} setModeToDisplay = {setModeToDisplay} />
-      
-        </>
-          
-            
+        editData && (
+          <>
+            {/* <ShowPropertDetails data={editData} /> */}
+            <PropertyForm
+            userId={userId} userToken={userToken}
+              editData={editData}
+              setModeToDisplay={setModeToDisplay}
+            />
+          </>
         )
       ) : mode === "showDetails" ? (
-        editData && (<>
-        <ShowPropertDetails data={editData} />
-      
-        </>
-            
+        editData && (
+          <>
+            <ShowPropertDetails data={editData} />
+          </>
         )
-      )  :(
+      ) : (
         <Box
           m="40px 0 0 0"
           height="75vh"
@@ -284,7 +318,7 @@ function Index() {
       )}
       <ToastContainer position="top-right" autoClose={2000} />
     </Box>
-  )
+  );
 }
 
-export default Index
+export default Index;

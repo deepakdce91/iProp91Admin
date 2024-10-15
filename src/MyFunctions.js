@@ -25,6 +25,17 @@ export function removeSpaces(str) {
   return str.replace(/\s+/g, '');
 }
 
-///// supabase upload and fetch functions
+
+ export function sortArrayByName(arr) {
+    return arr.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+export function validateEmail(email) {
+    // Regular expression for basic email validation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  
+    // Test the email against the regex
+    return emailRegex.test(email);
+  }
 
 

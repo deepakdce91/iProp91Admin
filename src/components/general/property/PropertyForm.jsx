@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
-import { getNameList, getUniqueItems, removeSpaces } from "../../../MyFunctions";
+import { getNameList, getUniqueItems, removeSpaces, sortArrayByName } from "../../../MyFunctions";
 
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { client } from "../../../config/s3Config";
@@ -14,7 +14,7 @@ import heic2any from "heic2any";
 
  
 
-function PropertyForm({ editData, setModeToDisplay  }) {
+function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
   const [builders, setBuilders] = useState([]);
@@ -31,7 +31,8 @@ function PropertyForm({ editData, setModeToDisplay  }) {
   const colors = tokens(theme.palette.mode);
 
   const [addData, setAddData] = useState({
-    customerId : "",
+    customerName : "",
+    customerNumber : "",
     applicationStatus: "under-review",
     state: "",
     city: "",
@@ -147,21 +148,30 @@ function PropertyForm({ editData, setModeToDisplay  }) {
     }
   };
 
-  const fetchCitiesByState = (state) => {
+  const fetchCitiesByState = (currentStateCode) => {
     axios
-      .get(`http://localhost:3700/api/city/fetchcitiesbystate/${state}`)
-      .then((response) => {
-        setCities(getUniqueItems(getNameList(response.data)));
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
+    .get(`https://api.countrystatecity.in/v1/countries/IN/states/${currentStateCode}/cities`,{
+      headers: {
+        'X-CSCAPI-KEY': process.env.REACT_APP_CSC_API,
+      }
+    })
+    .then((response) => {
+
+      setCities(sortArrayByName(response.data));
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+    });
   };
 
   const fetchBuildersByCity = (city) => {
     axios
-      .get(`http://localhost:3700/api/builders/fetchbuildersbycity/${city}`)
-      .then((response) => {
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/builders/fetchbuildersbycity/${city}?userId=${userId}`,  {
+              headers: {
+                "auth-token" : userToken
+              },
+            })
+          .then((response) => {
         setBuilders(getUniqueItems(getNameList(response.data)));
       })
       .catch((error) => {
@@ -172,9 +182,12 @@ function PropertyForm({ editData, setModeToDisplay  }) {
   const fetchProjectByBuilder = (builder) => {
     axios
       .get(
-        `http://localhost:3700/api/projects/fetchprojectbybuilder/${builder}`
-      )
-      .then((response) => {
+        `${process.env.REACT_APP_BACKEND_URL}/api/projects/fetchprojectbybuilder/${builder}?userId=${userId}`,  {
+              headers: {
+                "auth-token" : userToken
+              },
+            })
+          .then((response) => {
         setProjects(getUniqueItems(getNameList(response.data)));
       })
       .catch((error) => {
@@ -189,15 +202,19 @@ function PropertyForm({ editData, setModeToDisplay  }) {
     }));
 
     if (field === "state" && value) {
-      fetchCitiesByState(value);
+
+    if (value && value.length > 0) {
+      const selectedValue = value;
+      const item = states.find(state => state.name === selectedValue);
+      if (item) {
+        fetchCitiesByState(item.iso2);
+      }
+      
+    }
     }
 
     if (field === "city" && value) {
       fetchBuildersByCity(value);
-    }
-
-    if (field === "state" && value) {
-      fetchCitiesByState(value);
     }
 
     if (field === "builder" && value) {
@@ -210,7 +227,8 @@ function PropertyForm({ editData, setModeToDisplay  }) {
       toast.error("Upload files before submitting form.");
     } else {
       if (
-        addData.customerId !== "" &&
+        addData.customerName !== "" &&
+        addData.customerNumber !== "" &&
         addData.state !== "" &&
         addData.city !== "" &&
         addData.builder !== "" &&
@@ -230,8 +248,13 @@ function PropertyForm({ editData, setModeToDisplay  }) {
         if (editData) {
           axios
             .put(
-              `http://localhost:3700/api/property/updateproperty/${editData._id}`,
-              addData
+              `${process.env.REACT_APP_BACKEND_URL}/api/property/updateproperty/${editData._id}?userId=${userId}`,
+              addData,
+              {
+                headers: {
+                  "auth-token" : userToken
+                },
+              }
             )
             .then((response) => {
               if (response) {
@@ -247,7 +270,11 @@ function PropertyForm({ editData, setModeToDisplay  }) {
             });
         } else {
           axios
-            .post("http://localhost:3700/api/property/addproperty", addData)
+            .post(`${process.env.REACT_APP_BACKEND_URL}/api/property/addproperty?userId=${userId}`, addData,  {
+              headers: {
+                "auth-token" : userToken
+              },
+            })
             .then((response) => {
               if (response) {
                 toast("Property added!");
@@ -270,8 +297,12 @@ function PropertyForm({ editData, setModeToDisplay  }) {
 
   const fetchAllDocumentTypes = () => {
     axios
-      .get("http://localhost:3700/api/documentType/fetchallDocumentTypes")
-      .then((response) => {
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/documentType/fetchallDocumentTypes?userId=${userId}`,  {
+              headers: {
+                "auth-token" : userToken
+              },
+            })
+          .then((response) => {
         setDocumentTypes(getUniqueItems(getNameList(response.data)));
       })
       .catch((error) => {
@@ -281,9 +312,13 @@ function PropertyForm({ editData, setModeToDisplay  }) {
 
   const fetchAllStates = () => {
     axios
-      .get("http://localhost:3700/api/state/fetchallstates")
+      .get(`https://api.countrystatecity.in/v1/countries/IN/states`, {
+        headers: {
+          "X-CSCAPI-KEY": process.env.REACT_APP_CSC_API,
+        },
+      })
       .then((response) => {
-        setStates(getUniqueItems(getNameList(response.data)));
+        setStates(sortArrayByName(response.data));
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -305,7 +340,8 @@ function PropertyForm({ editData, setModeToDisplay  }) {
         unit: editData.unit,
         size: editData.size,
         nature: editData.nature,
-        customerId : editData.customerId,
+        customerName : editData.customerName,
+        customerNumber : editData.customerNumber,
         houseNumber: editData.houseNumber,
         floorNumber: editData.floorNumber,
         status: editData.status,
@@ -378,18 +414,38 @@ function PropertyForm({ editData, setModeToDisplay  }) {
               <div className="w-full px-3 md:w-1/2">
                 <div className="mb-5">
                   <label
-                    htmlFor="c-id"
+                    htmlFor="c-name"
                     className="mb-3 block text-base font-medium"
                   >
-                    Customer Id
+                    Customer Name
                   </label>
                   <input
                     type="text"
-                    name="c-id"
-                    id="c-id"
-                    value={addData.customerId}
-                    onChange={(e) => changeField("customerId", e.target.value)}
-                    placeholder="Customer Id"
+                    name="c-name"
+                    id="c-name"
+                    value={addData.customerName}
+                    onChange={(e) => changeField("customerName", e.target.value)}
+                    placeholder="Customer Name"
+                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  />
+                </div>
+              </div>
+
+              <div className="w-full px-3 md:w-1/2">
+                <div className="mb-5">
+                  <label
+                    htmlFor="c-num"
+                    className="mb-3 block text-base font-medium"
+                  >
+                    Customer Number
+                  </label>
+                  <input
+                    type="text"
+                    name="c-num"
+                    id="c-num"
+                    value={addData.customerNumber}
+                    onChange={(e) => changeField("customerNumber", e.target.value)}
+                    placeholder="Customer Number"
                     className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                   />
                 </div>
@@ -467,47 +523,55 @@ function PropertyForm({ editData, setModeToDisplay  }) {
             {/*  City and builder */}
             <div className="flex flex-col md:flex-row -mx-3">
 
-            <div className="w-full px-3 md:w-1/2">
-                <div className="mb-5">
-                  <label className="text-lg font-medium">
-                  Select state 
-                  </label>
-                  <input
-                    list="states"
-                    name="myState"
-                    className="w-full text-gray-600 mt-2 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                    placeholder="Select a state..."
-                    value={addData.state}
-                    onChange={(e) => changeField("state", e.target.value)}
-                  />
-                  <datalist id="states">
-                    {states.length > 0 &&
-                      states.map((item, index) => (
-                        <option key={index} value={item} />
-                      ))}
-                  </datalist>
-                </div>
+            {/* state  */}
+              <div className="flex mx-3 flex-col w-full md:w-1/2 pr-5 pb-5">
+              <label className="text-lg font-medium">
+                  Select state
+                </label>
+                <input
+                  list="states"
+                  name="myState"
+                  autoComplete="off"
+                  className="w-full  text-gray-600 mt-2 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  placeholder="Select a state..."
+                  value={addData.state}
+                  onChange={(e) => changeField("state",e.target.value)}
+                />
+                <datalist id="states">
+                  {states.length > 0 &&
+                    states.map((item, index) => (
+                      <option
+                        key={index}
+                        value={item.name}
+                      />
+                    ))}
+                </datalist>
               </div>
 
-              <div className="w-full px-3 md:w-1/2">
-                <div className="mb-5">
-                  <label className="text-lg font-medium">Select city</label>
-                  <input
-                    list="cities"
-                    disabled={addData.state.length > 0 ? false : true}
-                    name="myCities"
-                    className="w-full text-gray-600 mt-2 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                    placeholder="Select a city..."
-                    value={addData.city}
-                    onChange={(e) => changeField("city", e.target.value)}
-                  />
-                  <datalist id="cities">
-                    {cities.length > 0 &&
-                      cities.map((item, index) => (
-                        <option key={index} value={item} />
-                      ))}
-                  </datalist>
-                </div>
+              {/* city  */}
+              <div className="flex flex-col w-full md:w-1/2 pr-0 md:pr-5 pb-6">
+              <label className="text-lg font-medium">
+                  Select city
+                </label>
+                <input
+                  list="cities"
+                  autoComplete="off"
+                  disabled = {addData.state.length>0 ? false : true}
+                  name="myCities"
+                  className="w-full  text-gray-600 mt-2 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  placeholder="Select a city..."
+                  value={addData.city}
+                  onChange={(e) => changeField("city",e.target.value)}
+                />
+                <datalist id="cities">
+                  {cities.length > 0 &&
+                    cities.map((item, index) => (
+                      <option
+                        key={index}
+                        value={item.name}
+                      />
+                    ))}
+                </datalist>
               </div>
 
               <div className="w-full px-3 md:w-1/2">

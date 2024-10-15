@@ -7,14 +7,14 @@ import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 
  
-function MoreInfoReasonsForm({ editData }) {
+function MoreInfoReasonsForm({ editData, userId, userToken }) {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
   const [addData, setAddData] = useState({
     name: "",
     enable: "no",
-    addedBy: "Unknown",
+    addedBy: "admin",
   });
 
   const changeName = (value) => {
@@ -36,8 +36,12 @@ function MoreInfoReasonsForm({ editData }) {
       if (editData) {
         axios
           .put(
-            `http://localhost:3700/api/moreInfoReasons/updateReason/${editData._id}`,
-            addData
+            `${process.env.REACT_APP_BACKEND_URL}/api/moreInfoReasons/updateReason/${editData._id}?userId=${userId}`,
+            addData, {
+              headers: {
+                "auth-token" : userToken
+              },
+            }
           )
           .then((response) => {
             if (response) {
@@ -50,7 +54,11 @@ function MoreInfoReasonsForm({ editData }) {
           });
       } else {
         axios
-          .post("http://localhost:3700/api/moreInfoReasons/addReason", addData)
+          .post(`${process.env.REACT_APP_BACKEND_URL}/api/moreInfoReasons/addReason?userId=${userId}`, addData, {
+              headers: {
+                "auth-token" : userToken
+              },
+            })
           .then((response) => {
             if (response) {
               toast("More Info Reason added!");

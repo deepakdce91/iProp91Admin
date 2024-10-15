@@ -10,10 +10,14 @@ import "react-toastify/dist/ReactToastify.css";
 import Header from "../../../components/Header";
 import UsersForm from "../../../components/general/users/UsersForm";
 import { formatDate } from "../../../MyFunctions";
+import { jwtDecode } from "jwt-decode";
 
 function Index() {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+
+  const [userId, setUserId] = useState("");
+  const [userToken, setUserToken] = useState("");
 
   const [mode, setMode] = useState("display"); //display add edit showDetails
   const [data, setData] = useState([]);
@@ -24,7 +28,7 @@ function Index() {
     { field: "_id", headerName: "ID", flex: 1 },
     {
       field: "name",
-      headerName: "Property",
+      headerName: "Username",
       flex: 1,
       cellClassName: "name-column--cell",
     },
@@ -104,8 +108,12 @@ function Index() {
   const fetchUser = async (id) => {
     // Make the DELETE request
     await axios
-      .get(`http://localhost:3700/api/users/fetchuserforadmin/${id}`)
-      .then((response) => {
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/users/fetchuserforadmin/${id}?userId=${userId}`,  {
+              headers: {
+                "auth-token" : userToken
+              },
+            })
+          .then((response) => {
         if (response) {
           setEditData(response.data);
         }
@@ -116,10 +124,14 @@ function Index() {
       });
   };
 
-  const fetchAllUsers = () => {
+  const fetchAllUsers = (userId, userToken) => {
     axios
-      .get("http://localhost:3700/api/users/fetchallusers")
-      .then((response) => {
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/users/fetchallusers?userId=${userId}`,  {
+              headers: {
+                "auth-token" : userToken
+              },
+            })
+          .then((response) => {
         setData(response.data);
       })
       .catch((error) => {
@@ -130,11 +142,15 @@ function Index() {
   const deleteUserById = async (id) => {
     // Make the DELETE request
     await axios
-      .delete(`http://localhost:3700/api/users/deleteuser/${id}`)
-      .then((response) => {
+      .delete(`${process.env.REACT_APP_BACKEND_URL}/api/users/deleteuser/${id}?userId=${userId}`,  {
+              headers: {
+                "auth-token" : userToken
+              },
+            })
+          .then((response) => {
         if (response) {
           toast("User deleted!");
-          fetchAllUsers();
+          fetchAllUsers(userId, userToken);
         }
       })
       .catch((error) => {
@@ -145,7 +161,18 @@ function Index() {
 
   // useeffecttt
   useEffect(() => {
-    fetchAllUsers();
+    try {
+      // getting userId and userToken
+      let token = localStorage.getItem("iProp-token");
+      if (token) {
+        const decoded = jwtDecode(token);
+        setUserId(decoded.userId);
+        setUserToken(token);
+        fetchAllUsers(decoded.userId, token);
+      }
+    } catch (error) {
+      console.log(error);
+    }
   }, []);
 
   const handleAddMore = () => {
@@ -154,7 +181,7 @@ function Index() {
 
   const handleCancel = () => {
     setMode("display");
-    fetchAllUsers();
+    fetchAllUsers(userId, userToken);
   };
 
   // Click handler for the edit button
@@ -166,18 +193,10 @@ function Index() {
     }, 500);
   };
 
-  // to show the details of property
-  const handleShowDetails = (id) => {
-    fetchUser(id);
-
-    setTimeout(() => {
-      setMode("showDetails");
-    }, 500);
-  };
 
   const setModeToDisplay = () => {
     setMode("display");
-    fetchAllUsers();
+    fetchAllUsers(userId, userToken);
   };
 
   // Click handler for the delete button
@@ -221,13 +240,16 @@ function Index() {
 
       {/* Render form or DataGrid based on mode */}
       {mode === "add" ? (
-        <UsersForm setModeToDisplay={setModeToDisplay} />
+        <UsersForm userId = {userId}
+        userToken = {userToken} setModeToDisplay={setModeToDisplay} />
       ) : mode === "edit" ? (
         editData && (
           <>
             {/* <ShowPropertDetails data={editData} /> */}
             <UsersForm
               editData={editData}
+              userId = {userId}
+              userToken = {userToken}
               setModeToDisplay={setModeToDisplay}
             />
           </>
