@@ -6,10 +6,12 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 import {getNameList} from "../../MyFunctions";
-import {getUniqueItems} from "../../MyFunctions";
+import {sortArrayByName} from "../../MyFunctions";
 
-function CityForm({ editData }) {
+function CityForm({ editData, userId, userToken  }) {
   const [states, setStates] = useState([]);
+  const [currentStateCode , setCurrentStateCode ] = useState("") //iso2
+  const [cities, setCities] = useState([]);
 
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -18,7 +20,7 @@ function CityForm({ editData }) {
     name: "",
     enable: "no",
     state: "",
-    addedBy: "Unknown",
+    addedBy: "admin",
   });
 
   const changeName = (value) => {
@@ -36,17 +38,31 @@ function CityForm({ editData }) {
   };
 
   const changeState = (value) => {
+
     setAddData((prevData) => ({
       ...prevData,
       state: value,
     }));
+
+    const selectedValue = value;
+    const item = states.find(state => state.name === selectedValue);
+
+        if (item) {
+          setCurrentStateCode(item.iso2);
+        }
+
+    
   };
 
   const handleSubmit = (addData) => {
     if (addData.name !== "" && addData.state !== "") {
       if (editData) {
         axios
-          .put(`http://localhost:3700/api/city/updatecity/${editData._id}`, addData)
+          .put(`${process.env.REACT_APP_BACKEND_URL}/api/city/updatecity/${editData._id}?userId=${userId}`, addData, {
+              headers: {
+                "auth-token" : userToken
+              },
+            })
           .then((response) => {
             if (response) {
               toast("City updated!");
@@ -58,7 +74,11 @@ function CityForm({ editData }) {
           });
       } else {
         axios
-          .post("http://localhost:3700/api/city/addcity", addData)
+          .post(`${process.env.REACT_APP_BACKEND_URL}/api/city/addcity?userId=${userId}`, addData, {
+              headers: {
+                "auth-token" : userToken
+              },
+            })
           .then((response) => {
             if (response) {
               toast("City added!");
@@ -78,14 +98,20 @@ function CityForm({ editData }) {
   };
 
   const fetchAllStates = () => {
-    axios
-      .get("http://localhost:3700/api/state/fetchallstates")
+    
+      axios
+      .get(`https://api.countrystatecity.in/v1/countries/IN/states`,{
+        headers: {
+          'X-CSCAPI-KEY': process.env.REACT_APP_CSC_API,
+        }
+      })
       .then((response) => {
-        setStates(getUniqueItems(getNameList(response.data)));
+        setStates(sortArrayByName(response.data));
       })
       .catch((error) => {
         console.error("Error:", error);
       });
+    
   };
 
   useEffect(() => {
@@ -100,6 +126,24 @@ function CityForm({ editData }) {
       });
     }
   }, [editData]);
+
+  // fetching cities by state
+  useEffect(() => {
+    if(currentStateCode !== ""){
+      axios
+      .get(`https://api.countrystatecity.in/v1/countries/IN/states/${currentStateCode}/cities`,{
+        headers: {
+          'X-CSCAPI-KEY': process.env.REACT_APP_CSC_API,
+        }
+      })
+      .then((response) => {
+        setCities(sortArrayByName(response.data));
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+    }
+  }, [currentStateCode]);
 
   return (
     <Box
@@ -154,36 +198,16 @@ function CityForm({ editData }) {
         <div className="w-full">
           <form>
             <div className="flex flex-col md:flex-row gap-2">
-              <div className="flex flex-col w-full md:w-1/2 pr-0 md:pr-5 pb-6">
-                <div className="w-full pr-3">
-                  <div className="mb-5">
-                    <label
-                      htmlFor="fName"
-                      className="text-lg font-medium"
-                    >
-                      Name
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      id="name"
-                      value={addData.name}
-                      onChange={(e) => changeName(e.target.value)}
-                      placeholder="Name"
-                      className="w-full mt-[18px] text-gray-700 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                    />
-                  </div>
-                </div>
-              </div>
 
-              <div className="flex flex-col space-y-4 pr-4 w-full md:w-1/2 pb-5">
+            <div className="flex flex-col space-y-4 pr-4 w-full md:w-1/2 pb-5">
                 <label className="text-lg font-medium">
-                  Choose a state:
+                  Choose a state
                 </label>
                 <input
                   list="states"
                   name="myState"
                   className="w-full text-gray-600 -mt-1 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  autoComplete="off"
                   placeholder="Select a state..."
                   value={addData.state}
                   onChange={(e) => changeState(e.target.value)}
@@ -193,11 +217,47 @@ function CityForm({ editData }) {
                     states.map((item, index) => (
                       <option
                         key={index}
-                        value={item}
+                        value={item.name}
                       />
                     ))}
                 </datalist>
               </div>
+
+
+              <div className="flex flex-col w-full md:w-1/2 pr-0 md:pr-5 pb-6">
+                <div className="w-full pr-3">
+                  <div className="mb-5">
+                    <label
+                      htmlFor="fName"
+                      className="text-lg font-medium"
+                    >
+                      Set City
+                    </label>
+                    <input
+                      type="text"
+                      list="cities"
+                      autoComplete="off"
+                      name="name"
+                      id="name"
+                      value={addData.name}
+                      onChange={(e) => changeName(e.target.value)}
+                      placeholder="City"
+                      className="w-full mt-[18px] text-gray-700 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                    />
+                     <datalist id="cities">
+                  {cities.length > 0 &&
+                    cities.map((item, index) => (
+                      <option
+                        key={index}
+                        value={item.name}
+                      />
+                    ))}
+                </datalist>
+                  </div>
+                </div>
+              </div>
+
+              
             </div>
 
             <div className="mb-5">

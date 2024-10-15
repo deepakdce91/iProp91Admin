@@ -10,11 +10,16 @@ import "react-toastify/dist/ReactToastify.css";
 import Header from "../../../components/Header";
 import RejectedReasonsForm from "../../../components/configurations/RejectedReasonsForm";
 import {formatDate} from "../../../MyFunctions"
+import { jwtDecode } from "jwt-decode";
 
 
 function Index() {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+
+  const [userId, setUserId] = useState("");
+  const [userToken, setUserToken] = useState("");
+
 
   const [mode, setMode] = useState("display");
   const [data, setData] = useState([]);
@@ -85,7 +90,11 @@ function Index() {
   const fetchReason = async (id) => {
     // Make the DELETE request
     await axios
-      .get(`http://localhost:3700/api/rejectedReasons/fetchReason/${id}`)
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/rejectedReasons/fetchReason/${id}?userId=${userId}`, {
+          headers: {
+            "auth-token" : userToken
+          },
+        })
       .then((response) => {
         if (response) {
           setEditData(response.data);
@@ -97,9 +106,13 @@ function Index() {
       });
   };
 
-  const fetchAllReasons = () => {
+  const fetchAllReasons = (userId, userToken) => {
     axios
-      .get("http://localhost:3700/api/rejectedReasons/fetchAllReasons")
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/rejectedReasons/fetchAllReasons?userId=${userId}`, {
+          headers: {
+            "auth-token" : userToken
+          },
+        })
       .then((response) => {
         setData(response.data);
       })
@@ -111,11 +124,15 @@ function Index() {
   const deleteRejectedReasonById = async (id) => {
     // Make the DELETE request
     await axios
-      .delete(`http://localhost:3700/api/rejectedReasons/deleteReason/${id}`)
+      .delete(`${process.env.REACT_APP_BACKEND_URL}/api/rejectedReasons/deleteReason/${id}?userId=${userId}`, {
+          headers: {
+            "auth-token" : userToken
+          },
+        })
       .then((response) => {
         if (response) {
-          toast("Rejected Reason deleted!");
-          fetchAllReasons();
+          toast.success("Rejected Reason deleted!");
+          fetchAllReasons(userId, userToken);
         }
       })
       .catch((error) => {
@@ -126,7 +143,18 @@ function Index() {
 
   // useeffecttt
   useEffect(() => {
-    fetchAllReasons();
+    try {
+      // getting userId and userToken
+      let token = localStorage.getItem("iProp-token");
+      if (token) {
+        const decoded = jwtDecode(token);
+        setUserId(decoded.userId);
+        setUserToken(token);
+        fetchAllReasons(decoded.userId, token);
+      }
+    } catch (error) {
+      console.log(error);
+    }
   }, []);
 
   const handleAddMore = () => {
@@ -134,7 +162,7 @@ function Index() {
   };
 
   const handleCancel = () => {
-    fetchAllReasons();
+    fetchAllReasons(userId, userToken);
     setMode("display");
   };
 
@@ -182,7 +210,7 @@ function Index() {
 
       {/* Render form or DataGrid based on mode */}
       {mode === "add" ? (
-        <RejectedReasonsForm  />
+        <RejectedReasonsForm userId={userId} userToken = {userToken} />
       ) : mode === "edit" ? (
         editData && (
           <Box
@@ -217,7 +245,7 @@ function Index() {
               },
             }}
           >
-            <RejectedReasonsForm editData={editData}  />{" "}
+            <RejectedReasonsForm editData={editData}  userId={userId} userToken = {userToken}/>{" "}
           </Box>
         )
       ) : (

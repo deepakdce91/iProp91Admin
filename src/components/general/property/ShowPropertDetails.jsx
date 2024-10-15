@@ -6,6 +6,9 @@ import "react-toastify/dist/ReactToastify.css";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { client } from "../../../config/s3Config";
+import { jwtDecode } from "jwt-decode";
+import { FaEye } from "react-icons/fa";
+import AccordionCustomIcon from "../../ui/Accordion";
 
 
 //get signed url---will be used sooon
@@ -28,11 +31,42 @@ const getSignedUrlForPrivateFile = async (path) => {
 };
 
 const ShowPropertyDetails = ({ data }) => {
+
+  const [showSafe, setShowSafe] = useState(false);
+
+  const [userId, setUserId] = useState("");
+  const [userToken, setUserToken] = useState("");
+
   const theme = useTheme();
   // theme.palette.mode  === "dark"
 
+  const [safeData, setSafeData] = useState();
+
   const [updateData, setUpdateData] = useState(data);
   const [documentArray, setDocumentArray] = useState([]);
+
+  const fetchSafeData = async(userToken, userId) =>{
+    await axios
+    .get(
+      `${process.env.REACT_APP_BACKEND_URL}/api/safe/adminFetchAllDocuments/${data._id}?userId=${userId}`,
+      {
+        headers: {
+          "auth-token": userToken,
+        },
+      },
+      
+    )
+    .then((response) => {
+      if (response) {
+        setSafeData(response.data.data)
+
+      }
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+      toast.error("Some ERROR occurred.");
+    });
+  }
 
   const getUrlsArray = (pathArray) => {
     pathArray.map(async (path) => {
@@ -42,61 +76,116 @@ const ShowPropertyDetails = ({ data }) => {
   };
 
   const changeField = (field, value) => {
+
+    // if application status changed to approve... 
+    // make a safe with that propertyId
+    if(value === "approved"){
+      axios
+      .post(
+        `${process.env.REACT_APP_BACKEND_URL}/api/safe/adminAddNewSafe?userId=${userId}`,
+        {
+          propertyId: data._id 
+        },
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        },
+        
+      )
+      .then((response) => {
+        if (response) {
+          console.log(response)
+          toast.success("Safe Created!");
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        toast.error("Some ERROR occurred.");
+      });
+
+    }
+
+
     setUpdateData((prevData) => ({
       ...prevData,
       [field]: value,
     }));
 
-    setTimeout(() => {
-      axios
-        .put(
-          `http://localhost:3700/api/property/updateproperty/${data._id}`,
-          updateData
-        )
-        .then((response) => {
-          if (response) {
-            toast.success("Field updated!");
-          }
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-          toast.error("Some ERROR occurred.");
-        });
-    }, 200);
+    axios
+    .put(
+      `${process.env.REACT_APP_BACKEND_URL}/api/property/updateproperty/${data._id}?userId=${userId}`,
+      {
+        applicationStatus: value 
+      },
+      {
+        headers: {
+          "auth-token": userToken,
+        },
+      },
+      
+    )
+    .then((response) => {
+      if (response) {
+        console.log(response)
+        toast.success("Field updated!");
+      }
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+      toast.error("Some ERROR occurred.");
+    });
   };
 
 
 
   useEffect(() => {
     getUrlsArray(data.documents.files);
+
+  }, []);
+
+  useEffect(() => {
+    try {
+      // getting userId and userToken
+      let token = localStorage.getItem("iProp-token");
+      if (token) {
+        const decoded = jwtDecode(token);
+        setUserId(decoded.userId);
+        setUserToken(token);
+        fetchSafeData(token, decoded.userId);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+
   }, []);
 
   return (
     <>
-    <div className="w-full mx-auto p-4 pt-2 md:p-6 lg:p-12 bg-white rounded shadow-md">
+    <div className="w-full mx-auto p-4 pt-2 md:p-6 lg:p-12 bg-gray-200 rounded shadow-md">
       <h2 className="text-2xl font-bold mb-8 text-black ">Property Details</h2>
 
       <div className="flex flex-wrap -mx-3 mb-6">
         <div className="w-full md:w-1/2 px-3 mb-6 md:mb-0">
           <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
-            Customer Name
+            Customer Id
           </label>
-          <p className="text-gray-900">{data.customerName}</p>
+          <p className="text-gray-900">{data.customerId}</p>
         </div>
         <div className="w-full md:w-1/2 px-3 mb-6 md:mb-0">
           <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
-            Customer Number
+            House Number
           </label>
-          <p className="text-gray-900">{data.customerNumber}</p>
+          <p className="text-gray-900">{data.houseNumber}</p>
         </div>
       </div>
 
       <div className="flex flex-wrap -mx-3 mb-6">
         <div className="w-full md:w-1/2 px-3 mb-6 md:mb-0">
           <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
-            Property Name
+            Floor Number
           </label>
-          <p className="text-gray-900">{data.name}</p>
+          <p className="text-gray-900">{data.floorNumber}</p>
         </div>
         <div className="w-full md:w-1/2 px-3 mb-6 md:mb-0">
           <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
@@ -173,9 +262,9 @@ const ShowPropertyDetails = ({ data }) => {
           </label>
           {documentArray.length > 0 && <ul className="list-disc pl-4">
             {data.documents.files.map((file, index) => (
-              <li  className="text-gray-800" key={index}>
-                {file.split("/")[file.split("/").length - 1]} {" "} 
-                <a href={documentArray[index]} target="_blank" className="ml-2 underline" >View</a>
+              <li  className="text-gray-800 flex my-2" key={index}>
+                <div>{file.split("/")[file.split("/").length - 1]} {" "} </div>
+                <a href={documentArray[index]} target="_blank" className="ml-2 " > <div className="flex bg-blue-500 hover:bg-blue-600 text-white py-1 rounded-sm px-3 items-center justify-center"><FaEye className="mr-2"/><p>View</p></div></a>
               </li>
             ))}
           </ul>}
@@ -194,11 +283,15 @@ const ShowPropertyDetails = ({ data }) => {
               onChange={(e) => changeField("applicationStatus", e.target.value)}
               className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
             >
-              <option value="">Select...</option>
-              <option value="under-review">Under Review</option>
+              
+              {updateData.applicationStatus === "approved" ? null : <option value="">Select...</option>}
+\
               <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-              <option value="more-info-required">More info required</option>
+              
+              {updateData.applicationStatus === "approved" ? null : <>
+                <option value="rejected">Rejected</option>
+              <option value="under-review">Under Review</option>
+                <option value="more-info-required">More info required</option> </>}
             </select>
           </div>
         </div>
@@ -237,10 +330,30 @@ const ShowPropertyDetails = ({ data }) => {
           </div>
         </div>
       </div>
-      <ToastContainer position="bottom-right" autoClose={2000} />
     </div> 
 
+    {updateData.applicationStatus === "approved" &&<div className="mb-5 mt-5">
+      {showSafe === false && <button type="button" className="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-purple-500 text-white hover:bg-purple-600 focus:outline-none focus:bg-purple-600 disabled:opacity-50 disabled:pointer-events-none "
+      onClick={()=>{setShowSafe(true)}}
+      >
+  View Safe
+</button>}
 
+{showSafe === true && <button type="button" className="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-red-500 text-white hover:bg-red-600 focus:outline-none focus:bg-red-600 disabled:opacity-50 disabled:pointer-events-none "
+      onClick={()=>{setShowSafe(false)}}
+      >
+  Hide Safe
+</button>}
+
+<button type="button" className="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-green-500 text-white hover:bg-green-600 focus:outline-none focus:bg-gray-900 disabled:opacity-50 disabled:pointer-events-none ml-3">
+  Add to community
+</button>
+      </div>}
+
+
+    <div className="py-4">
+    {showSafe === true && <AccordionCustomIcon userId={userId} userToken={userToken} propertyId={data._id} safeData = {safeData}/>} 
+    </div>
     
     </>
   );

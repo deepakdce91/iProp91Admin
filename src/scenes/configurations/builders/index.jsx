@@ -10,12 +10,16 @@ import "react-toastify/dist/ReactToastify.css";
 import Header from "../../../components/Header";
 import BuildersForm from "../../../components/configurations/BuildersForm";
 import {formatDate} from "../../../MyFunctions"
-
+import { jwtDecode } from "jwt-decode";
 
 function Index() {
 
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+
+  const [userId, setUserId] = useState("");
+  const [userToken, setUserToken] = useState("");
+
 
   const [mode, setMode] = useState("display");
   const [data, setData] = useState([]);
@@ -96,7 +100,11 @@ function Index() {
   const fetchBuilder = async (id) => {
     // Make the DELETE request
     await axios
-      .get(`http://localhost:3700/api/builders/fetchbuilder/${id}`)
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/builders/fetchbuilder/${id}?userId=${userId}`, {
+          headers: {
+            "auth-token" : userToken
+          },
+        })
       .then((response) => {
         if (response) {
           setEditData(response.data);
@@ -108,9 +116,13 @@ function Index() {
       });
   };
 
-  const fetchAllBuilders = () => {
+  const fetchAllBuilders = (userId, userToken) => {
     axios
-      .get("http://localhost:3700/api/builders/fetchallbuilders")
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/builders/fetchallbuilders?userId=${userId}`, {
+          headers: {
+            "auth-token" : userToken
+          },
+        })
       .then((response) => {
         setData(response.data);
       })
@@ -122,10 +134,14 @@ function Index() {
   const deleteBuilderById = async (id) => {
     // Make the DELETE request
     await axios
-      .delete(`http://localhost:3700/api/builders/deletebuilder/${id}`)
+      .delete(`${process.env.REACT_APP_BACKEND_URL}/api/builders/deletebuilder/${id}?userId=${userId}`, {
+          headers: {
+            "auth-token" : userToken
+          },
+        })
       .then((response) => {
         if (response) {
-          toast("Builder deleted!");
+          toast.success("Builder deleted!");
           fetchAllBuilders();
         }
       })
@@ -137,7 +153,18 @@ function Index() {
 
   // useeffecttt
   useEffect(() => {
-    fetchAllBuilders();
+    try {
+      // getting userId and userToken
+      let token = localStorage.getItem("iProp-token");
+      if (token) {
+        const decoded = jwtDecode(token);
+        setUserId(decoded.userId);
+        setUserToken(token);
+        fetchAllBuilders(decoded.userId, token);
+      }
+    } catch (error) {
+      console.log(error);
+    }
   }, []);
 
   const handleAddMore = () => {
@@ -146,7 +173,7 @@ function Index() {
 
   const handleCancel = () => {
     setMode("display");
-    fetchAllBuilders();
+    fetchAllBuilders(userId, userToken);
   };
 
   // Click handler for the edit button
@@ -194,7 +221,7 @@ function Index() {
 
       {/* Render form or DataGrid based on mode */}
       {mode === "add" ? (
-        <BuildersForm  />
+        <BuildersForm  userId={userId} userToken = {userToken}/>
       ) : mode === "edit" ? (
         editData && (
           <Box
@@ -229,7 +256,7 @@ function Index() {
               },
             }}
           >
-            <BuildersForm editData={editData} />{" "}
+            <BuildersForm editData={editData} userId={userId} userToken = {userToken}/>{" "}
           </Box>
         )
       ) : (

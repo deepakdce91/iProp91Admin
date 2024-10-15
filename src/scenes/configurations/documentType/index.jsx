@@ -10,11 +10,16 @@ import "react-toastify/dist/ReactToastify.css";
 import Header from "../../../components/Header";
 import DocumentTypeForm from "../../../components/configurations/DocumentTypeForm";
 import {formatDate} from "../../../MyFunctions"
+import { jwtDecode } from "jwt-decode";
 
 
 function Index() {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+
+  const [userId, setUserId] = useState("");
+  const [userToken, setUserToken] = useState("");
+
 
   const [mode, setMode] = useState("display");
   const [data, setData] = useState([]);
@@ -85,7 +90,11 @@ function Index() {
   const fetchDocumentType = async (id) => {
     // Make the DELETE request
     await axios
-      .get(`http://localhost:3700/api/documentType/fetchDocumentType/${id}`)
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/documentType/fetchDocumentType/${id}?userId=${userId}`, {
+          headers: {
+            "auth-token" : userToken
+          },
+        })
       .then((response) => {
         if (response) {
           setEditData(response.data);
@@ -97,9 +106,13 @@ function Index() {
       });
   };
 
-  const fetchAllDocumentTypes = () => {
+  const fetchAllDocumentTypes = (userId, userToken) => {
     axios
-      .get("http://localhost:3700/api/documentType/fetchallDocumentTypes")
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/documentType/fetchallDocumentTypes?userId=${userId}`, {
+          headers: {
+            "auth-token" : userToken
+          },
+        })
       .then((response) => {
         setData(response.data);
       })
@@ -111,11 +124,15 @@ function Index() {
   const deleteDocumentTypeById = async (id) => {
     // Make the DELETE request
     await axios
-      .delete(`http://localhost:3700/api/documentType/deleteDocumentType/${id}`)
+      .delete(`${process.env.REACT_APP_BACKEND_URL}/api/documentType/deleteDocumentType/${id}?userId=${userId}`, {
+          headers: {
+            "auth-token" : userToken
+          },
+        })
       .then((response) => {
         if (response) {
-          toast("Document Type deleted!");
-          fetchAllDocumentTypes();
+          toast.success("Document Type deleted!");
+          fetchAllDocumentTypes(userId, userToken);
         }
       })
       .catch((error) => {
@@ -126,7 +143,18 @@ function Index() {
 
   // useeffecttt
   useEffect(() => {
-    fetchAllDocumentTypes();
+    try {
+      // getting userId and userToken
+      let token = localStorage.getItem("iProp-token");
+      if (token) {
+        const decoded = jwtDecode(token);
+        setUserId(decoded.userId);
+        setUserToken(token);
+        fetchAllDocumentTypes(decoded.userId, token);
+      }
+    } catch (error) {
+      console.log(error);
+    }
   }, []);
 
   const handleAddMore = () => {
@@ -134,7 +162,7 @@ function Index() {
   };
 
   const handleCancel = () => {
-    fetchAllDocumentTypes();
+    fetchAllDocumentTypes(userId, userToken);
     setMode("display");
   };
 
@@ -182,7 +210,7 @@ function Index() {
 
       {/* Render form or DataGrid based on mode */}
       {mode === "add" ? (
-        <DocumentTypeForm  />
+        <DocumentTypeForm  userId={userId} userToken = {userToken}/>
       ) : mode === "edit" ? (
         editData && (
           <Box
@@ -217,7 +245,7 @@ function Index() {
               },
             }}
           >
-            <DocumentTypeForm editData={editData}  />{" "}
+            <DocumentTypeForm editData={editData}  userId={userId} userToken = {userToken}/>{" "}
           </Box>
         )
       ) : (

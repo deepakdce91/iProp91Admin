@@ -5,8 +5,7 @@ import { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
-import { getNameList } from "../../../MyFunctions";
-import { getUniqueItems } from "../../../MyFunctions";
+import { getNameList, getUniqueItems, removeSpaces, sortArrayByName } from "../../../MyFunctions";
 
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { client } from "../../../config/s3Config";
@@ -15,7 +14,7 @@ import heic2any from "heic2any";
 
  
 
-function PropertyForm({ editData, setModeToDisplay  }) {
+function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
   const [builders, setBuilders] = useState([]);
@@ -32,19 +31,20 @@ function PropertyForm({ editData, setModeToDisplay  }) {
   const colors = tokens(theme.palette.mode);
 
   const [addData, setAddData] = useState({
-    name: "",
+    customerName : "",
+    customerNumber : "",
     applicationStatus: "under-review",
     state: "",
     city: "",
     builder: "",
     project: "",
+    houseNumber: "",
+    floorNumber: "",
     tower: "",
     unit: "",
     size: "",
     nature: "",
     status: "",
-    customerNumber: "",
-    customerName: "",
     isDeleted : "no",
     documents: {
       type: "",
@@ -56,7 +56,8 @@ function PropertyForm({ editData, setModeToDisplay  }) {
   // Upload the file to Supabase S3
   const uploadFileToCloud = async (myFile) => {
      
-      const myPath = `propertyDocs/${addData.customerNumber}/${myFile.name}`;
+      const myFileName = removeSpaces(myFile.name) // removing blank space from name
+      const myPath = `propertyDocs/${addData.customerId}/${myFileName}`;
       try {
         const uploadParams = {
           Bucket: process.env.REACT_APP_PROPERTY_BUCKET,
@@ -74,15 +75,6 @@ function PropertyForm({ editData, setModeToDisplay  }) {
     
   };
 
-  // handles file upload
-  // const handleFileAdding = (e) => {
-  //   const files = e.target.files;
-
-  //   if (files) {
-  //     // Convert the FileList object into an array and update the state
-  //     setUploadFiles((prevFiles) => [...prevFiles, ...Array.from(files)]);
-  //   }
-  // };
 
   const handleFileAdding = async (event) => {
     const files = event.target.files;
@@ -118,63 +110,68 @@ function PropertyForm({ editData, setModeToDisplay  }) {
 
   const handleFileUpload = (e) => {
     e.preventDefault();
-    if(addData.customerNumber.length === 10 ){
-      const isNumeric = /^[0-9]*$/.test(addData.customerNumber);
-      if(!isNumeric){
-        toast.error("Customer number should contain only number")
-      }else{
-        try {
-          setIsUploading(true);
-          uploadFiles.length > 0 &&
-            uploadFiles.map(async (item, index) => {
-              let cloudFilePath = await uploadFileToCloud(item);
-              setAddData((prevData) => ({
-                ...prevData,
-                documents: {
-                  ...prevData.documents,
-                  files: [...prevData.documents.files, cloudFilePath], // Append new files
-                },
-              }));
-    
-              // when in last iteration
-              if (index === uploadFiles.length - 1) {
-                // when last file has been uploaded
-                if (cloudFilePath) {
-                  setIsUploading(false);
-                  setUploadStatus(true);
-                  setUploadFiles([]);
-                }
+    if(addData.customerId !== "" ){
+      
+      try {
+        setIsUploading(true);
+        uploadFiles.length > 0 &&
+          uploadFiles.map(async (item, index) => {
+            let cloudFilePath = await uploadFileToCloud(item);
+            setAddData((prevData) => ({
+              ...prevData,
+              documents: {
+                ...prevData.documents,
+                files: [...prevData.documents.files, cloudFilePath], // Append new files
+              },
+            }));
+  
+            // when in last iteration
+            if (index === uploadFiles.length - 1) {
+              // when last file has been uploaded
+              if (cloudFilePath) {
+                setIsUploading(false);
+                setUploadStatus(true);
+                setUploadFiles([]);
               }
-            });
-        } catch (error) {
-          setIsUploading(false);
-          toast.error("Some error occured while uploading.");
-          console.log(error.message);
-        }
+            }
+          });
+      } catch (error) {
+        setIsUploading(false);
+        toast.error("Some error occured while uploading.");
+        console.log(error.message);
       }
       
     }else{
-      toast.error("Enter valid customer number");
+      toast.error("Enter customer Id before upload");
       return
       
     }
   };
 
-  const fetchCitiesByState = (state) => {
+  const fetchCitiesByState = (currentStateCode) => {
     axios
-      .get(`http://localhost:3700/api/city/fetchcitiesbystate/${state}`)
-      .then((response) => {
-        setCities(getUniqueItems(getNameList(response.data)));
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
+    .get(`https://api.countrystatecity.in/v1/countries/IN/states/${currentStateCode}/cities`,{
+      headers: {
+        'X-CSCAPI-KEY': process.env.REACT_APP_CSC_API,
+      }
+    })
+    .then((response) => {
+
+      setCities(sortArrayByName(response.data));
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+    });
   };
 
   const fetchBuildersByCity = (city) => {
     axios
-      .get(`http://localhost:3700/api/builders/fetchbuildersbycity/${city}`)
-      .then((response) => {
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/builders/fetchbuildersbycity/${city}?userId=${userId}`,  {
+              headers: {
+                "auth-token" : userToken
+              },
+            })
+          .then((response) => {
         setBuilders(getUniqueItems(getNameList(response.data)));
       })
       .catch((error) => {
@@ -185,9 +182,12 @@ function PropertyForm({ editData, setModeToDisplay  }) {
   const fetchProjectByBuilder = (builder) => {
     axios
       .get(
-        `http://localhost:3700/api/projects/fetchprojectbybuilder/${builder}`
-      )
-      .then((response) => {
+        `${process.env.REACT_APP_BACKEND_URL}/api/projects/fetchprojectbybuilder/${builder}?userId=${userId}`,  {
+              headers: {
+                "auth-token" : userToken
+              },
+            })
+          .then((response) => {
         setProjects(getUniqueItems(getNameList(response.data)));
       })
       .catch((error) => {
@@ -202,15 +202,19 @@ function PropertyForm({ editData, setModeToDisplay  }) {
     }));
 
     if (field === "state" && value) {
-      fetchCitiesByState(value);
+
+    if (value && value.length > 0) {
+      const selectedValue = value;
+      const item = states.find(state => state.name === selectedValue);
+      if (item) {
+        fetchCitiesByState(item.iso2);
+      }
+      
+    }
     }
 
     if (field === "city" && value) {
       fetchBuildersByCity(value);
-    }
-
-    if (field === "state" && value) {
-      fetchCitiesByState(value);
     }
 
     if (field === "builder" && value) {
@@ -223,12 +227,15 @@ function PropertyForm({ editData, setModeToDisplay  }) {
       toast.error("Upload files before submitting form.");
     } else {
       if (
-        addData.name !== "" &&
+        addData.customerName !== "" &&
+        addData.customerNumber !== "" &&
         addData.state !== "" &&
         addData.city !== "" &&
         addData.builder !== "" &&
         addData.project !== "" &&
         addData.tower !== "" &&
+        addData.houseNumber !== "" &&
+        addData.floorNumber !== "" &&
         addData.unit !== "" &&
         addData.size !== "" &&
         addData.nature !== "" &&
@@ -241,8 +248,13 @@ function PropertyForm({ editData, setModeToDisplay  }) {
         if (editData) {
           axios
             .put(
-              `http://localhost:3700/api/property/updateproperty/${editData._id}`,
-              addData
+              `${process.env.REACT_APP_BACKEND_URL}/api/property/updateproperty/${editData._id}?userId=${userId}`,
+              addData,
+              {
+                headers: {
+                  "auth-token" : userToken
+                },
+              }
             )
             .then((response) => {
               if (response) {
@@ -258,7 +270,11 @@ function PropertyForm({ editData, setModeToDisplay  }) {
             });
         } else {
           axios
-            .post("http://localhost:3700/api/property/addproperty", addData)
+            .post(`${process.env.REACT_APP_BACKEND_URL}/api/property/addproperty?userId=${userId}`, addData,  {
+              headers: {
+                "auth-token" : userToken
+              },
+            })
             .then((response) => {
               if (response) {
                 toast("Property added!");
@@ -281,8 +297,12 @@ function PropertyForm({ editData, setModeToDisplay  }) {
 
   const fetchAllDocumentTypes = () => {
     axios
-      .get("http://localhost:3700/api/documentType/fetchallDocumentTypes")
-      .then((response) => {
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/documentType/fetchallDocumentTypes?userId=${userId}`,  {
+              headers: {
+                "auth-token" : userToken
+              },
+            })
+          .then((response) => {
         setDocumentTypes(getUniqueItems(getNameList(response.data)));
       })
       .catch((error) => {
@@ -292,9 +312,13 @@ function PropertyForm({ editData, setModeToDisplay  }) {
 
   const fetchAllStates = () => {
     axios
-      .get("http://localhost:3700/api/state/fetchallstates")
+      .get(`https://api.countrystatecity.in/v1/countries/IN/states`, {
+        headers: {
+          "X-CSCAPI-KEY": process.env.REACT_APP_CSC_API,
+        },
+      })
       .then((response) => {
-        setStates(getUniqueItems(getNameList(response.data)));
+        setStates(sortArrayByName(response.data));
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -307,7 +331,6 @@ function PropertyForm({ editData, setModeToDisplay  }) {
 
     if (editData) {
       setAddData({
-        name: editData.name,
         applicationStatus: editData.applicationStatus,
         state: editData.state,
         city: editData.city,
@@ -317,9 +340,10 @@ function PropertyForm({ editData, setModeToDisplay  }) {
         unit: editData.unit,
         size: editData.size,
         nature: editData.nature,
-        enable : editData.enable,
         customerName : editData.customerName,
-        customerNumber: editData.customerNumber,
+        customerNumber : editData.customerNumber,
+        houseNumber: editData.houseNumber,
+        floorNumber: editData.floorNumber,
         status: editData.status,
         isDeleted : editData.isDeleted,
         documents: {
@@ -393,15 +417,15 @@ function PropertyForm({ editData, setModeToDisplay  }) {
                     htmlFor="c-name"
                     className="mb-3 block text-base font-medium"
                   >
-                    Customer name
+                    Customer Name
                   </label>
                   <input
                     type="text"
-                    name="name"
+                    name="c-name"
                     id="c-name"
                     value={addData.customerName}
                     onChange={(e) => changeField("customerName", e.target.value)}
-                    placeholder="Customer name"
+                    placeholder="Customer Name"
                     className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                   />
                 </div>
@@ -413,15 +437,35 @@ function PropertyForm({ editData, setModeToDisplay  }) {
                     htmlFor="c-num"
                     className="mb-3 block text-base font-medium"
                   >
-                    Customer number
+                    Customer Number
                   </label>
                   <input
-                    type="tel"
-                    name="name"
+                    type="text"
+                    name="c-num"
                     id="c-num"
                     value={addData.customerNumber}
                     onChange={(e) => changeField("customerNumber", e.target.value)}
-                    placeholder="Customer number"
+                    placeholder="Customer Number"
+                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  />
+                </div>
+              </div>
+
+              <div className="w-full px-3 md:w-1/2">
+                <div className="mb-5">
+                  <label
+                    htmlFor="h-num"
+                    className="mb-3 block text-base font-medium"
+                  >
+                    House number
+                  </label>
+                  <input
+                    type="tel"
+                    name="houseNumber"
+                    id="h-num"
+                    value={addData.houseNumber}
+                    onChange={(e) => changeField("houseNumber", e.target.value)}
+                    placeholder="House number"
                     className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                   />
                 </div>
@@ -434,117 +478,20 @@ function PropertyForm({ editData, setModeToDisplay  }) {
               <div className="w-full px-3 md:w-1/2">
                 <div className="mb-5">
                   <label
-                    htmlFor="name"
+                    htmlFor="floorNumber"
                     className="mb-3 block text-base font-medium"
                   >
-                    Property name
+                    Floor Number
                   </label>
                   <input
                     type="text"
-                    name="name"
-                    id="name"
-                    value={addData.name}
-                    onChange={(e) => changeField("name", e.target.value)}
+                    name="f-num"
+                    id="floorNumber"
+                    value={addData.floorNumber}
+                    onChange={(e) => changeField("floorNumber", e.target.value)}
                     placeholder="Name"
                     className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                   />
-                </div>
-              </div>
-
-              <div className="w-full px-3 md:w-1/2">
-                <div className="mb-5">
-                  <label className="text-lg font-medium">
-                    Choose a state 
-                  </label>
-                  <input
-                    list="states"
-                    name="myState"
-                    className="w-full text-gray-600 mt-2 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                    placeholder="Select a state..."
-                    value={addData.state}
-                    onChange={(e) => changeField("state", e.target.value)}
-                  />
-                  <datalist id="states">
-                    {states.length > 0 &&
-                      states.map((item, index) => (
-                        <option key={index} value={item} />
-                      ))}
-                  </datalist>
-                </div>
-              </div>
-            </div>
-
-           
-
-            {/*  City and builder */}
-            <div className="flex flex-col md:flex-row -mx-3">
-              <div className="w-full px-3 md:w-1/2">
-                <div className="mb-5">
-                  <label className="text-lg font-medium">Choose a city</label>
-                  <input
-                    list="cities"
-                    disabled={addData.state.length > 0 ? false : true}
-                    name="myCities"
-                    className="w-full text-gray-600 mt-2 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                    placeholder="Select a city..."
-                    value={addData.city}
-                    onChange={(e) => changeField("city", e.target.value)}
-                  />
-                  <datalist id="cities">
-                    {cities.length > 0 &&
-                      cities.map((item, index) => (
-                        <option key={index} value={item} />
-                      ))}
-                  </datalist>
-                </div>
-              </div>
-
-              <div className="w-full px-3 md:w-1/2">
-                <div className="mb-5">
-                  <label className="text-lg font-medium">
-                    Choose a Builder
-                  </label>
-                  <input
-                    list="builders"
-                    disabled={addData.city.length > 0 ? false : true}
-                    name="myBuilders"
-                    className="w-full text-gray-600 mt-2 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                    placeholder="Select builder..."
-                    value={addData.builder}
-                    onChange={(e) => changeField("builder", e.target.value)}
-                  />
-                  <datalist id="builders">
-                    {builders.length > 0 &&
-                      builders.map((item, index) => (
-                        <option key={index} value={item} />
-                      ))}
-                  </datalist>
-                </div>
-              </div>
-            </div>
-
-            {/* Additional Fields */}
-            <div className="flex flex-col md:flex-row -mx-3">
-              <div className="w-full px-3 md:w-1/2">
-                <div className="mb-5">
-                  <label className="text-lg font-medium">
-                    Choose a Project
-                  </label>
-                  <input
-                    list="projects"
-                    disabled={addData.builder.length > 0 ? false : true}
-                    name="myprojects"
-                    className="w-full text-gray-600 mt-2 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                    placeholder="Select project..."
-                    value={addData.project}
-                    onChange={(e) => changeField("project", e.target.value)}
-                  />
-                  <datalist id="projects">
-                    {projects.length > 0 &&
-                      projects.map((item, index) => (
-                        <option key={index} value={item} />
-                      ))}
-                  </datalist>
                 </div>
               </div>
 
@@ -567,9 +514,117 @@ function PropertyForm({ editData, setModeToDisplay  }) {
                   />
                 </div>
               </div>
+
+              
             </div>
 
+           
+
+            {/*  City and builder */}
             <div className="flex flex-col md:flex-row -mx-3">
+
+            {/* state  */}
+              <div className="flex mx-3 flex-col w-full md:w-1/2 pr-5 pb-5">
+              <label className="text-lg font-medium">
+                  Select state
+                </label>
+                <input
+                  list="states"
+                  name="myState"
+                  autoComplete="off"
+                  className="w-full  text-gray-600 mt-2 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  placeholder="Select a state..."
+                  value={addData.state}
+                  onChange={(e) => changeField("state",e.target.value)}
+                />
+                <datalist id="states">
+                  {states.length > 0 &&
+                    states.map((item, index) => (
+                      <option
+                        key={index}
+                        value={item.name}
+                      />
+                    ))}
+                </datalist>
+              </div>
+
+              {/* city  */}
+              <div className="flex flex-col w-full md:w-1/2 pr-0 md:pr-5 pb-6">
+              <label className="text-lg font-medium">
+                  Select city
+                </label>
+                <input
+                  list="cities"
+                  autoComplete="off"
+                  disabled = {addData.state.length>0 ? false : true}
+                  name="myCities"
+                  className="w-full  text-gray-600 mt-2 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  placeholder="Select a city..."
+                  value={addData.city}
+                  onChange={(e) => changeField("city",e.target.value)}
+                />
+                <datalist id="cities">
+                  {cities.length > 0 &&
+                    cities.map((item, index) => (
+                      <option
+                        key={index}
+                        value={item.name}
+                      />
+                    ))}
+                </datalist>
+              </div>
+
+              <div className="w-full px-3 md:w-1/2">
+                <div className="mb-5">
+                  <label className="text-lg font-medium">
+                  Select Builder
+                  </label>
+                  <input
+                    list="builders"
+                    disabled={addData.city.length > 0 ? false : true}
+                    name="myBuilders"
+                    className="w-full text-gray-600 mt-2 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                    placeholder="Select builder..."
+                    value={addData.builder}
+                    onChange={(e) => changeField("builder", e.target.value)}
+                  />
+                  <datalist id="builders">
+                    {builders.length > 0 &&
+                      builders.map((item, index) => (
+                        <option key={index} value={item} />
+                      ))}
+                  </datalist>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Fields */}
+            <div className="flex flex-col md:flex-row -mx-3">
+
+              <div className="w-full px-3 md:w-1/2">
+                <div className="mb-5">
+                  <label className="text-lg font-medium">
+                  Select Project
+                  </label>
+                  <input
+                    list="projects"
+                    disabled={addData.builder.length > 0 ? false : true}
+                    name="myprojects"
+                    className="w-full text-gray-600 mt-2 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                    placeholder="Select project..."
+                    value={addData.project}
+                    onChange={(e) => changeField("project", e.target.value)}
+                  />
+                  <datalist id="projects">
+                    {projects.length > 0 &&
+                      projects.map((item, index) => (
+                        <option key={index} value={item} />
+                      ))}
+                  </datalist>
+                </div>
+              </div>
+
+
               <div className="w-full px-3 md:w-1/2">
                 <div className="mb-5">
                   <label
@@ -609,7 +664,10 @@ function PropertyForm({ editData, setModeToDisplay  }) {
                   />
                 </div>
               </div>
+              
             </div>
+
+           
 
             <div className="flex flex-col md:flex-row -mx-3">
               <div className="w-full px-3 md:w-1/2">

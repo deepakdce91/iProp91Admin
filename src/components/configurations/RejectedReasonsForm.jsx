@@ -7,14 +7,14 @@ import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 
 
-function RejectedReasonsForm({ editData }) {
+function RejectedReasonsForm({ editData, userId, userToken }) {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
   const [addData, setAddData] = useState({
     name: "",
     enable: "no",
-    addedBy: "Unknown",
+    addedBy: "admin",
   });
 
   const changeName = (value) => {
@@ -36,8 +36,12 @@ function RejectedReasonsForm({ editData }) {
       if (editData) {
         axios
           .put(
-            `http://localhost:3700/api/rejectedReasons/updateReason/${editData._id}`,
-            addData
+            `${process.env.REACT_APP_BACKEND_URL}/api/rejectedReasons/updateReason/${editData._id}?userId=${userId}`,
+            addData,  {
+              headers: {
+                "auth-token" : userToken
+              },
+            }
           )
           .then((response) => {
             if (response) {
@@ -50,7 +54,11 @@ function RejectedReasonsForm({ editData }) {
           });
       } else {
         axios
-          .post("http://localhost:3700/api/rejectedReasons/addReason", addData)
+          .post(`${process.env.REACT_APP_BACKEND_URL}/api/rejectedReasons/addReason?userId=${userId}`, addData, {
+              headers: {
+                "auth-token" : userToken
+              },
+            })
           .then((response) => {
             if (response) {
               toast("Rejected Reason added!");

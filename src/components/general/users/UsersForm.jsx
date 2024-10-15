@@ -5,39 +5,16 @@ import { useState, useEffect, useRef } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
-import { getNameList } from "../../../MyFunctions";
-import { getUniqueItems } from "../../../MyFunctions";
 
 import heic2any from "heic2any";
 import { MdEdit } from "react-icons/md";
-
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-
-import { GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { client } from "../../../config/s3Config";
-// import { Preview } from "@mui/icons-material";
 
-//get signed url---will be used sooon
-const getSignedUrlForPrivateFile = async (path) => {
-  try {
-    const getParams = {
-      Bucket: process.env.REACT_APP_PROPERTY_BUCKET,
-      Key: path,
-      ResponseContentDisposition: "inline",
-    };
+import { supabase } from "../../../config/supabase";
 
-    const command = new GetObjectCommand(getParams);
-    const signedUrl = await getSignedUrl(client, command, { expiresIn: 3600 }); // URL valid for 1 hour
+function UserForm({ editData, setModeToDisplay , userToken, userId }) {
 
-    return signedUrl;
-  } catch (error) {
-    console.error("Error getting signed URL:", error);
-    throw error;
-  }
-};
-
-function PropertyForm({ editData, setModeToDisplay }) {
   const fileInputRef = useRef(null);
 
   const [isUploading, setIsUploading] = useState(false);
@@ -55,20 +32,30 @@ function PropertyForm({ editData, setModeToDisplay }) {
     password: "",
     profilePicture: "",
     lastLogin: new Date(),
-    visible: "true",
+    suspended: "false",
+    fraud: "false",
   });
+
+  const getPublicUrlFromSupabase = (path) => {
+    const { data, error } = supabase.storage.from(process.env.REACT_APP_PROFILE_PIC_BUCKET).getPublicUrl(path);
+    if (error) {
+      console.error("Error fetching public URL:", error);
+      return null;
+    } 
+    return data.publicUrl;
+  };
 
   const handleDivClick = () => {
     // Trigger the click event on the file input
     fileInputRef.current.click();
-  };
+  }; 
 
   // Upload the file to Supabase S3
   const uploadFileToCloud = async (myFile) => {
     const myPath = `usersProfilePic/${myFile.name}`;
     try {
       const uploadParams = {
-        Bucket: process.env.REACT_APP_PROPERTY_BUCKET,
+        Bucket: process.env.REACT_APP_PROFILE_PIC_BUCKET,
         Key: myPath,
         Body: myFile, // The file content
         ContentType: myFile.type, // The MIME type of the file
@@ -92,6 +79,26 @@ function PropertyForm({ editData, setModeToDisplay }) {
     setIsUploading(true);
     toast("Uploading Image.");
     const file = event.target.files[0];
+    // checking for .heic files and converting it into jpeg before adding
+    if (file.type === "image/heic") {
+      try {
+        // Convert .heic file to .png
+        const convertedBlob = await heic2any({
+          blob: file,
+          toType: "image/jpeg",
+        });
+
+        // Create a new File object from the Blob
+        const convertedFile = new File([convertedBlob], file.name.replace(/\.heic$/i, ".jpeg"), {
+          type: "image/jpeg",
+        });
+
+        file = convertedFile;
+
+      } catch (error) {
+        console.error("Error converting HEIC file:", error);
+      }
+    }
 
     try {
       let cloudFilePath = await uploadFileToCloud(file);
@@ -101,11 +108,16 @@ function PropertyForm({ editData, setModeToDisplay }) {
           ...prevData,
           profilePicture: cloudFilePath,
         }));
-        let signedUrl = await getSignedUrlForPrivateFile(cloudFilePath);
-        if (signedUrl) {
+        let publicUrl =  getPublicUrlFromSupabase(cloudFilePath);
+        if (publicUrl) {
           toast.success("Profile picture changed!");
           setIsUploading(false);
-          setPreviewUrl(signedUrl);
+          setPreviewUrl(publicUrl);
+          console.log(publicUrl);
+          setAddData((prevData) => ({
+            ...prevData,
+            profilePicture: publicUrl, 
+          }))
         }
       }
     } catch (error) {
@@ -125,11 +137,15 @@ function PropertyForm({ editData, setModeToDisplay }) {
   const handleSubmit = (addData) => {
     if (addData.name !== "" && addData.phone !== "") {
       if (editData) {
-        console.log(addData);
+
         axios
           .put(
-            `http://localhost:3700/api/users/updateuser/${editData._id}`,
-            addData
+            `${process.env.REACT_APP_BACKEND_URL}/api/users/updateuser/${editData._id}?userId=${userId}`,
+            addData, {
+              headers: {
+                "auth-token" : userToken
+              },
+            }
           )
           .then((response) => {
             if (response) {
@@ -144,18 +160,12 @@ function PropertyForm({ editData, setModeToDisplay }) {
             toast.error("Some ERROR occurred.");
           });
       } else {
-        console.log(addData);
-        // const myData = {
-        //   name : "",
-        //   phone : "",
-        //   email : "",
-        //   profilePicture : "",
-        //   password : "",
-        //   lastLogin : new Date(),
-        //   visible : addData.visible || "true"
-        // }
         axios
-          .post("http://localhost:3700/api/users/adduser", addData)
+          .post(`${process.env.REACT_APP_BACKEND_URL}/api/users/adduser?userId=${userId}`, addData, {
+            headers: {
+              "auth-token" : userToken
+            },
+          })
           .then((response) => {
             if (response) {
               toast("User added!");
@@ -175,23 +185,33 @@ function PropertyForm({ editData, setModeToDisplay }) {
   };
 
   useEffect(() => {
-    if (editData) {
-      console.log(editData)
-      setAddData({
-        name: editData.name,
-        phone: editData.phone,
-        email: editData.email ,
-        password: editData.password ,
-        profilePicture: editData.profilePicture || "",
-        lastLogin: editData.lastLogin || new Date(),
-        visible: editData.visible || "true",
-      });
-
-      if (editData.profilePicture !== "") {
-        setPreviewUrl(getSignedUrlForPrivateFile(editData.profilePicture));
+    const fetchData = async () => {
+      if (editData) {
+        setAddData({
+          name: editData.name,
+          phone: editData.phone,
+          email: editData.email,
+          password: editData.password,
+          profilePicture: editData.profilePicture || "",
+          lastLogin: editData.lastLogin || new Date(),
+          suspended: editData.suspended || "false",
+          fraud: editData.fraud || "false",
+        });
+  
+        if (editData.profilePicture !== "") {
+          try {
+            setPreviewUrl(editData.profilePicture); // Set the preview URL
+          } catch (error) {
+            console.error("Error fetching signed URL:", error);
+          }
+        }
       }
-    }
+    };
+  
+    fetchData(); 
+  
   }, [editData]);
+  
 
   return (
     <Box
@@ -253,25 +273,25 @@ function PropertyForm({ editData, setModeToDisplay }) {
                 alt="profile-picture"
               />
 
-{isUploading === true ? (
-                            <img
-                              className="ml-2 mt-2 h-8 w-7 absolute bottom-0 -right-6 "
-                              src={`${
-                                theme.palette.mode === "dark"
-                                  ? "/spinner-white.svg"
-                                  : "/spinner.svg"
-                              }`}
-                              alt="upload-spinner"
-                            />
-                          ) : <div
-                          onClick={handleDivClick}
-                          className="flex text-gray-400 hover:text-white absolute bottom-0 -right-12 items-end"
-                        >
-                          <MdEdit className="w-6 h-6  rounded-full  " />
-                          <span>Change</span>
-                        </div>}
-
-              
+              {isUploading === true ? (
+                <img
+                  className="ml-2 mt-2 h-8 w-7 absolute bottom-0 -right-6 "
+                  src={`${
+                    theme.palette.mode === "dark"
+                      ? "/spinner-white.svg"
+                      : "/spinner.svg"
+                  }`}
+                  alt="upload-spinner"
+                />
+              ) : (
+                <div
+                  onClick={handleDivClick}
+                  className="flex text-gray-400 hover:text-white absolute bottom-0 -right-12 items-end"
+                >
+                  <MdEdit className="w-6 h-6  rounded-full  " />
+                  <span>Change</span>
+                </div>
+              )}
 
               <input
                 type="file"
@@ -363,18 +383,60 @@ function PropertyForm({ editData, setModeToDisplay }) {
 
             <div className="mb-5">
               <label className="mb-3 block text-base font-medium">
-                Make user visible?
+                Mark user as fraud?
               </label>
               <div className="flex items-center space-x-6">
                 <div className="flex items-center">
                   <input
                     type="radio"
-                    name="enable"
+                    name="fraud"
+                    value={"true"}
+                    className="h-5 w-5"
+                    id="radioButton11"
+                    checked={addData.fraud === "true"}
+                    onChange={(e) => changeField("fraud", e.target.value)}
+                  />
+                  <label
+                    htmlFor="radioButton11"
+                    className="pl-3 text-base font-medium"
+                  >
+                    Yes
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    name="fraud"
+                    value={"false"}
+                    className="h-5 w-5"
+                    id="radioButton22"
+                    checked={addData.fraud === "false"}
+                    onChange={(e) => changeField("fraud", e.target.value)}
+                  />
+                  <label
+                    htmlFor="radioButton22"
+                    className="pl-3 text-base font-medium"
+                  >
+                    No
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-5">
+              <label className="mb-3 block text-base font-medium">
+                Suspend user account?
+              </label>
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    name="suspended"
                     value={"true"}
                     className="h-5 w-5"
                     id="radioButton1"
-                    checked={addData.visible === "true"}
-                    onChange={(e) => changeField("visible", e.target.value)}
+                    checked={addData.suspended === "true"}
+                    onChange={(e) => changeField("suspended", e.target.value)}
                   />
                   <label
                     htmlFor="radioButton1"
@@ -386,12 +448,12 @@ function PropertyForm({ editData, setModeToDisplay }) {
                 <div className="flex items-center">
                   <input
                     type="radio"
-                    name="enable"
+                    name="suspended"
                     value={"false"}
                     className="h-5 w-5"
                     id="radioButton2"
-                    checked={addData.visible === "false"}
-                    onChange={(e) => changeField("visible", e.target.value)}
+                    checked={addData.suspended === "false"}
+                    onChange={(e) => changeField("suspended", e.target.value)}
                   />
                   <label
                     htmlFor="radioButton2"
@@ -425,4 +487,4 @@ function PropertyForm({ editData, setModeToDisplay }) {
   );
 }
 
-export default PropertyForm;
+export default UserForm;

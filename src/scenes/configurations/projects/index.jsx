@@ -10,11 +10,16 @@ import "react-toastify/dist/ReactToastify.css";
 import Header from "../../../components/Header";
 import ProjectsForm from "../../../components/configurations/ProjectsForm";
 import {formatDate} from "../../../MyFunctions"
+import { jwtDecode } from "jwt-decode";
 
 
 function Index() {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
+
+  const [userId, setUserId] = useState("");
+  const [userToken, setUserToken] = useState("");
+
 
   const [mode, setMode] = useState("display");
   const [data, setData] = useState([]);
@@ -100,7 +105,11 @@ function Index() {
   const fetchProject = async (id) => {
     // Make the DELETE request
     await axios
-      .get(`http://localhost:3700/api/projects/fetchproject/${id}`)
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/projects/fetchproject/${id}?userId=${userId}`, {
+          headers: {
+            "auth-token" : userToken
+          },
+        })
       .then((response) => {
         if (response) {
           setEditData(response.data);
@@ -112,9 +121,13 @@ function Index() {
       });
   };
 
-  const fetchAllProjects = () => {
+  const fetchAllProjects = (userId, userToken) => {
     axios
-      .get("http://localhost:3700/api/projects/fetchallprojects")
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/projects/fetchallprojects?userId=${userId}`, {
+          headers: {
+            "auth-token" : userToken
+          },
+        })
       .then((response) => {
         setData(response.data);
       })
@@ -126,11 +139,15 @@ function Index() {
   const deleteProjectById = async (id) => {
     // Make the DELETE request
     await axios
-      .delete(`http://localhost:3700/api/projects/deleteproject/${id}`)
+      .delete(`${process.env.REACT_APP_BACKEND_URL}/api/projects/deleteproject/${id}?userId=${userId}`, {
+          headers: {
+            "auth-token" : userToken
+          },
+        })
       .then((response) => {
         if (response) {
-          toast("Project deleted!");
-          fetchAllProjects();
+          toast.success("Project deleted!");
+          fetchAllProjects(userId, userToken);
         }
       })
       .catch((error) => {
@@ -141,7 +158,18 @@ function Index() {
 
   // useeffecttt
   useEffect(() => {
-    fetchAllProjects();
+    try {
+      // getting userId and userToken
+      let token = localStorage.getItem("iProp-token");
+      if (token) {
+        const decoded = jwtDecode(token);
+        setUserId(decoded.userId);
+        setUserToken(token);
+        fetchAllProjects(decoded.userId, token);
+      }
+    } catch (error) {
+      console.log(error);
+    }
   }, []);
 
   const handleAddMore = () => {
@@ -150,7 +178,7 @@ function Index() {
 
   const handleCancel = () => {
     setMode("display");
-    fetchAllProjects();
+    fetchAllProjects(userId,userToken);
   };
 
   // Click handler for the edit button
@@ -172,8 +200,8 @@ function Index() {
       {/* HEADER */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header
-          title="Builders"
-          subtitle={mode === "add" ? "Add a Builder" : (mode === "edit" ? "Edit the builder details" : "Manage builders here")}
+          title="Projects"
+          subtitle={mode === "add" ? "Add a Project" : (mode === "edit" ? "Edit the project details" : "Manage projects here")}
         />
 
         <Box>
@@ -197,7 +225,7 @@ function Index() {
 
       {/* Render form or DataGrid based on mode */}
       {mode === "add" ? (
-        <ProjectsForm  />
+        <ProjectsForm  userId={userId} userToken = {userToken}/>
       ) : mode === "edit" ? (
         editData && (
           <Box
@@ -232,7 +260,7 @@ function Index() {
               },
             }}
           >
-            <ProjectsForm editData={editData} />{" "}
+            <ProjectsForm editData={editData} userId={userId} userToken = {userToken}/>{" "}
           </Box>
         )
       ) : (

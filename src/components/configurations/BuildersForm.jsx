@@ -5,13 +5,12 @@ import { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
-import {getNameList} from "../../MyFunctions";
-import {getUniqueItems} from "../../MyFunctions";
+import { getNameList } from "../../MyFunctions";
+import { getUniqueItems, sortArrayByName } from "../../MyFunctions";
 
-function BuildersForm({ editData }) {
+function BuildersForm({ editData, userId,userToken }) {
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
-
 
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -20,20 +19,24 @@ function BuildersForm({ editData }) {
     name: "",
     enable: "no",
     state: "",
-    city : "",
-    addedBy: "Unknown",
+    city: "",
+    addedBy: "admin",
   });
 
-  const fetchCitiesByState = (state) =>{
+  const fetchCitiesByState = (currentStateCode) => {
     axios
-      .get(`http://localhost:3700/api/city/fetchcitiesbystate/${state}`)
-      .then((response) => {
-        setCities(getUniqueItems(getNameList(response.data)));
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
-  }
+    .get(`https://api.countrystatecity.in/v1/countries/IN/states/${currentStateCode}/cities`,{
+      headers: {
+        'X-CSCAPI-KEY': process.env.REACT_APP_CSC_API,
+      }
+    })
+    .then((response) => {
+      setCities(sortArrayByName(response.data));
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+    });
+  };
 
   const changeName = (value) => {
     setAddData((prevData) => ({
@@ -55,8 +58,13 @@ function BuildersForm({ editData }) {
       state: value,
     }));
 
-    if(value && value.length > 0){
-      fetchCitiesByState(value);
+    if (value && value.length > 0) {
+      const selectedValue = value;
+      const item = states.find(state => state.name === selectedValue);
+      if (item) {
+        fetchCitiesByState(item.iso2);
+      }
+      
     }
   };
 
@@ -71,7 +79,14 @@ function BuildersForm({ editData }) {
     if (addData.name !== "" && addData.state !== "" && addData.city !== "") {
       if (editData) {
         axios
-          .put(`http://localhost:3700/api/builders/updatebuilder/${editData._id}`, addData)
+          .put(
+            `${process.env.REACT_APP_BACKEND_URL}/api/builders/updatebuilder/${editData._id}?userId=${userId}`,
+            addData, {
+              headers: {
+                "auth-token" : userToken
+              },
+            }
+          )
           .then((response) => {
             if (response) {
               toast("Builder updated!");
@@ -83,7 +98,11 @@ function BuildersForm({ editData }) {
           });
       } else {
         axios
-          .post("http://localhost:3700/api/builders/addbuilder", addData)
+          .post(`${process.env.REACT_APP_BACKEND_URL}/api/builders/addbuilder?userId=${userId}`, addData, {
+              headers: {
+                "auth-token" : userToken
+              },
+            })
           .then((response) => {
             if (response) {
               toast("Builder added!");
@@ -105,9 +124,13 @@ function BuildersForm({ editData }) {
 
   const fetchAllStates = () => {
     axios
-      .get("http://localhost:3700/api/state/fetchallstates")
+      .get(`https://api.countrystatecity.in/v1/countries/IN/states`, {
+        headers: {
+          "X-CSCAPI-KEY": process.env.REACT_APP_CSC_API,
+        },
+      })
       .then((response) => {
-        setStates(getUniqueItems(getNameList(response.data)));
+        setStates(sortArrayByName(response.data));
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -121,8 +144,8 @@ function BuildersForm({ editData }) {
       setAddData({
         name: editData.name,
         enable: editData.enable,
-        state: editData.state ,
-        city : editData.city ,
+        state: editData.state,
+        city: editData.city,
         addedBy: editData.addedBy,
       });
     }
@@ -180,32 +203,11 @@ function BuildersForm({ editData }) {
         <div className="w-full">
           <form>
             <div className="flex flex-col md:flex-row -mx-3">
-              <div className="w-full px-3 md:w-1/2">
-                <div className="mb-5">
-                  <label
-                    htmlFor="fName"
-                    className="mb-3 block text-base font-medium"
-                  >
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    id="name"
-                    value={addData.name}
-                    onChange={(e) => changeName(e.target.value)}
-                    placeholder="Name"
-                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                  />
-                </div>
-              </div>
-
               <div className="flex mx-3 flex-col w-full md:w-1/2 pr-5 pb-5">
-              <label className="text-lg font-medium">
-                  Choose a state:
-                </label>
+                <label className="text-lg font-medium">Select state:</label>
                 <input
                   list="states"
+                  autoComplete="off"
                   name="myState"
                   className="w-full  text-gray-600 mt-2 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                   placeholder="Select a state..."
@@ -215,22 +217,17 @@ function BuildersForm({ editData }) {
                 <datalist id="states">
                   {states.length > 0 &&
                     states.map((item, index) => (
-                      <option
-                        key={index}
-                        value={item}
-                      />
+                      <option key={index} value={item.name} />
                     ))}
                 </datalist>
               </div>
-            </div>
 
-            <div className="flex flex-col w-full md:w-1/2 pr-0 md:pr-5 pb-6">
-            <label className="text-lg font-medium">
-                  Choose a city:
-                </label>
+              <div className="w-full px-3 md:w-1/2 mb-4">
+                <label className="text-lg font-medium">Select city:</label>
                 <input
                   list="cities"
-                  disabled = {addData.state.length>0 ? false : true}
+                  autoComplete="off"
+                  disabled={addData.state.length > 0 ? false : true}
                   name="myCities"
                   className="w-full  text-gray-600 mt-2 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                   placeholder="Select a city..."
@@ -240,12 +237,32 @@ function BuildersForm({ editData }) {
                 <datalist id="cities">
                   {cities.length > 0 &&
                     cities.map((item, index) => (
-                      <option
-                        key={index}
-                        value={item}
-                      />
+                      <option key={index} value={item.name} /> 
                     ))}
                 </datalist>
+              </div>
+            </div>
+
+            <div className="flex flex-col md:flex-row -mx-3">
+            <div className="w-full px-3 md:w-1/2">
+              <div className="mb-5">
+                <label
+                  htmlFor="fName"
+                  className="mb-3 block text-base font-medium"
+                >
+                  Builder
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  id="name"
+                  value={addData.name}
+                  onChange={(e) => changeName(e.target.value)}
+                  placeholder="Builder"
+                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                />
+              </div>
+            </div>
             </div>
 
             <div className="mb-5">

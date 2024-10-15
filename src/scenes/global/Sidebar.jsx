@@ -17,6 +17,11 @@ import { TbInfoTriangleFilled } from "react-icons/tb";
 import { BsFillInfoSquareFill } from "react-icons/bs";
 import { MdLandscape } from "react-icons/md";
 import { FaUsers } from "react-icons/fa";
+import { IoDocumentLockSharp } from "react-icons/io5";
+
+import { FaLayerGroup } from "react-icons/fa";
+import { IoChatboxEllipsesSharp } from "react-icons/io5";
+import { TbMessageReportFilled } from "react-icons/tb";
 
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
@@ -45,7 +50,7 @@ const Sidebar = () => {
   return (
     <Box
       sx={{
-        position : "sticky",
+        position: "sticky",
         top: 0,
         height: "100vh",
 
@@ -113,7 +118,7 @@ const Sidebar = () => {
                   fontWeight="bold"
                   sx={{ m: "10px 0 0 0" }}
                 >
-                  Deepak Verma
+                  Aaditya Dagar
                 </Typography>
                 <Typography variant="h5" color={colors.greenAccent[500]}>
                   Admin
@@ -142,7 +147,7 @@ const Sidebar = () => {
                 General
               </Typography>
             )}
-             <Item
+            <Item
               title="Users"
               to="/users"
               icon={<FaUsers className="h-5 w-5" />}
@@ -158,6 +163,13 @@ const Sidebar = () => {
               setSelected={setSelected}
             />
 
+            <Item
+              title="Documents"
+              to="/documents"
+              icon={<IoDocumentLockSharp className="h-5 w-5" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
 
             {/* // heading...  */}
             {!isCollapsed && (
@@ -223,6 +235,36 @@ const Sidebar = () => {
               selected={selected}
               setSelected={setSelected}
             />
+
+
+
+<Item
+              title="Group Formation"
+              to="/groupFormation"
+              icon={<FaLayerGroup className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+
+<Item
+              title="Conversations"
+              to="/conversations"
+              icon={<IoChatboxEllipsesSharp className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+
+
+<Item
+              title="Reported Messages"
+              to="/reportedMessages"
+              icon={<TbMessageReportFilled className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
           </Box>
         </Menu>
       </ProSidebar>
