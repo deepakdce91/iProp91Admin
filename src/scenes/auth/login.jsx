@@ -28,7 +28,6 @@ function Login({changeLoginStatus}) {
             const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/api/admins/login?email=${email}&password=${password}`);
             
             if (response.data.success) {
-              console.log("Signup successful, token:", response.data.token);
               localStorage.setItem("iProp-token", response.data.token)
               toast.success("Logged In successfully! Welcome.")
               changeLoginStatus();

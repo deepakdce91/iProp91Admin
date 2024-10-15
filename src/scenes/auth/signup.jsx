@@ -34,7 +34,6 @@ function Signup({changeLoginStatus}) {
               );
 
               if (response.data.success) {
-                console.log("Signup successful, token:", response.data.token);
                 localStorage.setItem("iProp-token", response.data.token);
                 toast.success("Account created successfully! Welcome.");
                 changeLoginStatus();
