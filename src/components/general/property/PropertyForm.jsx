@@ -940,7 +940,6 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
               </button>
             </div>
           </form>
-          <ToastContainer position="top-center" autoClose={2000} />
         </div>
       </div>
     </Box>

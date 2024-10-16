@@ -37,7 +37,6 @@ import { ColorModeContext, useMode } from "./theme";
 import useAuthToken from "./hooks/useAuthToken";  // Custom hook for JWT token handling
 import useMetaTags from "./hooks/useMetaTags";    // Custom hook for meta tags
 
-import { io } from "socket.io-client";
 
 // Constants for routes
 const routes = {
