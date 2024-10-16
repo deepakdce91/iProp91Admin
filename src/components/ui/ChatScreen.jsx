@@ -101,8 +101,8 @@ function ChatScreen({userId, userToken}) {
                     setCurrentGroupData(item);
                   }}
                   key={`community-${index}`}
-                  className={`flex items-center mb-4 cursor-pointer hover:bg-gray-200 ${
-                    theme.palette.mode === "dark" ? "hover:bg-opacity-20" : null
+                  className={`flex items-center mb-4 cursor-pointer ${currentGroupData._id === item._id ? "bg-gray-200" : null } hover:bg-gray-200  ${
+                    theme.palette.mode === "dark" ? "bg-opacity-20 hover:bg-opacity-20" : null
                   } p-2 rounded-md`}
                 >
                   <div className="w-12 h-12 bg-gray-300 rounded-full mr-3">
