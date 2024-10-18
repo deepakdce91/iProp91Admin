@@ -10,8 +10,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 
 
-const defaultCommunityUrl = "https://img.freepik.com/premium-vector/teamwork-business-team-friendship-icon-social-group-organization-vector-conceptual-unusual-symbol-your-design_570429-33721.jpg"
-
+const defaultCommunityUrl = "/community-pfp.jpg"
 
 function ChatScreen({userId, userToken}) {
   const theme = useTheme();
@@ -20,6 +19,12 @@ function ChatScreen({userId, userToken}) {
   const [currentGroupData, setCurrentGroupData] = useState();
 
   const [isUsersListOpen, setIsUsersListOpen] = useState(false);
+
+  const isAdmin =(id, myObj) => {
+    const customers = myObj.customers;
+    const customer = customers.find((customer) => customer._id === id);
+    return customer ? customer.admin === "true" : false;
+  }
 
 
   const fetchAllCommunities = () => {
@@ -101,7 +106,7 @@ function ChatScreen({userId, userToken}) {
                     setCurrentGroupData(item);
                   }}
                   key={`community-${index}`}
-                  className={`flex items-center mb-4 cursor-pointer ${currentGroupData._id === item._id ? "bg-gray-200" : null } hover:bg-gray-200  ${
+                  className={`flex items-center mb-4 cursor-pointer ${currentGroupData && (currentGroupData._id === item._id ? "bg-gray-200" : null )} hover:bg-gray-200  ${
                     theme.palette.mode === "dark" ? "bg-opacity-20 hover:bg-opacity-20" : null
                   } p-2 rounded-md`}
                 >
@@ -156,7 +161,7 @@ function ChatScreen({userId, userToken}) {
             </header>
 
             {/* <!-- Chat Messages --> */}
-            {currentGroupData && <Chats communityId={currentGroupData._id} userId={userId} userToken = {userToken}/>}
+            {currentGroupData && <Chats isGroupAdmin={isAdmin(userId,currentGroupData)} communityId={currentGroupData._id} userId={userId} userToken = {userToken}/>}
             {!currentGroupData && (
               <div className="h-full w-full flex items-center justify-center">
                 <p className="text-lg mx-3">{`Select a community to see the messages.`}</p>
