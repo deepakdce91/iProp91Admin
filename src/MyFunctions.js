@@ -39,3 +39,28 @@ export function validateEmail(email) {
   }
 
 
+export async function handleDownload  (myUrl) {
+  const fileUrl = myUrl; // Replace with your file link
+  const response = await fetch(fileUrl);
+  
+  // Check if the response is successful
+  if (!response.ok) {
+    throw new Error('Network response was not ok');
+  }
+
+  const blob = await response.blob(); // Get the file as a Blob
+  const url = window.URL.createObjectURL(blob); // Create a Blob URL
+
+  const link = document.createElement('a'); // Create a link element
+  link.href = url;
+  
+  // Use the filename from user input or default to 'filename.pdf' if empty
+  link.setAttribute('download', "document"); 
+
+  // Append to the body and trigger the download
+  document.body.appendChild(link);
+  link.click();
+
+  // Clean up and remove the link
+  link.parentNode.removeChild(link);
+};

@@ -15,6 +15,7 @@ import { FaEye } from "react-icons/fa";
 
 import {formatDate} from "../../../MyFunctions"
 import { IoMdDownload } from "react-icons/io";
+import {handleDownload} from "../../../MyFunctions"
 
 // ------------------
 const EditSafe = ({ userId, userToken, safeId, fieldName, propertyId }) => {
@@ -24,32 +25,6 @@ const EditSafe = ({ userId, userToken, safeId, fieldName, propertyId }) => {
   const [arrWithUrl, setArrWithUrl] = useState([]);
 
   const [isUploading, setIsUploading] = useState(false);
-
-  const handleDownload = async (myUrl) => {
-    const fileUrl = myUrl; // Replace with your file link
-    const response = await fetch(fileUrl);
-    
-    // Check if the response is successful
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
-
-    const blob = await response.blob(); // Get the file as a Blob
-    const url = window.URL.createObjectURL(blob); // Create a Blob URL
-
-    const link = document.createElement('a'); // Create a link element
-    link.href = url;
-    
-    // Use the filename from user input or default to 'filename.pdf' if empty
-    link.setAttribute('download', "document"); 
-
-    // Append to the body and trigger the download
-    document.body.appendChild(link);
-    link.click();
-
-    // Clean up and remove the link
-    link.parentNode.removeChild(link);
-  };
 
   const fetchFieldData = async () => {
     await axios

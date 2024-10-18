@@ -69,6 +69,7 @@ function ChipComponentUsers({ preSelected, itemArray, updateSelectedArr }) {
         <div className='relative'>
           <input
             type="text"
+            autoComplete='off'
             className={`w-40 mr-3 my-2 text-sm py-2 px-2 rounded-sm ${theme.palette.mode === "dark" ? "bg-[#141B2D]" : "bg-white"} border-[1px] border-white`}
             placeholder={`Enter Name or Phone`}
             value={currentInputValue}

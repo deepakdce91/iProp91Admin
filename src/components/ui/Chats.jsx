@@ -211,6 +211,8 @@ const txtMessages = {
 };
 
 function IncomingMessage({
+  isGroupAdmin,
+  userId,
   _id,
   userProfilePicture,
   userName,
@@ -229,7 +231,7 @@ function IncomingMessage({
             src={
               userProfilePicture && userProfilePicture !== ""
                 ? userProfilePicture
-                : process.env.REACT_APP_DEFAULT_PROFILE_URL
+                : "/default-profile-pic.jpg"
             }
             alt="User Avatar"
             className="w-8 h-8 rounded-full"
@@ -311,7 +313,7 @@ function IncomingMessage({
                 }`}
               />
             </button>
-          </div>
+          </div> 
         </div>
       </div>
     </div>
@@ -319,12 +321,14 @@ function IncomingMessage({
 }
 
 function OutgoingMessage({
+  isGroupAdmin,
   _id,
   userProfilePicture,
   text,
   file,
   userId,
   removeMessage,
+  createdAt
 }) {
   const theme = useTheme();
 
@@ -334,6 +338,7 @@ function OutgoingMessage({
         {userId.includes("IPA") === true ? "Admin" : "You"}
       </p>
       <div className="flex justify-end">
+        <p>{createdAt}</p>
         <div className="flex relative items-center max-w-96 bg-indigo-500 text-white rounded-lg p-3 gap-3">
           <div className="absolute -left-[68px] flex flex-row-reverse">
             <button
@@ -364,7 +369,7 @@ function OutgoingMessage({
                 }`}
               />
             </button>
-          </div>
+          </div> 
 
           {file ? (
             checkFileType(file) === "image" ? (
@@ -426,13 +431,13 @@ function OutgoingMessage({
 
 // -----------------------------------------------------------
 
-function Chats({ communityId, userId, userToken }) {
+function Chats({ communityId, userId = "IPP0001", userToken ,isGroupAdmin }) {
   // users/fetchuser/:id
 
   const fileInputRef = useRef(null);
   const theme = useTheme();
 
-  const [messages, setMessages] = useState(txtMessages);
+  const [messages, setMessages] = useState({});
 
   const [textMessage, setTextMessage] = useState("");
   const [showPicker, setShowPicker] = useState(false);
@@ -470,6 +475,7 @@ function Chats({ communityId, userId, userToken }) {
   };
 
   useEffect(() => {
+    console.log("isadmin - ", isGroupAdmin);
     socket.emit('joinCommunity', communityId);
 
     socket.on('existingMessages', (existingMessages) => {
@@ -619,7 +625,7 @@ function Chats({ communityId, userId, userToken }) {
     }
   };
 
-  const fetchLoggedInUserDetails = () => {};
+
   return (
     <>
       <ScrollToBottom className="h-screen overflow-y-auto px-4 ">
@@ -630,6 +636,8 @@ function Chats({ communityId, userId, userToken }) {
                 {msg.userId === userId ? (
                   msg.file ? (
                     <OutgoingMessage
+                    createdAt = {msg.createdAt}
+                    isGroupAdmin={isGroupAdmin}
                       _id={msg._id}
                       userProfilePicture={msg.userProfilePicture}
                       userId={userId}
@@ -638,6 +646,8 @@ function Chats({ communityId, userId, userToken }) {
                     />
                   ) : (
                     <OutgoingMessage
+                    createdAt = {msg.createdAt}
+                    isGroupAdmin={isGroupAdmin}
                       _id={msg._id}
                       userId={userId}
                       userProfilePicture={msg.userProfilePicture}
@@ -647,6 +657,9 @@ function Chats({ communityId, userId, userToken }) {
                   )
                 ) : msg.file ? (
                   <IncomingMessage
+                  createdAt = {msg.createdAt}
+                  userId={userId}
+                  isGroupAdmin={isGroupAdmin}
                     _id={msg._id}
                     userProfilePicture={msg.userProfilePicture}
                     userName={msg.userName}
@@ -655,6 +668,9 @@ function Chats({ communityId, userId, userToken }) {
                   />
                 ) : (
                   <IncomingMessage
+                  createdAt = {msg.createdAt}
+                  userId={userId}
+                  isGroupAdmin={isGroupAdmin}
                     _id={msg._id}
                     userProfilePicture={msg.userProfilePicture}
                     userName={msg.userName}

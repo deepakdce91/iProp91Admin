@@ -31,7 +31,7 @@ function GroupFormationForm({ editData, setModeToDisplay, userToken, userId }) {
   const [builders, setBuilders] = useState([]);
   const [projects, setProjects] = useState([]);
 
-  const [uploadFile, setUploadFile] = useState("");
+  const [uploadFile, setUploadFile] = useState();
   const [isUploading, setIsUploading] = useState(false);
   const [fileAddedForUpload, setFileAddedForUpload] = useState(false);
 
@@ -276,15 +276,14 @@ function GroupFormationForm({ editData, setModeToDisplay, userToken, userId }) {
   }
 
   const handleSubmit = () => {
-    if (addData.thumbnail.length === 0) {
-      toast.error("Upload files before submitting form.");
+    if (uploadFile) {
+      toast.error("Upload thumbnail file before submitting form.");
     } else {
       if (
         addData.name !== "" &&
         addData.state !== "" &&
         addData.city !== "" &&
         addData.builder !== "" &&
-        addData.thumbnail !== "" &&
         addData.customers.length !== 0 &&
         addData.projects.length !== 0 
       ) {
