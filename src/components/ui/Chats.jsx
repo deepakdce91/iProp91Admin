@@ -1,7 +1,10 @@
-import React, { useRef,useEffect, useState } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { useTheme } from "@mui/material";
 
-import io from 'socket.io-client';
+import io from "socket.io-client";
+
+import { format } from "date-fns";
+import { getDate, getTime } from "../../MyFunctions";
 
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -28,7 +31,6 @@ import { FaSmile } from "react-icons/fa";
 import { FaFileAlt } from "react-icons/fa";
 
 import { GrFlagFill, GrFlag } from "react-icons/gr";
-import { TbMessageReportFilled } from "react-icons/tb";
 import { MdDelete } from "react-icons/md";
 
 import { TbPaperclip } from "react-icons/tb";
@@ -37,7 +39,9 @@ import { GrDocumentWord } from "react-icons/gr";
 import { GrDocumentExcel } from "react-icons/gr";
 import { FaRegFilePowerpoint } from "react-icons/fa";
 
-const socket = io(process.env.REACT_APP_BACKEND_URL, {transportOptions : ["websocket"]}); 
+const socket = io(process.env.REACT_APP_BACKEND_URL, {
+  transportOptions: ["websocket"],
+});
 
 function isValidURL(text) {
   const urlPattern = new RegExp(
@@ -119,114 +123,28 @@ function hasWordExtension(filename) {
   );
 }
 
-const txtMessages = {
-  communityId: "670c2ec525a1a478846a540c",
-
-  messages: [
-    {
-      _id: "hjbdcjksdvsvsd",
-      text: "Hello, how's everyone doing?",
-      userId: "user_123",
-      userName: "John Doe",
-      userProfilePicture:
-        "https://cdn.pixabay.com/photo/2019/08/11/18/59/icon-4399701_1280.png",
-      flag: "false",
-      createdAt: "2024-10-14T10:00:00.000Z",
-      updatedAt: "2024-10-14T10:05:00.000Z",
-    },
-    {
-      _id: "hjbdcrrggvsvsd",
-      userId: "IPA003",
-      userProfilePicture:
-        "https://cdn.vectorstock.com/i/500p/17/61/male-avatar-profile-picture-vector-10211761.jpg",
-
-      userName: "Jane Smith",
-      flag: "true",
-      file: {
-        name: "a photo",
-        type: "jpg",
-        url: "https://cdn.vectorstock.com/i/500p/17/61/male-avatar-profile-picture-vector-10211761.jpg",
-      },
-      createdAt: "2024-10-14T10:06:00.000Z",
-      updatedAt: "2024-10-14T10:07:00.000Z",
-    },
-    {
-      _id: "hjbdcrrggvsvsd",
-      userId: "IPA003",
-      userProfilePicture:
-        "https://cdn.vectorstock.com/i/500p/17/61/male-avatar-profile-picture-vector-10211761.jpg",
-
-      userName: "Jane Smith",
-      flag: "true",
-      file: {
-        name: "rich dad poor dad hindi",
-        type: "pdf",
-        url: "https://shipmin.gov.in/sites/default/files/instapdf.in-rich-dad-poor-dad-hindi-696.pdf",
-      },
-      createdAt: "2024-10-14T10:06:00.000Z",
-      updatedAt: "2024-10-14T10:07:00.000Z",
-    },
-
-    {
-      _id: "hjbdcrrggvsvsd",
-      userId: "IPA003",
-      userProfilePicture:
-        "https://cdn.vectorstock.com/i/500p/17/61/male-avatar-profile-picture-vector-10211761.jpg",
-
-      userName: "Jane Smith",
-      flag: "true",
-      file: {
-        type: "mp4",
-        name: "rera video",
-        url: "https://mwsiclqblrbxyioropji.supabase.co/storage/v1/s3/iprop-property-documents/documentsSafe/IPS00001/reraApproval/rera-approval.mp4?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=afa1381155fff83976f566402755138a%2F20241015%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20241015T185537Z&X-Amz-Expires=3600&X-Amz-Signature=084138501681c20de9f0ef533bf08fc3a9d288fcac284dad861be153e5cb7428&X-Amz-SignedHeaders=host&response-content-disposition=inline&x-id=GetObject",
-      },
-      createdAt: "2024-10-14T10:06:00.000Z",
-      updatedAt: "2024-10-14T10:07:00.000Z",
-    },
-    {
-      _id: "jbdcwwwwdvsvsd",
-      text: "The progress is just great!",
-      userId: "IPA003",
-      userProfilePicture:
-        "https://cdn.vectorstock.com/i/500p/17/61/male-avatar-profile-picture-vector-10211761.jpg",
-      userName: "Jane Smith",
-      flag: "true",
-      createdAt: "2024-10-14T10:06:00.000Z",
-      updatedAt: "2024-10-14T10:07:00.000Z",
-    },
-    {
-      _id: "jbdcwwwdawdvsvsd",
-      text: "https://youtu.be/PT2_F-1esPk?si=Pn-7Y_YzyM1Mwafn",
-      userId: "IPA003",
-      userProfilePicture:
-        "https://cdn.vectorstock.com/i/500p/17/61/male-avatar-profile-picture-vector-10211761.jpg",
-      userName: "Jane Smith",
-      flag: "true",
-      createdAt: "2024-10-14T10:06:00.000Z",
-      updatedAt: "2024-10-14T10:07:00.000Z",
-    },
-  ],
-  createdAt: "2024-10-14T09:55:00.000Z",
-  updatedAt: "2024-10-14T10:07:00.000Z",
-};
-
 function IncomingMessage({
-  isGroupAdmin,
   userId,
   _id,
+  flag,
   userProfilePicture,
   userName,
   text,
   file,
+  senderId,
   removeMessage,
+  flagMessage,
+  unflagMessage,
+  createdAt,
+  isGroupAdmin,
 }) {
   const theme = useTheme();
 
   return (
-    <div className="flex flex-col my-4 cursor-pointer group">
+    <div className="flex flex-col my-5 cursor-pointer group">
       <p className="ml-12 mb-1">{userName}</p>
       <div className="flex">
-        <div className="w-9 h-9 rounded-full flex items-center justify-center mr-2">
+        <div className="w-9 h-9 relative rounded-full flex items-center justify-center mr-2">
           <img
             src={
               userProfilePicture && userProfilePicture !== ""
@@ -236,84 +154,133 @@ function IncomingMessage({
             alt="User Avatar"
             className="w-8 h-8 rounded-full"
           />
+          {isGroupAdmin === true ? (
+            <img
+              src="/star-badge.svg"
+              alt="admin-badge"
+              className="absolute text-yellow-500  right-0 -top-1 z-20 w-5 h-5"
+            />
+          ) : null}
         </div>
-        <div
-          className={`relative flex max-w-96 items-center ${
-            theme.palette.mode === "dark" ? "bg-gray-100 text-gray-700" : "bg-gray-200 text-gray-700"
-          } rounded-lg p-3 gap-3`}
-        >
-          {file ? (
-            checkFileType(file) === "image" ? (
-              <Image
-                className="w-48"
-                src={file.url}
-                alt="Image"
-                width="250"
-                preview
-              />
-            ) : checkFileType(file) === "video" ? (
-              <video src={file.url} className=" w-56" controls />
-            ) : (
-              <div className="flex items-center">
-                {file.type.includes("pdf") ? (
-                  <FaRegFilePdf className="w-8 h-8 mr-3" />
-                ) : hasWordExtension(file.type) ? (
-                  <GrDocumentWord className="w-8 h-8 mr-3" />
-                ) : hasExcelExtension(file.type) ? (
-                  <GrDocumentExcel className="w-8 h-8 mr-3" />
-                ) : hasPowerPointExtension(file.type) ? (
-                  <FaRegFilePowerpoint className="w-8 h-8 mr-3" />
-                ) : (
-                  <FaFileAlt className="w-8 h-8 mr-3" />
-                )}
+        <div className="flex flex-col items-start">
+          <div
+            className={`relative flex max-w-96 items-center ${
+              theme.palette.mode === "dark"
+                ? "bg-gray-100 text-gray-700"
+                : "bg-gray-200 text-gray-700"
+            } rounded-lg p-3 gap-3`}
+          >
+            {file ? (
+              checkFileType(file) === "image" ? (
+                <Image
+                  className="w-48"
+                  src={file.url}
+                  alt="Image"
+                  width="250"
+                  preview
+                />
+              ) : checkFileType(file) === "video" ? (
+                <video src={file.url} className=" w-56" controls />
+              ) : (
+                <div className="flex items-center">
+                  {file.type.includes("pdf") ? (
+                    <FaRegFilePdf className="w-8 h-8 mr-3" />
+                  ) : hasWordExtension(file.type) ? (
+                    <GrDocumentWord className="w-8 h-8 mr-3" />
+                  ) : hasExcelExtension(file.type) ? (
+                    <GrDocumentExcel className="w-8 h-8 mr-3" />
+                  ) : hasPowerPointExtension(file.type) ? (
+                    <FaRegFilePowerpoint className="w-8 h-8 mr-3" />
+                  ) : (
+                    <FaFileAlt className="w-8 h-8 mr-3" />
+                  )}
 
-                <a className="hover:underline" target="_blank" href={file.url}>
-                  {file.name}
+                  <a
+                    className="hover:underline text-[16px]"
+                    target="_blank"
+                    href={file.url}
+                  >
+                    {file.name}
+                  </a>
+                </div>
+              )
+            ) : isValidURL(text) ? (
+              text.includes("youtu") ? (
+                <ReactPlayer controls url={text} />
+              ) : (
+                <a
+                  className="underline text-[16px]"
+                  href={text}
+                  target="_blank"
+                >
+                  {text}
                 </a>
-              </div>
-            )
-          ) : isValidURL(text) ? (
-            text.includes("youtu") ? (
-              <ReactPlayer  controls url={text} />
+              )
             ) : (
-              <a className="underline" href={text} target="_blank">
-                {text}
-              </a>
-            )
-          ) : (
-            <p className="text-gray-700">{text}</p>
-          )}
+              <p className="text-gray-700 text-[16px]">{text}</p>
+            )}
 
-          <div className={`absolute -right-[68px] flex`}>
-            <button
-              onClick={() => {
-                console.log("flag pressed", _id);
-              }}
-            >
-              <GrFlag
-                className={`rounded-full py-2  h-8 my-2 w-8 p-1  group-hover:block hidden  ${
-                  theme.palette.mode === "dark"
-                    ? " text-gray-300 hover:bg-gray-600"
-                    : "text-gray-700 hover:bg-gray-200"
-                }`}
-              />
-            </button>
+            <div className={`absolute -right-[68px] flex`}>
+              {flag === "false" ? (
+                <button
+                  onClick={() => {
+                    const message = text
+                    ? text
+                    : `Media file with with link - ${
+                        file ? file.url : ""
+                      } [ message id : ${_id} ]`;
+                    const messageBy = senderId;
+                    const messageId = _id;
 
-            <button
-              onClick={() => {
-                removeMessage(_id);
-                console.log("delete pressed", _id);
-              }}
-            >
-              <MdDelete
-                className={`rounded-full py-2 hover:text-red-400  h-8 my-2 w-8 p-1  group-hover:block hidden  ${
-                  theme.palette.mode === "dark"
-                    ? " text-gray-300 hover:bg-gray-600"
-                    : "text-gray-700 hover:bg-gray-200"
-                }`}
-              />
-            </button>
-          </div> 
+                    flagMessage(messageId, message, messageBy);
+                  }}
+                >
+                  <GrFlag
+                    className={`rounded-full py-2  h-8 my-2 w-8 p-1  group-hover:block hidden  ${
+                      theme.palette.mode === "dark"
+                        ? " text-gray-300 hover:bg-gray-600"
+                        : "text-gray-700 hover:bg-gray-200"
+                    }`}
+                  />
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    unflagMessage(_id);
+                  }}
+                >
+                  <GrFlagFill
+                    className={`rounded-full py-2  h-8 my-2 w-8 p-1  group-hover:block hidden  ${
+                      theme.palette.mode === "dark"
+                        ? " text-gray-300 hover:bg-gray-600"
+                        : "text-gray-700 hover:bg-gray-200"
+                    }`}
+                  />
+                </button>
+              )}
+
+              <button
+                onClick={() => {
+                  removeMessage(_id, userId);
+                }}
+              >
+                <MdDelete
+                  className={`rounded-full py-2 hover:text-red-400  h-8 my-2 w-8 p-1  group-hover:block hidden  ${
+                    theme.palette.mode === "dark"
+                      ? " text-gray-300 hover:bg-gray-600"
+                      : "text-gray-700 hover:bg-gray-200"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+          <p
+            className={`text-[12px] font-extralight ${
+              theme.palette.mode === "dark" ? "text-gray-300" : "text-gray-500"
+            }`}
+          >
+            {getTime(createdAt)}
+          </p>
         </div>
       </div>
     </div>
@@ -321,99 +288,143 @@ function IncomingMessage({
 }
 
 function OutgoingMessage({
-  isGroupAdmin,
   _id,
+  flag,
   userProfilePicture,
   text,
   file,
   userId,
   removeMessage,
-  createdAt
+  flagMessage,
+  senderId,
+  unflagMessage,
+  createdAt,
+  isGroupAdmin,
 }) {
   const theme = useTheme();
 
   return (
-    <div className="flex flex-col  mb-4 cursor-pointer group items-end">
+    <div className="flex flex-col   mb-5 cursor-pointer group items-end">
       <p className="mr-12 mb-1">
         {userId.includes("IPA") === true ? "Admin" : "You"}
       </p>
-      <div className="flex justify-end">
-        <p>{createdAt}</p>
-        <div className="flex relative items-center max-w-96 bg-indigo-500 text-white rounded-lg p-3 gap-3">
-          <div className="absolute -left-[68px] flex flex-row-reverse">
-            <button
-              onClick={() => {
-                console.log("flag pressed", _id);
-              }}
-            >
-              <GrFlag
-                className={`rounded-full py-2  h-8 my-2 w-8 p-1  group-hover:block hidden  ${
-                  theme.palette.mode === "dark"
-                    ? " text-gray-300 hover:bg-gray-600"
-                    : "text-gray-700 hover:bg-gray-200"
-                }`}
-              />
-            </button>
+      <div className="flex justify-end ">
+        <div className="flex flex-col items-end">
+          <div className="flex relative items-center max-w-96 bg-indigo-500 text-white rounded-lg p-3 gap-3">
+            <div className="absolute -left-[68px] flex flex-row-reverse">
+              {flag === "false" ? (
+                <button
+                  onClick={() => {
+                    const message = text
+                      ? text
+                      : `Media file with with link - ${
+                          file ? file.url : ""
+                        } [ message id : ${_id} ]`;
+                    const messageBy = senderId;
+                    const messageId = _id;
 
-            <button
-              onClick={() => {
-                console.log("delete pressed", _id);
-                removeMessage(_id);
-              }}
-            >
-              <MdDelete
-                className={`rounded-full py-2 hover:text-red-400  h-8 my-2 w-8 p-1  group-hover:block hidden  ${
-                  theme.palette.mode === "dark"
-                    ? " text-gray-300 hover:bg-gray-600"
-                    : "text-gray-700 hover:bg-gray-200"
-                }`}
-              />
-            </button>
-          </div> 
+                    flagMessage(messageId, message, messageBy);
+                  }}
+                >
+                  <GrFlag
+                    className={`rounded-full py-2  h-8 my-2 w-8 p-1  group-hover:block hidden  ${
+                      theme.palette.mode === "dark"
+                        ? " text-gray-300 hover:bg-gray-600"
+                        : "text-gray-700 hover:bg-gray-200"
+                    }`}
+                  />
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    unflagMessage(_id);
+                  }}
+                >
+                  <GrFlagFill
+                    className={`rounded-full py-2  h-8 my-2 w-8 p-1  group-hover:block hidden  ${
+                      theme.palette.mode === "dark"
+                        ? " text-gray-300 hover:bg-gray-600"
+                        : "text-gray-700 hover:bg-gray-200"
+                    }`}
+                  />
+                </button>
+              )}
 
-          {file ? (
-            checkFileType(file) === "image" ? (
-              <Image
-                className="w-48"
-                src={file.url}
-                alt="Image"
-                width="250"
-                preview
-              />
-            ) : checkFileType(file) === "video" ? (
-              <video src={file.url} className=" w-56" controls />
-            ) : (
-              <div className="flex items-center">
-                {file.type.includes("pdf") ? (
-                  <FaRegFilePdf className="w-8 h-8 mr-3" />
-                ) : hasWordExtension(file.type) ? (
-                  <GrDocumentWord className="w-8 h-8 mr-3" />
-                ) : hasExcelExtension(file.type) ? (
-                  <GrDocumentExcel className="w-8 h-8 mr-3" />
-                ) : hasPowerPointExtension(file.type) ? (
-                  <FaRegFilePowerpoint className="w-8 h-8 mr-3" />
-                ) : (
-                  <FaFileAlt className="w-8 h-8 mr-3" />
-                )}
+              <button
+                onClick={() => {
+                  removeMessage(_id, userId);
+                }}
+              >
+                <MdDelete
+                  className={`rounded-full py-2 hover:text-red-400  h-8 my-2 w-8 p-1  group-hover:block hidden  ${
+                    theme.palette.mode === "dark"
+                      ? " text-gray-300 hover:bg-gray-600"
+                      : "text-gray-700 hover:bg-gray-200"
+                  }`}
+                />
+              </button>
+            </div>
 
-                <a className="hover:underline" target="_blank" href={file.url}>
-                  {file.name}
+            {file ? (
+              checkFileType(file) === "image" ? (
+                <Image
+                  className="w-48"
+                  src={file.url}
+                  alt="Image"
+                  width="250"
+                  preview
+                />
+              ) : checkFileType(file) === "video" ? (
+                <video src={file.url} className=" w-56" controls />
+              ) : (
+                <div className="flex items-center">
+                  {file.type.includes("pdf") ? (
+                    <FaRegFilePdf className="w-8 h-8 mr-3" />
+                  ) : hasWordExtension(file.type) ? (
+                    <GrDocumentWord className="w-8 h-8 mr-3" />
+                  ) : hasExcelExtension(file.type) ? (
+                    <GrDocumentExcel className="w-8 h-8 mr-3" />
+                  ) : hasPowerPointExtension(file.type) ? (
+                    <FaRegFilePowerpoint className="w-8 h-8 mr-3" />
+                  ) : (
+                    <FaFileAlt className="w-8 h-8 mr-3" />
+                  )}
+
+                  <a
+                    className="hover:underline text-[16px]"
+                    target="_blank"
+                    href={file.url}
+                  >
+                    {file.name}
+                  </a>
+                </div>
+              )
+            ) : isValidURL(text) ? (
+              text.includes("youtu") ? (
+                <ReactPlayer controls url={text} />
+              ) : (
+                <a
+                  className="underline text-[16px]"
+                  href={text}
+                  target="_blank"
+                >
+                  {text}
                 </a>
-              </div>
-            )
-          ) : isValidURL(text) ? (
-            text.includes("youtu") ? (
-              <ReactPlayer  controls url={text} />
+              )
             ) : (
-              <a className="underline" href={text} target="_blank">
-                {text}
-              </a>
-            )
-          ) : (
-            <p className="text-gray-100">{text}</p>
-          )}
+              <p className="text-gray-100 text-[16px]">{text}</p>
+            )}
+          </div>
+          <p
+            className={` text-[12px] font-extralight ${
+              theme.palette.mode === "dark" ? "text-gray-300" : "text-gray-500"
+            }`}
+          >
+            {getTime(createdAt)}
+          </p>
         </div>
-        <div className="w-9 h-9 rounded-full flex items-center justify-center ml-2">
+
+        <div className="w-9 h-9 relative rounded-full flex items-center justify-center ml-2">
           <img
             src={
               userProfilePicture && userProfilePicture !== ""
@@ -423,6 +434,13 @@ function OutgoingMessage({
             alt="My Avatar"
             className="w-8 h-8 rounded-full"
           />
+          {isGroupAdmin === true ? (
+            <img
+              src="/star-badge.svg"
+              alt="admin-badge"
+              className="absolute text-yellow-500  right-0 -top-1 z-20 w-5 h-5"
+            />
+          ) : null}
         </div>
       </div>
     </div>
@@ -431,18 +449,52 @@ function OutgoingMessage({
 
 // -----------------------------------------------------------
 
-function Chats({ communityId, userId = "IPP0001", userToken ,isGroupAdmin }) {
+function Chats({
+  communityId,
+  userId = "IPP0001",
+  userToken,
+  currentGroupDetails,
+}) {
   // users/fetchuser/:id
+
+  let lastMessageDate = null;
 
   const fileInputRef = useRef(null);
   const theme = useTheme();
 
-  const [messages, setMessages] = useState({});
+  const [messages, setMessages] = useState([]);
 
   const [textMessage, setTextMessage] = useState("");
   const [showPicker, setShowPicker] = useState(false);
 
   const [fileToUpload, setFileToUpload] = useState();
+
+  const [filteredMessages, setFilteredMessages] = useState([]);
+  // for message filtering
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    if (!(searchTerm.trim() === "")) {
+      // Function to filter messages based on the search term
+      const myFilteredMessages = messages.messages.filter((message) => {
+        if (message.text) {
+          return message.text.toLowerCase().includes(searchTerm.toLowerCase());
+        } else if (message.file) {
+          return message.file.url.includes(searchTerm.toLowerCase());
+        }
+      });
+      setFilteredMessages((prevData) => ({
+        ...prevData,
+        messages: myFilteredMessages,
+      }));
+    } else {
+      setFilteredMessages(messages);
+    }
+  }, [searchTerm, messages]);
+
+  const isBlank = (input) => {
+    return !input || input.trim().length === 0;
+  };
 
   const getPublicUrlFromSupabase = (path) => {
     const { data, error } = supabase.storage
@@ -475,48 +527,98 @@ function Chats({ communityId, userId = "IPP0001", userToken ,isGroupAdmin }) {
   };
 
   useEffect(() => {
-    console.log("isadmin - ", isGroupAdmin);
-    socket.emit('joinCommunity', communityId);
+    socket.emit("joinCommunity", { communityId, userId, userToken });
 
-    socket.on('existingMessages', (existingMessages) => {
+    socket.on(`existingMessages-${communityId}`, (existingMessages) => {
       setMessages(existingMessages);
     });
 
-    socket.on('newMessage', (data) => {
-
-        if(data.communityId === communityId){
-            setMessages((prev) => ({
-                ...prev,
-                messages: [...prev.messages, data.message],
-              }));
-        }
-    
-        
-
+    socket.on(`newMessage-${communityId}`, (data) => {
+      if (data.communityId === communityId) {
+        setMessages((prev) => ({
+          ...prev,
+          messages: [...prev.messages, data.message],
+        }));
+      }
     });
 
-    socket.on('messageDeleted', (messageId) => {
-        setMessages((prev) => ({
-            ...prev,
-            messages: prev.messages.filter(message => message._id !== messageId),
-          }));
+    socket.on(`messageDeleted-${communityId}`, (messageId) => {
+      setMessages((prev) => ({
+        ...prev,
+        messages: prev.messages.filter((message) => message._id !== messageId),
+      }));
+    });
 
+    // Listen for flagging events
+    socket.on(`messageFlagged-${communityId}`, (data) => {
+      const { messageId, flag } = data;
+      toast("Message flagged!");
+      setMessages((prevObj) => ({
+        ...prevObj,
+        messages: prevObj.messages.map((message) =>
+          message._id === messageId ? { ...message, flag: flag } : message
+        ),
+      }));
+    });
 
+    // Listen for unflagging events
+    socket.on(`messageUnflagged-${communityId}`, (data) => {
+      const { messageId, flag } = data;
+      toast("Message unflagged!");
+      setMessages((prevObj) => ({
+        ...prevObj,
+        messages: prevObj.messages.map((message) =>
+          message._id === messageId ? { ...message, flag: flag } : message
+        ),
+      }));
+    });
+
+    // Listen for 'errorMessage' event
+    socket.on(`errorMessage-${communityId}`, (data) => {
+      toast.error(data.error);
     });
 
     return () => {
-      socket.off('existingMessages');
-      socket.off('newMessage');
-      socket.off('messageDeleted');
+      socket.off(`existingMessages-${communityId}`);
+      socket.off(`newMessage-${communityId}`);
+      socket.off(`messageDeleted-${communityId}`);
+      socket.off(`messageFlagged-${communityId}`);
+      socket.off(`messageUnflagged-${communityId}`);
+      socket.off(`errorMessage-${communityId}`);
     };
   }, [communityId]);
 
-  const handleSendMessage = (messageObj) => {
-      socket.emit('sendMessage', { communityId, message: messageObj });
+  const handleSendMessage = (messageObj, userId, userToken) => {
+    socket.emit("sendMessage", {
+      communityId,
+      message: messageObj,
+      userId,
+      userToken,
+    });
   };
 
-  const handleDeleteMessage = (communityId, messageId) => {
-    socket.emit('deleteMessage', {communityId, messageId});
+  const handleDeleteMessage = (communityId, messageId, userId, userToken) => {
+    socket.emit("deleteMessage", { communityId, messageId, userId, userToken });
+  };
+
+  const handleFlagMessage = (
+    communityId,
+    messageId,
+    userId,
+    userToken,
+    reportData
+  ) => {
+    socket.emit("flagMessage", {
+      communityId,
+      messageId,
+      userId,
+      userToken,
+      reportData,
+    });
+  };
+
+  const handleUnflagMessage = (communityId, messageId, userId, userToken) => {
+    socket.emit("unflagMessage", { communityId, messageId, userId, userToken });
   };
 
   const handleButtonClick = () => {
@@ -570,7 +672,6 @@ function Chats({ communityId, userId = "IPP0001", userToken ,isGroupAdmin }) {
         let publicUrl = getPublicUrlFromSupabase(cloudFilePath);
         if (publicUrl) {
           const msgObj = {
-            _id: `id`,
             userId,
             userProfilePicture: "/admin-avatar.jpg", /// try catch
             file: {
@@ -581,9 +682,9 @@ function Chats({ communityId, userId = "IPP0001", userToken ,isGroupAdmin }) {
             userName: "Admin",
           };
 
-          handleSendMessage(msgObj);
-
-          setFileToUpload();
+          handleSendMessage(msgObj, userId, userToken);
+      setTextMessage("");
+      setFileToUpload();
         }
       }
     } catch (error) {
@@ -593,21 +694,37 @@ function Chats({ communityId, userId = "IPP0001", userToken ,isGroupAdmin }) {
   };
 
   const addMessage = () => {
-    const msgObj = {
-      _id: `${textMessage}-id`,
-      text: textMessage,
-      userId,
-      userProfilePicture: "/admin-avatar.jpg",
-      userName: "Admin",
-    };
-
-    handleSendMessage(msgObj);
-
-    setTextMessage("");
+    if (!isBlank(textMessage)) {
+      const msgObj = {
+        text: textMessage,
+        userId,
+        userProfilePicture: "/admin-avatar.jpg",
+        userName: "Admin",
+      };
+      handleSendMessage(msgObj, userId, userToken);
+      setTextMessage("");
+    }
   };
 
   const removeMessage = (messageId) => {
-    handleDeleteMessage(communityId, messageId);
+    handleDeleteMessage(communityId, messageId, userId, userToken);
+  };
+
+  const flagMessage = (messageId, message, messageBy) => {
+    const reportData = {
+      groupName: currentGroupDetails.name,
+      reportedBy: userId,
+      message,
+      messageId,
+      messageBy,
+      groupId : communityId
+    };
+
+    handleFlagMessage(communityId, messageId, userId, userToken, reportData);
+  };
+
+  const unflagMessage = (messageId) => {
+    handleUnflagMessage(communityId, messageId, userId, userToken);
   };
 
   const onEmojiClick = (emojiObject) => {
@@ -625,57 +742,117 @@ function Chats({ communityId, userId = "IPP0001", userToken ,isGroupAdmin }) {
     }
   };
 
+  const isAdmin = (id, myObj) => {
+    const customers = myObj.customers;
+    const customer = customers.find((customer) => customer._id === id);
+    return customer ? customer.admin === "true" : false;
+  };
 
   return (
     <>
+      <div className="flex px-4 py-3 mt-2 rounded-md border-[1px] border-gray-200 overflow-hidden max-w-md mx-auto font-[sans-serif]">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 192.904 192.904"
+          width="16px"
+          className="fill-white mr-3 rotate-90"
+        >
+          <path d="m190.707 180.101-47.078-47.077c11.702-14.072 18.752-32.142 18.752-51.831C162.381 36.423 125.959 0 81.191 0 36.422 0 0 36.423 0 81.193c0 44.767 36.422 81.187 81.191 81.187 19.688 0 37.759-7.049 51.831-18.751l47.079 47.078a7.474 7.474 0 0 0 5.303 2.197 7.498 7.498 0 0 0 5.303-12.803zM15 81.193C15 44.694 44.693 15 81.191 15c36.497 0 66.189 29.694 66.189 66.193 0 36.496-29.692 66.187-66.189 66.187C44.693 147.38 15 117.689 15 81.193z"></path>
+        </svg>
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+          }}
+          placeholder="Search"
+          className="w-full outline-none bg-transparent text-gray-100 text-sm"
+        />
+      </div>
       <ScrollToBottom className="h-screen overflow-y-auto px-4 ">
-        {messages &&
-          messages.messages?.map((msg, index) => {
+        {filteredMessages.messages?.length > 0 &&
+          filteredMessages.messages?.map((msg, index) => {
+            // msg daywise seperator logic
+            const currentMessageDate = format(
+              new Date(msg.createdAt),
+              "yyyy-MM-dd"
+            );
+            const isNewDay = lastMessageDate !== currentMessageDate;
+            lastMessageDate = currentMessageDate;
+
+            const isGroupAdmin = isAdmin(msg.userId, currentGroupDetails);
+
             return (
               <div key={`msg-${index}`}>
+
+                {isNewDay && (
+                  // date wise seperator
+                  <div className="text-center my-2">
+                    {format(new Date(msg.createdAt), "yyyy-MM-dd") ===
+                    format(new Date(), "yyyy-MM-dd")
+                      ? "Today"
+                      : getDate(msg.createdAt)}
+                  </div>
+                )}
                 {msg.userId === userId ? (
                   msg.file ? (
                     <OutgoingMessage
-                    createdAt = {msg.createdAt}
-                    isGroupAdmin={isGroupAdmin}
+                      createdAt={msg.createdAt}
                       _id={msg._id}
+                      flag={msg.flag}
                       userProfilePicture={msg.userProfilePicture}
                       userId={userId}
+                      senderId={msg.userId}
                       file={msg.file}
                       removeMessage={removeMessage}
+                      flagMessage={flagMessage}
+                      unflagMessage={unflagMessage}
+                      isGroupAdmin={isGroupAdmin}
                     />
                   ) : (
                     <OutgoingMessage
-                    createdAt = {msg.createdAt}
-                    isGroupAdmin={isGroupAdmin}
+                      createdAt={msg.createdAt}
+                      flag={msg.flag}
                       _id={msg._id}
+                      senderId={msg.userId}
                       userId={userId}
                       userProfilePicture={msg.userProfilePicture}
                       text={msg.text}
                       removeMessage={removeMessage}
+                      flagMessage={flagMessage}
+                      unflagMessage={unflagMessage}
+                      isGroupAdmin={isGroupAdmin}
                     />
                   )
                 ) : msg.file ? (
                   <IncomingMessage
-                  createdAt = {msg.createdAt}
-                  userId={userId}
-                  isGroupAdmin={isGroupAdmin}
+                    createdAt={msg.createdAt}
+                    userId={userId}
+                    flag={msg.flag}
+                    senderId={msg.userId}
                     _id={msg._id}
                     userProfilePicture={msg.userProfilePicture}
                     userName={msg.userName}
                     file={msg.file}
                     removeMessage={removeMessage}
+                    flagMessage={flagMessage}
+                    unflagMessage={unflagMessage}
+                    isGroupAdmin={isGroupAdmin}
                   />
                 ) : (
                   <IncomingMessage
-                  createdAt = {msg.createdAt}
-                  userId={userId}
-                  isGroupAdmin={isGroupAdmin}
+                    createdAt={msg.createdAt}
+                    userId={userId}
+                    flag={msg.flag}
                     _id={msg._id}
+                    senderId={msg.userId}
                     userProfilePicture={msg.userProfilePicture}
                     userName={msg.userName}
                     text={msg.text}
                     removeMessage={removeMessage}
+                    flagMessage={flagMessage}
+                    unflagMessage={unflagMessage}
+                    isGroupAdmin={isGroupAdmin}
                   />
                 )}
               </div>
@@ -703,7 +880,13 @@ function Chats({ communityId, userId = "IPP0001", userToken ,isGroupAdmin }) {
               onChange={handleFileAdding}
             />
             <button className="ml-3" onClick={handleButtonClick}>
-              <TbPaperclip className={theme.palette.mode === "dark" ? "h-6 w-6 text-gray-300 hover:scale-110 hover:text-white" : "h-6 w-6 text-gray-700 hover:scale-110 hover:ext-gray-900"}/>
+              <TbPaperclip
+                className={
+                  theme.palette.mode === "dark"
+                    ? "h-6 w-6 text-gray-300 hover:scale-110 hover:text-white"
+                    : "h-6 w-6 text-gray-700 hover:scale-110 hover:ext-gray-900"
+                }
+              />
             </button>
 
             {/* Emoji button/icon */}
@@ -712,7 +895,11 @@ function Chats({ communityId, userId = "IPP0001", userToken ,isGroupAdmin }) {
               onClick={() => setShowPicker(!showPicker)} // Toggle picker visibility
             >
               <FaSmile
-                className={theme.palette.mode === "dark" ? "text-gray-300 hover:scale-110 hover:text-white" : "text-gray-700 hover:scale-110 hover:ext-gray-900"}
+                className={
+                  theme.palette.mode === "dark"
+                    ? "text-gray-300 hover:scale-110 hover:text-white"
+                    : "text-gray-700 hover:scale-110 hover:ext-gray-900"
+                }
                 style={{
                   fontSize: "24px",
                   cursor: "pointer",
@@ -740,7 +927,8 @@ function Chats({ communityId, userId = "IPP0001", userToken ,isGroupAdmin }) {
             )}
 
             <button
-              className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md ml-2"
+              disabled={textMessage === "" ? true : false}
+              className={`bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md ml-2`}
               onClick={(e) => {
                 e.preventDefault();
                 addMessage();
@@ -757,7 +945,13 @@ function Chats({ communityId, userId = "IPP0001", userToken ,isGroupAdmin }) {
               <button onClick={handleFileRemoving}>
                 <TiDelete className="h-7 w-7 text-red-400 hover:scale-110 hover:text-red-500 mr-4" />
               </button>
-              <p className={`${theme.palette.mode === "dark" ? "text-white" : "text-gray-900"}`}>{fileToUpload.name}</p>
+              <p
+                className={`${
+                  theme.palette.mode === "dark" ? "text-white" : "text-gray-900"
+                }`}
+              >
+                {fileToUpload.name}
+              </p>
             </div>
             <button
               className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md ml-2"

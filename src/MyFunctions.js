@@ -16,6 +16,33 @@ export function getNameList(arrayOfObjects) {
   return arrayOfObjects.map((obj) => obj.name);
 };
 
+export function getDate(dateString) {
+  const months = [
+    "January", "February", "March", "April", "May", "June", 
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  const dateObj = new Date(dateString);
+  const day = dateObj.getDate();
+  const month = months[dateObj.getMonth()];
+  const year = dateObj.getFullYear();
+
+  return `${day} ${month} ${year}`;
+}
+
+export function getTime(dateString) {
+  const dateObj = new Date(dateString);
+  let hours = dateObj.getHours();
+  const minutes = dateObj.getMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+
+  hours = hours % 12;
+  hours = hours ? hours : 12; // The hour '0' should be '12'
+  const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
+
+  return `${hours}:${formattedMinutes} ${ampm}`;
+}
+
 
 export function getUniqueItems(arr) {
     return [...new Set(arr)];
@@ -36,6 +63,11 @@ export function validateEmail(email) {
   
     // Test the email against the regex
     return emailRegex.test(email);
+  }
+
+  export function validatePhoneNumber(phoneNumber) {
+    const phoneRegex = /^\d{10}$/;
+    return phoneRegex.test(phoneNumber);
   }
 
 
