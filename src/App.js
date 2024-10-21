@@ -123,6 +123,7 @@ function App() {
               <Route path={routes.signup} element={<Signup changeLoginStatus ={ changeLoginStatus}/>} />
 
               {userId && userToken && <>
+
               <Route path={routes.home} element={<Dashboard />} />
               <Route path={routes.state} element={<State />} />
               <Route path={routes.city} element={<City />} />

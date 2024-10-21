@@ -11,6 +11,7 @@ import Header from "../../../components/Header";
 import { jwtDecode } from "jwt-decode";
 import { IoEyeSharp } from "react-icons/io5";
 import {formatDate} from "../../../MyFunctions"
+import DisplayReportedMessagesModal from "../../../components/ui/DisplayReportedMessageModal";
 
 
 function Index() {
@@ -20,44 +21,46 @@ function Index() {
   const [userId, setUserId] = useState("");
   const [userToken, setUserToken] = useState("");
 
-
-  const [mode, setMode] = useState("display");
   const [data, setData] = useState([]);
+
+  const [showModal, setShowModal] = useState(false);
+  const [modalData, setModalData] = useState();
+
 
   const [editData, setEditData] = useState();
 
   const columns = [
     {
-      field: "_id",
-      headerName: "Message",
-      flex: 1,
-
-    },
-    {
-      field: "name",
-      headerName: "Group Name",
-      flex: 1,
-      cellClassName: "name-column--cell",
-    },
-    {
-      field: "builder",
+      field: "reportedBy",
       headerName: "Reported By",
       flex: 1,
     },
     {
-      field: "projects",
+      field: "groupName",
+      headerName: "Group Name",
+      flex: 1,
+      cellClassName: "name-column--cell",
+
+    },
+    {
+      field: "message",
+      headerName: "Message",
+      flex: 2,
+    },
+    {
+      field: "messageBy",
       headerName: "Message By",
       flex: 1,
-      valueGetter: (params) => params.value.join(","), 
     },
-
+    
     {
       field: "createdAt",
       headerName: "ReportedAt",
       flex: 1,
       valueGetter: (params) => formatDate(params.value), 
     },
-    
+   
+
 
     {
       field: "action",
@@ -67,16 +70,15 @@ function Index() {
         <Box>
           <IconButton
             onClick={() => {
-              // handleEdit(params.row._id)
-              console.log("show rep msg")
+              setModalData(params.row)
+              setShowModal(true)
             }}
-            // color="primary"
             className="text-grey-400"
           >
             <IoEyeSharp />
           </IconButton>
           <IconButton
-            onClick={() => handleDelete(params.row._id)}
+            onClick={() => handleDelete(params.row._id,params.row.groupId, params.row.messageId,)}
             color="secondary"
           >
             <DeleteIcon />
@@ -86,57 +88,35 @@ function Index() {
     },
   ];
 
-  const setModeToDisplay =()=>{
-    setMode("display")
-    fetchAllCommunities(userId,userToken)
-  }
 
-  const FetchCommunity = async (id) => {
-    // Make the DELETE request
-    await axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/communities/getCommunity/${id}?userId=${userId}`, {
-          headers: {
-            "auth-token" : userToken
-          },
-        })
-      .then((response) => {
-        if (response) {
-          setEditData(response.data.data);
-        }
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        toast.error("Some ERROR occured.");
-      });
-  };
-
-  const fetchAllCommunities = (userId, userToken) => {
+  const fetchAllReportedMessages = (userId, userToken) => {
     axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/communities/getAllCommunities?userId=${userId}`, {
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/reportedMessages/fetchAllReportedMessages?userId=${userId}`, {
           headers: {
             "auth-token" : userToken
           },
         })
       .then((response) => {
-        setData(response.data.data);
+        setData(response.data);
       })
       .catch((error) => {
         console.error("Error:", error);
       });
   };
 
-  const deleteCommunityById = async (id) => {
+  const deleteReportedMessageById = async (id, communityId, messageId) => {
     // Make the DELETE request
     await axios
-      .delete(`${process.env.REACT_APP_BACKEND_URL}/api/communities/deleteCommunity/${id}?userId=${userId}`, {
+      .delete(`${process.env.REACT_APP_BACKEND_URL}/api/reportedMessages/deleteReportedMessage/${id}?userId=${userId}&communityId=${communityId}&messageId=${messageId}`,
+        {
           headers: {
             "auth-token" : userToken
           },
         })
       .then((response) => {
         if (response) {
-          fetchAllCommunities(userId, userToken);
-          toast.success("Community deleted!");
+          fetchAllReportedMessages(userId, userToken);
+          toast.success("Reported Message deleted!");
         }
       })
       .catch((error) => {
@@ -154,35 +134,26 @@ function Index() {
         const decoded = jwtDecode(token);
         setUserId(decoded.userId);
         setUserToken(token);
-        fetchAllCommunities(decoded.userId, token);
+        fetchAllReportedMessages(decoded.userId, token);
       }
     } catch (error) {
       console.log(error);
     }
   }, []);
 
-  const handleAddMore = () => {
-    setMode("add");
+
+  const closeModal = () => {
+    setShowModal(false)
+    setModalData();
+    fetchAllReportedMessages(userId,userToken);
   };
 
-  const handleCancel = () => {
-    setMode("display");
-    fetchAllCommunities(userId,userToken);
-  };
-
-  // Click handler for the edit button
-  const handleEdit = (id) => {
-    FetchCommunity(id);
-
-    setTimeout(() => {
-      setMode("edit");
-    }, 500);
-  };
 
   // Click handler for the delete button
-  const handleDelete = (id) => {
-    deleteCommunityById(id);
+  const handleDelete = (id, communityId, messageId) => {
+    deleteReportedMessageById(id, communityId, messageId);
   };
+  
 
   return (
     <Box m="20px">
@@ -192,8 +163,6 @@ function Index() {
           title="Reported Messages"
           subtitle={"See reported messages here"}
         />
-
-        
       </Box>
 
       <Box
@@ -228,15 +197,15 @@ function Index() {
             },
           }}
         >
-          <DataGrid
+         {data && <DataGrid
             rows={data}
             columns={columns}
             components={{ Toolbar: GridToolbar }}
             getRowId={(row) => row._id}
             autoHeight
-          />
+          />}
         </Box>
-      
+      {showModal === true && modalData && <DisplayReportedMessagesModal closeModal={closeModal} data={modalData}/>}
     </Box>
   )
 }
