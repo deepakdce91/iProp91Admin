@@ -28,6 +28,11 @@ import GroupFormation from "./scenes/configurations/groupFormation";
 import Conversations from "./scenes/configurations/conversations";
 import ReportedMessages from "./scenes/configurations/reportedMessages";
 
+import Faqs from "./scenes/knowledgeCenter/faqs";
+import Laws from "./scenes/knowledgeCenter/laws";
+import Library from "./scenes/knowledgeCenter/library";
+import CaseLaws from "./scenes/knowledgeCenter/caseLaws";
+
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -57,7 +62,13 @@ const routes = {
 
   property: "/property",
   users: "/users",
-  documents : "/documents"
+  documents : "/documents",
+
+  faqs : "/faqs",
+  laws : "/laws",
+  library : "/library",
+  caseLaws : "/caseLaws",
+
 };
 
 function App() {
@@ -140,6 +151,12 @@ function App() {
               <Route path={routes.property} element={<Property />} />
               <Route path={routes.users} element={<Users />} />
               <Route path={routes.documents} element={<Documents />} />
+
+              <Route path={routes.faqs} element={<Faqs />} />
+              <Route path={routes.laws} element={<Laws />} />
+              <Route path={routes.library} element={<Library />} />
+              <Route path={routes.caseLaws} element={<CaseLaws />} />
+      
               </>}
               
             </Routes>

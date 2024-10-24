@@ -11,6 +11,9 @@ import Header from "../../../components/Header";
 import { jwtDecode } from "jwt-decode";
 import { IoEyeSharp } from "react-icons/io5";
 import {formatDate} from "../../../MyFunctions"
+
+import { FaRegCircleDot } from "react-icons/fa6";
+
 import DisplayReportedMessagesModal from "../../../components/ui/DisplayReportedMessageModal";
 
 
@@ -25,9 +28,6 @@ function Index() {
 
   const [showModal, setShowModal] = useState(false);
   const [modalData, setModalData] = useState();
-
-
-  const [editData, setEditData] = useState();
 
   const columns = [
     {
@@ -61,6 +61,21 @@ function Index() {
     },
    
 
+{
+      field: "actionTaken",
+      headerName: "Action Taken",
+      flex: 1,
+      align: "center",
+      renderCell: (params) => (
+        <Box>
+          <IconButton
+          >
+             <FaRegCircleDot className={`${params.value === "true" ? "text-green-500" : "text-red-500"} h-4 w-4`}  />
+          </IconButton>
+        </Box>
+      ),
+    },
+   
 
     {
       field: "action",
@@ -79,9 +94,9 @@ function Index() {
           </IconButton>
           <IconButton
             onClick={() => handleDelete(params.row._id,params.row.groupId, params.row.messageId,)}
-            color="secondary"
+            // color="secondary"
           >
-            <DeleteIcon />
+            <DeleteIcon  className="hover:text-red-400"/>
           </IconButton>
         </Box>
       ),
@@ -205,7 +220,7 @@ function Index() {
             autoHeight
           />}
         </Box>
-      {showModal === true && modalData && <DisplayReportedMessagesModal closeModal={closeModal} data={modalData}/>}
+      {showModal === true && modalData && <DisplayReportedMessagesModal closeModal={closeModal} data={modalData} userToken = {userToken} userId={userId} />}
     </Box>
   )
 }
