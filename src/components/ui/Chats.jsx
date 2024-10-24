@@ -228,7 +228,7 @@ function IncomingMessage({
                     ? text
                     : `Media file with with link - ${
                         file ? file.url : ""
-                      } [ message id : ${_id} ]`;
+                      }`;
                     const messageBy = senderId;
                     const messageId = _id;
 
@@ -319,7 +319,7 @@ function OutgoingMessage({
                       ? text
                       : `Media file with with link - ${
                           file ? file.url : ""
-                        } [ message id : ${_id} ]`;
+                        }`;
                     const messageBy = senderId;
                     const messageId = _id;
 

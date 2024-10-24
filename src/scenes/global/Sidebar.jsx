@@ -23,6 +23,8 @@ import { FaLayerGroup } from "react-icons/fa";
 import { IoChatboxEllipsesSharp } from "react-icons/io5";
 import { TbMessageReportFilled } from "react-icons/tb";
 
+import { GiOpenBook } from "react-icons/gi";
+
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -70,9 +72,10 @@ const Sidebar = () => {
           color: "#6870fa !important",
         },
       }}
+      
     >
-      <ProSidebar collapsed={isCollapsed}>
-        <Menu iconShape="square">
+      <ProSidebar collapsed={isCollapsed} >
+        <Menu iconShape="square" className=" mb-6">
           {/* LOGO AND MENU ICON */}
           <MenuItem
             onClick={() => setIsCollapsed(!isCollapsed)}
@@ -81,6 +84,7 @@ const Sidebar = () => {
               margin: "10px 0 20px 0",
               color: colors.grey[100],
             }}
+            
           >
             {!isCollapsed && (
               <Box
@@ -88,6 +92,7 @@ const Sidebar = () => {
                 justifyContent="space-between"
                 alignItems="center"
                 ml="15px"
+                
               >
                 <Typography variant="h3" color={colors.grey[100]}>
                   Iprop91
@@ -147,6 +152,7 @@ const Sidebar = () => {
                 General
               </Typography>
             )}
+
             <Item
               title="Users"
               to="/users"
@@ -236,9 +242,7 @@ const Sidebar = () => {
               setSelected={setSelected}
             />
 
-
-
-<Item
+            <Item
               title="Group Formation"
               to="/groupFormation"
               icon={<FaLayerGroup className="h-4 w-4" />}
@@ -246,8 +250,7 @@ const Sidebar = () => {
               setSelected={setSelected}
             />
 
-
-<Item
+            <Item
               title="Conversations"
               to="/conversations"
               icon={<IoChatboxEllipsesSharp className="h-4 w-4" />}
@@ -255,9 +258,7 @@ const Sidebar = () => {
               setSelected={setSelected}
             />
 
-
-
-<Item
+            <Item
               title="Reported Messages"
               to="/reportedMessages"
               icon={<TbMessageReportFilled className="h-4 w-4" />}
@@ -265,6 +266,47 @@ const Sidebar = () => {
               setSelected={setSelected}
             />
 
+            {!isCollapsed && (
+              <Typography
+                variant="h6"
+                color={colors.grey[200]}
+                sx={{ m: "15px 0 5px 20px" }}
+              >
+                Knowledge Center
+              </Typography>
+            )}
+
+            <Item
+              title="FAQs"
+              to="/faqs"
+              icon={<GiOpenBook className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+            <Item
+              title="Laws"
+              to="/laws"
+              icon={<GiOpenBook className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+            <Item
+              title="Library"
+              to="/library"
+              icon={<GiOpenBook className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+            <Item
+              title="Case Laws"
+              to="/caseLaws"
+              icon={<GiOpenBook className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
           </Box>
         </Menu>
       </ProSidebar>

@@ -101,7 +101,7 @@ function ChatScreen({ userId, userToken }) {
         {/* <!-- Sidebar --> */}
         <div
           className={` bg-transparent border-r border-gray-300 ${
-            currentGroupData ? "hidden md:block  w-1/4" : "w-1/2"
+            currentGroupData ? "hidden md:block  w-1/4" : "w-full"
           }`}
         >
           {/* <!-- Sidebar Header --> */}
@@ -167,7 +167,7 @@ function ChatScreen({ userId, userToken }) {
         </div>
 
         {/* <!-- Main Chat Area --> */}
-        <div className={`flex-1  ${currentGroupData ? "w-3/4" : " w-1/2"}`}>
+        <div className={`flex-1  ${currentGroupData ? "w-3/4" : " hidden"}`}>
           <div className="flex flex-col h-[88vh]">
             {/* <!-- Chat Header --> */}
             <header
