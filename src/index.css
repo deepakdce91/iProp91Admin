@@ -39,3 +39,28 @@ body,
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
+
+
+.ck-editor__editable {
+  height: 500px; /* Set desired height here */
+  width: 100%;
+
+
+}
+
+/* Add padding to the entire content of the editor */
+.ck-content {
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+/* Add left padding specifically for lists to prevent cropping */
+.ck-content ol,
+.ck-content ul {
+  padding-left: 16px;  
+}
+
+/* Optional: Add some margin to list items */
+.ck-content li {
+  margin-left: 6px; 
+}
