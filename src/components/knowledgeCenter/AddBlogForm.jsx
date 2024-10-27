@@ -1,6 +1,6 @@
 import { Box } from "@mui/material";
 import { useTheme } from "@mui/material";
-import { tokens } from "../../../theme";
+import { tokens } from "../../theme";
 import { useState, useEffect, useRef } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -9,51 +9,68 @@ import axios from "axios";
 import heic2any from "heic2any";
 import { MdEdit } from "react-icons/md";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { client } from "../../../config/s3Config";
+import { client } from "../../config/s3Config";
 
-import { supabase } from "../../../config/supabase";
+import { supabase } from "../../config/supabase";
 
-function UserForm({ editData, setModeToDisplay , userToken, userId }) {
+import { CKEditor } from "@ckeditor/ckeditor5-react";
+import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 
+import CKUploadAdapter from "../../config/CKUploadAdapter";
+
+
+ 
+function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
   const fileInputRef = useRef(null);
 
   const [isUploading, setIsUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState("/default-profile-pic.jpg");
+  const [previewUrl, setPreviewUrl] = useState(
+    "/default-library-thumbnail.jpg"
+  );
 
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
   const [addData, setAddData] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    password: "",
-    profilePicture: "",
-    lastLogin: new Date(),
-    suspended: "false",
-    fraud: "false",
+    thumbnail: "",
+    title: "",
+    content: "",
+    enable: "true",
   });
 
+  const editorConfiguration = {
+    // plugins: [ Image, PictureEditing, ImageUpload, CloudServices, CKBox, CKBoxImageEdit, /* ... */ ],
+    extraPlugins: [
+      function (editor) {
+        editor.plugins.get("FileRepository").createUploadAdapter = (loader) => {
+          return new CKUploadAdapter(loader, supabase);
+        };
+      },
+    ],
+  };
+
   const getPublicUrlFromSupabase = (path) => {
-    const { data, error } = supabase.storage.from(process.env.REACT_APP_PROFILE_PIC_BUCKET).getPublicUrl(path);
+    const { data, error } = supabase.storage
+      .from(process.env.REACT_APP_LIBRARY_THUMBNAIL_BUCKET)
+      .getPublicUrl(path);
     if (error) {
       console.error("Error fetching public URL:", error);
       return null;
-    } 
+    }
     return data.publicUrl;
   };
 
   const handleDivClick = () => {
     // Trigger the click event on the file input
     fileInputRef.current.click();
-  }; 
+  };
 
   // Upload the file to Supabase S3
   const uploadFileToCloud = async (myFile) => {
-    const myPath = `usersProfilePic/${myFile.name}`;
+    const myPath = `blogsThumbnail/${myFile.name}`;
     try {
       const uploadParams = {
-        Bucket: process.env.REACT_APP_PROFILE_PIC_BUCKET,
+        Bucket: process.env.REACT_APP_LIBRARY_THUMBNAIL_BUCKET,
         Key: myPath,
         Body: myFile, // The file content
         ContentType: myFile.type, // The MIME type of the file
@@ -61,7 +78,7 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
       const command = new PutObjectCommand(uploadParams);
       let success = await client.send(command);
       if (success) {
-        changeField("profilePicture", myPath);
+        changeField("thumbnail", myPath);
         return myPath; //  return the file path
       }
       return;
@@ -87,12 +104,15 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
         });
 
         // Create a new File object from the Blob
-        const convertedFile = new File([convertedBlob], file.name.replace(/\.heic$/i, ".jpeg"), {
-          type: "image/jpeg",
-        });
+        const convertedFile = new File(
+          [convertedBlob],
+          file.name.replace(/\.heic$/i, ".jpeg"),
+          {
+            type: "image/jpeg",
+          }
+        );
 
         file = convertedFile;
-
       } catch (error) {
         console.error("Error converting HEIC file:", error);
       }
@@ -104,18 +124,18 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
       if (cloudFilePath) {
         setAddData((prevData) => ({
           ...prevData,
-          profilePicture: cloudFilePath,
+          thumbnail: cloudFilePath,
         }));
-        let publicUrl =  getPublicUrlFromSupabase(cloudFilePath);
+        let publicUrl = getPublicUrlFromSupabase(cloudFilePath);
         if (publicUrl) {
-          toast.success("Profile picture changed!");
+          toast.success("Thumbnail picture changed!");
           setIsUploading(false);
           setPreviewUrl(publicUrl);
           console.log(publicUrl);
           setAddData((prevData) => ({
             ...prevData,
-            profilePicture: publicUrl, 
-          }))
+            thumbnail: publicUrl,
+          }));
         }
       }
     } catch (error) {
@@ -133,21 +153,21 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
   };
 
   const handleSubmit = (addData) => {
-    if (addData.name !== "" && addData.phone !== "") {
+    if (addData.title !== "" && addData.content !== "") {
       if (editData) {
-
         axios
           .put(
-            `${process.env.REACT_APP_BACKEND_URL}/api/users/updateuser/${editData._id}?userId=${userId}`,
-            addData, {
+            `${process.env.REACT_APP_BACKEND_URL}/api/library/updateBlog/${editData._id}?userId=${userId}`,
+            addData,
+            {
               headers: {
-                "auth-token" : userToken
+                "auth-token": userToken,
               },
             }
           )
           .then((response) => {
             if (response) {
-              toast("User updated!");
+              toast("Blog updated!");
               setTimeout(() => {
                 setModeToDisplay();
               }, 2000);
@@ -159,14 +179,18 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
           });
       } else {
         axios
-          .post(`${process.env.REACT_APP_BACKEND_URL}/api/users/adduser?userId=${userId}`, addData, {
-            headers: {
-              "auth-token" : userToken
-            },
-          })
+          .post(
+            `${process.env.REACT_APP_BACKEND_URL}/api/library/addBlog?userId=${userId}`,
+            addData,
+            {
+              headers: {
+                "auth-token": userToken,
+              },
+            }
+          )
           .then((response) => {
             if (response) {
-              toast("User added!");
+              toast("Blog added!");
               setTimeout(() => {
                 setModeToDisplay();
               }, 2000);
@@ -180,36 +204,32 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
     } else {
       toast.error("Fill all the fields.");
     }
+
+    console.log(addData)
   };
 
   useEffect(() => {
     const fetchData = async () => {
       if (editData) {
         setAddData({
-          name: editData.name,
-          phone: editData.phone,
-          email: editData.email,
-          password: editData.password,
-          profilePicture: editData.profilePicture || "",
-          lastLogin: editData.lastLogin || new Date(),
-          suspended: editData.suspended || "false",
-          fraud: editData.fraud || "false",
+          thumbnail: editData.thumbnail || "/default-library-thumbnail.jpg",
+          title: editData.title,
+          content: editData.content,
+          enable: editData.enable,
         });
-  
-        if (editData.profilePicture !== "") {
+
+        if (editData.thumbnail !== "") {
           try {
-            setPreviewUrl(editData.profilePicture); // Set the preview URL
+            setPreviewUrl(editData.thumbnail); // Set the preview URL
           } catch (error) {
             console.error("Error fetching signed URL:", error);
           }
         }
       }
     };
-  
-    fetchData(); 
-  
+
+    fetchData();
   }, [editData]);
-  
 
   return (
     <Box
@@ -265,15 +285,16 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
         <div className="w-full">
           <form>
             <div className="relative w-fit">
+              <h1 className="text-lg font-medium mb-3">Thumbnail</h1>
               <img
                 src={previewUrl}
-                className="h-32 w-32 rounded-full mb-5"
+                className="h-32 w-52 rounded-lg mb-5 object-cover"
                 alt="profile-picture"
               />
 
               {isUploading === true ? (
                 <img
-                  className="ml-2 mt-2 h-8 w-7 absolute bottom-0 -right-6 "
+                  className="ml-2 mt-2 h-8 w-7 absolute bottom-0 -right-10 "
                   src={`${
                     theme.palette.mode === "dark"
                       ? "/spinner-white.svg"
@@ -284,7 +305,7 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
               ) : (
                 <div
                   onClick={handleDivClick}
-                  className="flex text-gray-400 hover:text-white absolute bottom-0 -right-12 items-end"
+                  className="flex text-gray-400 hover:text-white absolute bottom-0 -right-20 items-end"
                 >
                   <MdEdit className="w-6 h-6  rounded-full  " />
                   <span>Change</span>
@@ -302,88 +323,43 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
             <div className="flex flex-col md:flex-row gap-2">
               <div className="flex flex-col w-full md:w-1/2 pr-0 md:pr-5 ">
                 <div className="w-full pr-3">
-                  <div className="mb-5">
+                  <div className="my-4">
                     <label htmlFor="fName" className="text-lg font-medium">
-                      Name
+                      Title
                     </label>
                     <input
                       type="text"
                       name="name"
                       id="name"
-                      value={addData.name}
-                      onChange={(e) => changeField("name", e.target.value)}
-                      placeholder="Name"
-                      className="w-full mt-[18px] text-gray-700 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col w-full md:w-1/2 pr-0 md:pr-5 pb-6">
-                <div className="w-full pr-3">
-                  <div className="mb-5">
-                    <label htmlFor="phone" className="text-lg font-medium">
-                      Phone number
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      id="phone"
-                      value={addData.phone}
-                      onChange={(e) => changeField("phone", e.target.value)}
-                      placeholder="Phone number"
-                      className="w-full mt-[18px] text-gray-700 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                      value={addData.title}
+                      onChange={(e) => changeField("title", e.target.value)}
+                      placeholder="Title"
+                      className="w-full mt-[10px] text-gray-700 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                     />
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-2">
-              <div className="flex flex-col w-full md:w-1/2 pr-0 md:pr-5 pb-6">
-                <div className="w-full pr-3">
-                  <div className="mb-5">
-                    <label htmlFor="email" className="text-lg font-medium">
-                      Email
-                    </label>
-                    <input
-                      type="text"
-                      name="email"
-                      id="email"
-                      value={addData.email}
-                      onChange={(e) => changeField("email", e.target.value)}
-                      placeholder="Email"
-                      className="w-full mt-[18px] text-gray-700 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                    />
-                  </div>
-                </div>
-              </div>
+            <h2 className="text-lg font-medium mt-2 mb-3">Content</h2>
 
-              <div className="flex flex-col w-full md:w-1/2 pr-0 md:pr-5 pb-6">
-                <div className="w-full pr-3">
-                  <div className="mb-5">
-                    <label htmlFor="password" className="text-lg font-medium">
-                      Password
-                    </label>
-                    <input
-                      type="text"
-                      name="password"
-                      id="password"
-                      value={addData.password}
-                      onChange={(e) => changeField("password", e.target.value)}
-                      placeholder="Password"
-                      className="w-full mt-[18px] text-gray-700 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                    />
-                  </div>
-                </div>
-              </div>
+            <div className=" w-full  text-black pr-0 md:pr-5 ">
+              <CKEditor
+                editor={ClassicEditor}
+                config={editorConfiguration}
+                data={addData.content}
+                onChange={(event, editor) => {
+                  const data = editor.getData();
+                  changeField("content", data);
+                }}
+              />
             </div>
 
-            <div className="mb-5">
-              <label className="mb-3 block text-base font-medium">
-                Mark user as fraud?
+            <div className="my-5">
+              <label className="text-lg font-medium ">
+                Enable?
               </label>
-              <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-6 mt-2">
                 <div className="flex items-center">
                   <input
                     type="radio"
@@ -391,8 +367,8 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
                     value={"true"}
                     className="h-5 w-5"
                     id="radioButton11"
-                    checked={addData.fraud === "true"}
-                    onChange={(e) => changeField("fraud", e.target.value)}
+                    checked={addData.enable === "true"}
+                    onChange={(e) => changeField("enable", e.target.value)}
                   />
                   <label
                     htmlFor="radioButton11"
@@ -408,53 +384,11 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
                     value={"false"}
                     className="h-5 w-5"
                     id="radioButton22"
-                    checked={addData.fraud === "false"}
-                    onChange={(e) => changeField("fraud", e.target.value)}
+                    checked={addData.enable === "false"}
+                    onChange={(e) => changeField("enable", e.target.value)}
                   />
                   <label
                     htmlFor="radioButton22"
-                    className="pl-3 text-base font-medium"
-                  >
-                    No
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div className="mb-5">
-              <label className="mb-3 block text-base font-medium">
-                Suspend user account?
-              </label>
-              <div className="flex items-center space-x-6">
-                <div className="flex items-center">
-                  <input
-                    type="radio"
-                    name="suspended"
-                    value={"true"}
-                    className="h-5 w-5"
-                    id="radioButton1"
-                    checked={addData.suspended === "true"}
-                    onChange={(e) => changeField("suspended", e.target.value)}
-                  />
-                  <label
-                    htmlFor="radioButton1"
-                    className="pl-3 text-base font-medium"
-                  >
-                    Yes
-                  </label>
-                </div>
-                <div className="flex items-center">
-                  <input
-                    type="radio"
-                    name="suspended"
-                    value={"false"}
-                    className="h-5 w-5"
-                    id="radioButton2"
-                    checked={addData.suspended === "false"}
-                    onChange={(e) => changeField("suspended", e.target.value)}
-                  />
-                  <label
-                    htmlFor="radioButton2"
                     className="pl-3 text-base font-medium"
                   >
                     No
@@ -474,7 +408,7 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
                 }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
                 disabled={isUploading === true ? true : false}
               >
-                {editData ? "Update User" : "Add User"}
+                {editData ? "Update Blog" : "Add Blog"}
               </button>
             </div>
           </form>
@@ -485,4 +419,4 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
   );
 }
 
-export default UserForm;
+export default AddBlogForm;
