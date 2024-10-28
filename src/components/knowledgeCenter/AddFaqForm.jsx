@@ -81,6 +81,7 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
       throw error;
     }
   };
+  
 
   const handleFileAdding = async (event) => {
     const file = event.target.files[0];
@@ -115,6 +116,7 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
       }
     
   };
+
 
   const handleFileUpload = async(e) => {
     e.preventDefault();
@@ -154,7 +156,6 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
       [field]: value,
     }));
   };
-
 
 
   const handleSubmit = () => {

@@ -25,6 +25,8 @@ import { TbMessageReportFilled } from "react-icons/tb";
 
 import { GiOpenBook } from "react-icons/gi";
 
+import { FaHouseUser } from "react-icons/fa";
+
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -187,6 +189,14 @@ const Sidebar = () => {
                 Configurations
               </Typography>
             )}
+
+<Item
+              title="Owners From"
+              to="/ownerFrom"
+              icon={<FaHouseUser className="h-5 w-5" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
 
             <Item
               title="State"

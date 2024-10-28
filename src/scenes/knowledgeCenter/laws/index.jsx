@@ -27,6 +27,12 @@ function Index() {
 
   const columns = [
     {
+      field: "serial",
+      headerName: "No.",
+      width: 70,
+      valueGetter: (params) => params.api.getRowIndex(params.id) + 1, // Start numbering from 1
+    },
+    {
       field: "title",
       headerName: "Title",
       flex: 1,

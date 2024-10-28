@@ -34,25 +34,15 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
   const colors = tokens(theme.palette.mode);
 
   const [addData, setAddData] = useState({
-    title: "",
-    content : "",
-    file: "",
+    name: "",
+    url: "",
     enable : "true"
    
   });
 
-  const editorConfiguration = {
-    extraPlugins: [
-      function (editor) {
-        editor.plugins.get("FileRepository").createUploadAdapter = (loader) => {
-          return new CKUploadAdapter(loader, supabase);
-        };
-      },
-    ],
-  };
 
   const getPublicUrlFromSupabase = (path) => {
-    const { data, error } = supabase.storage.from(process.env.REACT_APP_LIBRARY_BUCKET).getPublicUrl(path);
+    const { data, error } = supabase.storage.from(process.env.REACT_APP_SHARED_FILES_BUCKET).getPublicUrl(path);
     if (error) {
       console.error("Error fetching public URL:", error);
       return null;
@@ -65,10 +55,10 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
   // Upload the file to Supabase S3
   const uploadFileToCloud = async (myFile) => {
     const myFileName = removeSpaces(myFile.name); // removing blank space from name
-    const myPath = `lawFiles/${myFileName}`;
+    const myPath = `ownersFromCompanies/${myFileName}`;
     try {
       const uploadParams = {
-        Bucket: process.env.REACT_APP_LIBRARY_BUCKET,
+        Bucket: process.env.REACT_APP_SHARED_FILES_BUCKET,
         Key: myPath,
         Body: myFile, // The file content
         ContentType: myFile.type, // The MIME type of the file
@@ -121,7 +111,7 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
 
       try {
         setIsUploading(true);
-        toast("Uploading file.")
+        toast("Uploading file.");
         
             let cloudFilePath = await uploadFileToCloud(uploadFile);
             
@@ -130,7 +120,7 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
             if (cloudFilePath) {
               const publicUrl = getPublicUrlFromSupabase(cloudFilePath);
                 if(publicUrl){
-                  changeField("file", publicUrl)
+                  changeField("url", publicUrl)
    
                 setIsUploading(false);
                 setUploadFile("");
@@ -158,18 +148,17 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
 
 
   const handleSubmit = () => {
-    if (uploadFile) {
+    if (uploadFile || addData.url === "") {
       toast.error("Upload file before submitting form.");
     } else {
       if (
-        addData.title !== "" &&
-        addData.enable !== "" 
+        addData.name !== "" 
       ) {
         if(!(addData.content === "" && addData.file === "")){
         if (editData) {
           axios
             .put(
-              `${process.env.REACT_APP_BACKEND_URL}/api/faqs/updateFAQ/${editData._id}?userId=${userId}`,
+              `${process.env.REACT_APP_BACKEND_URL}/api/ownersFrom/updateOwnersFrom/${editData._id}?userId=${userId}`,
               addData,
               {
                 headers: {
@@ -179,7 +168,7 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
             )
             .then((response) => {
               if (response) {
-                toast.success("Faq updated!");
+                toast.success("Company updated!");
                 setTimeout(() => {
                   setModeToDisplay();
                 }, 2000);
@@ -192,7 +181,7 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
         } else {
           axios
             .post(
-              `${process.env.REACT_APP_BACKEND_URL}/api/faqs/addFAQ?userId=${userId}`,
+              `${process.env.REACT_APP_BACKEND_URL}/api/ownersFrom/addOwnersFrom?userId=${userId}`,
               addData,
               {
                 headers: {
@@ -203,7 +192,7 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
             .then((response) => {
               if (response) {
      
-                toast.success("Faq added!");
+                toast.success("Company added!");
                 setTimeout(() => {
                     setModeToDisplay();
                   }, 2000);
@@ -215,7 +204,7 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
             });
         }
         }else{
-            toast.error("Provide either a file or content for Law.")
+            toast.error("Provide name.")
         }
       } else {
         toast.error("Fill all the fields.");
@@ -310,15 +299,15 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
                     htmlFor="title"
                     className="mb-3 block text-base font-medium"
                   >
-                    Title 
+                    Name 
                   </label>
                   <input
                     type="text"
                     name="title"
                     id="title"
-                    value={addData.title}
-                    onChange={(e) => changeField("title", e.target.value)}
-                    placeholder="Title"
+                    value={addData.name}
+                    onChange={(e) => changeField("name", e.target.value)}
+                    placeholder="Name"
                     className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                   />
                 </div>
@@ -358,19 +347,6 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
               </div>
             </div>
 
-
-            <h2 className="text-lg font-medium mt-2 mb-3">Content</h2>
-            <div className=" w-full  text-black pr-0 md:pr-5 ">
-              <CKEditor
-                editor={ClassicEditor}
-                config={editorConfiguration}
-                data={addData.content}
-                onChange={(event, editor) => {
-                  const data = editor.getData();
-                  changeField("content", data);
-                }}
-              />
-            </div>
 
             <div className="my-5">
               <label className="text-lg font-medium ">
@@ -429,7 +405,7 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
                 }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
                 disabled={isUploading === true ? true : false}
               >
-                {editData ? "Update FAQ" : "Add FAQ"}
+                {editData ? "Update Company" : "Add Company"}
               </button>
             </div>
           </form>

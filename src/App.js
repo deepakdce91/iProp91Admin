@@ -42,6 +42,8 @@ import { ColorModeContext, useMode } from "./theme";
 import useAuthToken from "./hooks/useAuthToken";  // Custom hook for JWT token handling
 import useMetaTags from "./hooks/useMetaTags";    // Custom hook for meta tags
 
+import OwnerFrom from "./scenes/configurations/ownersFrom"
+
 
 // Constants for routes
 const routes = {
@@ -68,6 +70,8 @@ const routes = {
   laws : "/laws",
   library : "/library",
   caseLaws : "/caseLaws",
+
+  ownerFrom : "/ownerFrom"
 
 };
 
@@ -156,6 +160,8 @@ function App() {
               <Route path={routes.laws} element={<Laws />} />
               <Route path={routes.library} element={<Library />} />
               <Route path={routes.caseLaws} element={<CaseLaws />} />
+
+              <Route path={routes.ownerFrom} element={<OwnerFrom />} />
       
               </>}
               
