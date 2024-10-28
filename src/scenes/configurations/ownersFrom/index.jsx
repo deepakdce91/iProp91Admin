@@ -9,10 +9,9 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Header from "../../../components/Header";
 import { jwtDecode } from "jwt-decode";
-import AddBlogForm from "../../../components/knowledgeCenter/AddBlogForm";
-import { formatDate } from "../../../MyFunctions";
+import AddOwnersFromForm from "../../../components/configurations/AddOwnersFromForm";
 
- 
+
 function Index() {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -28,28 +27,24 @@ function Index() {
 
   const columns = [
     {
-      field: "serial",
-      headerName: "No.",
-      width: 70,
-      valueGetter: (params) => params.api.getRowIndex(params.id) + 1, // Start numbering from 1
-    },
+        field: "serial",
+        headerName: "No.",
+        width: 70,
+        valueGetter: (params) => params.api.getRowIndex(params.id) + 1, 
+      },
     {
-      field: "title",
-      headerName: "Title",
+      field: "name",
+      headerName: "Name",
       flex: 1,
       cellClassName: "name-column--cell",
-    },
-    {
-      field: "content",
-      headerName: "Content",
-      flex: 1,
-    },
-    {
-        field: "createdAt",
-        headerName: "Created At",
-        flex: 1,
-        valueGetter: (params) => formatDate(params.value),
-      },
+    },{
+    field: "url",
+    headerName: "Image",
+    flex: 1,
+    renderCell: (params) => (
+        <a target="_blank" href={params.row.url} className="underline">See File</a>
+      ),
+  },
     {
       field: "enable",
       headerName: "Enabled",
@@ -81,15 +76,15 @@ function Index() {
     },
   ];
 
-  const setModeToDisplay =()=>{ 
+  const setModeToDisplay =()=>{
     setMode("display")
-    fetchAllBlogs(userId,userToken)
+    fetchAllOwnersFrom(userId,userToken)
   }
 
-  const FetchBlog = async (id) => {
+  const FetchOwnersFrom = async (id) => {
     // Make the DELETE request
     await axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/library/fetchBlog/${id}?userId=${userId}`, {
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/ownersFrom/fetchOwnerFrom/${id}?userId=${userId}`, {
           headers: {
             "auth-token" : userToken
           },
@@ -105,9 +100,9 @@ function Index() {
       });
   };
 
-  const fetchAllBlogs = (userId, userToken) => {
+  const fetchAllOwnersFrom = (userId, userToken) => {
     axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/library/fetchAllBlogs?userId=${userId}`, {
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/ownersFrom/fetchAllOwnersFrom?userId=${userId}`, {
           headers: {
             "auth-token" : userToken
           },
@@ -120,18 +115,18 @@ function Index() {
       });
   };
 
-  const deleteBlogById = async (id) => {
+  const deleteOwnersFromById = async (id) => {
     // Make the DELETE request
     await axios
-      .delete(`${process.env.REACT_APP_BACKEND_URL}/api/library/deleteBlog/${id}?userId=${userId}`, {
+      .delete(`${process.env.REACT_APP_BACKEND_URL}/api/ownersFrom/deleteOwnersFrom/${id}?userId=${userId}`, {
           headers: {
             "auth-token" : userToken
           },
         })
       .then((response) => {
         if (response) {
-          fetchAllBlogs(userId, userToken);
-          toast.success("Blog deleted!");
+          fetchAllOwnersFrom(userId, userToken);
+          toast.success("Community deleted!");
         }
       })
       .catch((error) => {
@@ -142,7 +137,6 @@ function Index() {
 
   // useeffecttt
   useEffect(() => {
-
     try {
       // getting userId and userToken
       let token = localStorage.getItem("iProp-token");
@@ -150,7 +144,7 @@ function Index() {
         const decoded = jwtDecode(token);
         setUserId(decoded.userId);
         setUserToken(token);
-        fetchAllBlogs(decoded.userId, token);
+        fetchAllOwnersFrom(decoded.userId, token);
       }
     } catch (error) {
       console.log(error);
@@ -163,12 +157,12 @@ function Index() {
 
   const handleCancel = () => {
     setMode("display");
-    fetchAllBlogs(userId,userToken);
+    fetchAllOwnersFrom(userId,userToken);
   };
 
   // Click handler for the edit button
   const handleEdit = (id) => {
-    FetchBlog(id);
+    FetchOwnersFrom(id);
 
     setTimeout(() => {
       setMode("edit");
@@ -177,7 +171,7 @@ function Index() {
 
   // Click handler for the delete button
   const handleDelete = (id) => {
-    deleteBlogById(id);
+    deleteOwnersFromById(id);
   };
 
   return (
@@ -185,8 +179,8 @@ function Index() {
       {/* HEADER */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header
-          title="Library"
-          subtitle={mode === "add" ? "Add a library item" : (mode === "edit" ? "Edit the library item details" : "Manage library here")}
+          title="Owners From"
+          subtitle={mode === "add" ? "Add owner's builder" : (mode === "edit" ? "Edit owner's builder details" : "Manage owner's builders here")}
         />
 
         <Box>
@@ -210,7 +204,7 @@ function Index() {
 
       {/* Render form or DataGrid based on mode */}
       {mode === "add" ? (
-        <AddBlogForm  setModeToDisplay={setModeToDisplay}  userId={userId} userToken = {userToken}/>
+        <AddOwnersFromForm  setModeToDisplay={setModeToDisplay}  userId={userId} userToken = {userToken}/>
       ) : mode === "edit" ? (
         editData && (
           <Box
@@ -245,7 +239,7 @@ function Index() {
               },
             }}
           >
-            <AddBlogForm editData={editData} setModeToDisplay={setModeToDisplay} userId={userId} userToken = {userToken}/>{" "}
+            <AddOwnersFromForm editData={editData} setModeToDisplay={setModeToDisplay} userId={userId} userToken = {userToken}/>{" "}
           </Box>
         )
       ) : (

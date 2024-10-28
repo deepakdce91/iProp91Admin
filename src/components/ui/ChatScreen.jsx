@@ -25,7 +25,7 @@ function ChatScreen({ userId, userToken }) {
       .get(
         `${process.env.REACT_APP_BACKEND_URL}/api/communities/getAllCommunities?userId=${userId}`,
         {
-          headers: {
+          headers: { 
             "auth-token": userToken,
           },
         }
@@ -128,7 +128,7 @@ function ChatScreen({ userId, userToken }) {
             </div>
           </header>
 
-          {/* <!-- Contact List --> */}
+          {/* <!-- Community List --> */}
           <div className="overflow-y-auto bg-transparent h-fit p-3 mb-9 pb-20">
             {filteredGroupNames.map((item, index) => {
               return (

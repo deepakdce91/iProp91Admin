@@ -659,7 +659,7 @@ function Chats({
   const handleFileRemoving = () => {
     setFileToUpload();
   };
-
+// ---------------- 
   const addFile = async (e) => {
     e.preventDefault();
 

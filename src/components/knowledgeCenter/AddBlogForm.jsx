@@ -131,7 +131,6 @@ function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
           toast.success("Thumbnail picture changed!");
           setIsUploading(false);
           setPreviewUrl(publicUrl);
-          console.log(publicUrl);
           setAddData((prevData) => ({
             ...prevData,
             thumbnail: publicUrl,
@@ -205,7 +204,6 @@ function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
       toast.error("Fill all the fields.");
     }
 
-    console.log(addData)
   };
 
   useEffect(() => {
