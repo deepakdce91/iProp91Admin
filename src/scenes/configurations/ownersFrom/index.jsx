@@ -10,6 +10,7 @@ import "react-toastify/dist/ReactToastify.css";
 import Header from "../../../components/Header";
 import { jwtDecode } from "jwt-decode";
 import AddOwnersFromForm from "../../../components/configurations/AddOwnersFromForm";
+import {formatDate} from "../../../MyFunctions"
 
 
 function Index() {
@@ -49,6 +50,13 @@ function Index() {
       field: "enable",
       headerName: "Enabled",
       flex: 1,
+    },
+
+    {
+      field: "createdAt",
+      headerName: "Created At",
+      flex: 1,
+      valueGetter: (params) => formatDate(params.value),
     },
     
 
