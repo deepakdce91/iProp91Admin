@@ -221,9 +221,8 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
 
     if (editData) {
       setAddData({
-        title: editData.title,
-        file: editData.file,
-        content : editData.content,
+        name: editData.name,
+        url: editData.url,
         enable : editData.enable || "true"
       });
 
