@@ -99,6 +99,7 @@ function Index() {
         })
       .then((response) => {
         if (response) {
+          // console.log(response.data);
           setEditData(response.data);
         }
       })
