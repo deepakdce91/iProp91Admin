@@ -160,7 +160,7 @@ function Index() {
       .then((response) => {
         if (response) {
           toast("Property deleted!");
-          fetchAllProperties();
+          fetchAllProperties(userId, userToken);
         }
       })
       .catch((error) => {
