@@ -5,21 +5,20 @@ import { tokens } from "../../../theme";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Header from "../../../components/Header";
-import BuildersForm from "../../../components/configurations/BuildersForm";
-import {formatDate} from "../../../MyFunctions"
+import TestimonialForm from "../../../components/frontendPreview/TestimonialForm";
+import { formatDate } from "../../../MyFunctions";
+
 import { jwtDecode } from "jwt-decode";
 
 function Index() {
-
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
   const [userId, setUserId] = useState("");
   const [userToken, setUserToken] = useState("");
-
 
   const [mode, setMode] = useState("display");
   const [data, setData] = useState([]);
@@ -27,29 +26,23 @@ function Index() {
   const [editData, setEditData] = useState();
 
   const columns = [
-    { field: "_id", headerName: "ID", flex: 1 },
     {
-      field: "name",
-      headerName: "Builder",
+        field: "serial",
+        headerName: "No.",
+        width: 70,
+        valueGetter: (params) => params.api.getRowIndex(params.id) + 1, // Start numbering from 1
+      },
+    {
+      field: "title",
+      headerName: "Title",
       flex: 1,
       cellClassName: "name-column--cell",
     },
     {
-      field: "state",
-      headerName: "State",
-      flex: 1,
-    },
-    {
-      field: "city",
-      headerName: "City",
-      flex: 1,
-    },
-    {
-      field: "addedBy",
+      field: "userInfo",
       headerName: "Added By",
-      headerAlign: "left",
-      align: "left",
       flex: 1,
+      valueGetter: (params) => params.value.id,
     },
 
     {
@@ -64,13 +57,13 @@ function Index() {
       field: "createdAt",
       headerName: "Created",
       flex: 1,
-      valueGetter: (params) => formatDate(params.value), 
+      valueGetter: (params) => formatDate(params.value),
     },
     {
       field: "updatedAt",
       headerName: "Updated",
       flex: 1,
-      valueGetter: (params) => formatDate(params.value), 
+      valueGetter: (params) => formatDate(params.value),
     },
 
     {
@@ -95,16 +88,18 @@ function Index() {
         </Box>
       ),
     },
-  ];
+  ]; 
 
-  const fetchBuilder = async (id) => {
+  const fetchTestimonial = async (id) => {
     // Make the DELETE request
     await axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/builders/fetchbuilder/${id}?userId=${userId}`, {
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/testimonials/fetchTestimonial/${id}?userId=${userId}`,
+        {
           headers: {
             "auth-token" : userToken
           },
-        })
+        }
+      )
       .then((response) => {
         if (response) {
           setEditData(response.data);
@@ -116,13 +111,16 @@ function Index() {
       });
   };
 
-  const fetchAllBuilders = (userId, userToken) => {
-    axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/builders/fetchallbuilders?userId=${userId}`, {
+  const fetchAllTestimonials = (userId, userToken) => {
+    axios 
+      .get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/testimonials/fetchAllTestimonials?userId=${userId}`,
+        {
           headers: {
             "auth-token" : userToken
           },
-        })
+        }
+      )
       .then((response) => {
         setData(response.data);
       })
@@ -131,18 +129,21 @@ function Index() {
       });
   };
 
-  const deleteBuilderById = async (id) => {
+  const deleteTestimonialById = async (id) => {
     // Make the DELETE request
     await axios
-      .delete(`${process.env.REACT_APP_BACKEND_URL}/api/builders/deletebuilder/${id}?userId=${userId}`, {
+      .delete(
+        `${process.env.REACT_APP_BACKEND_URL}/api/testimonials/deleteTestimonial/${id}?userId=${userId}`, 
+        {
           headers: {
             "auth-token" : userToken
           },
-        })
+        }
+      )
       .then((response) => {
         if (response) {
-          toast.success("Builder deleted!");
-          fetchAllBuilders();
+          toast.error("Testimonial deleted!");
+          fetchAllTestimonials(userId,userToken);
         }
       })
       .catch((error) => {
@@ -153,6 +154,8 @@ function Index() {
 
   // useeffecttt
   useEffect(() => {
+    
+
     try {
       // getting userId and userToken
       let token = localStorage.getItem("iProp-token");
@@ -160,7 +163,7 @@ function Index() {
         const decoded = jwtDecode(token);
         setUserId(decoded.userId);
         setUserToken(token);
-        fetchAllBuilders(decoded.userId, token);
+        fetchAllTestimonials(decoded.userId, token);
       }
     } catch (error) {
       console.log(error);
@@ -172,13 +175,13 @@ function Index() {
   };
 
   const handleCancel = () => {
+    fetchAllTestimonials(userId,userToken);
     setMode("display");
-    fetchAllBuilders(userId, userToken);
   };
 
   // Click handler for the edit button
   const handleEdit = (id) => {
-    fetchBuilder(id);
+    fetchTestimonial(id);
 
     setTimeout(() => {
       setMode("edit");
@@ -187,17 +190,22 @@ function Index() {
 
   // Click handler for the delete button
   const handleDelete = (id) => {
-    deleteBuilderById(id);
+    deleteTestimonialById(id);
   };
-
 
   return (
     <Box m="20px">
       {/* HEADER */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header
-          title="Builders"
-          subtitle={mode === "add" ? "Add a Builder" : (mode === "edit" ? "Edit the builder details" : "Manage builders here")}
+          title="Testimonials"
+          subtitle={
+            mode === "add"
+              ? "Add a Testimonial"
+              : mode === "edit"
+              ? "Edit Testimonial "
+              : "Manage Testimonials here"
+          }
         />
 
         <Box>
@@ -214,14 +222,14 @@ function Index() {
               onClick={handleCancel}
             >
               Back
-            </div>
+            </div> 
           )}
         </Box>
       </Box>
 
       {/* Render form or DataGrid based on mode */}
       {mode === "add" ? (
-        <BuildersForm  userId={userId} userToken = {userToken}/>
+        <TestimonialForm setModeToDisplay={handleCancel} userId={userId} userToken = {userToken} />
       ) : mode === "edit" ? (
         editData && (
           <Box
@@ -256,7 +264,7 @@ function Index() {
               },
             }}
           >
-            <BuildersForm editData={editData} userId={userId} userToken = {userToken}/>{" "}
+            <TestimonialForm setModeToDisplay={handleCancel} userId={userId} userToken = {userToken} editData={editData} />{" "}
           </Box>
         )
       ) : (
@@ -301,9 +309,8 @@ function Index() {
           />
         </Box>
       )}
-      <ToastContainer position="top-right" autoClose={2000} />
     </Box>
-  )
+  );
 }
 
-export default Index
+export default Index;

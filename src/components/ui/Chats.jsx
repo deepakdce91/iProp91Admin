@@ -473,6 +473,8 @@ function Chats({
   // for message filtering
   const [searchTerm, setSearchTerm] = useState("");
 
+  const [uploadingFile, setUploadingFile] = useState(false);
+
   useEffect(() => {
     if (!(searchTerm.trim() === "")) {
       // Function to filter messages based on the search term
@@ -667,6 +669,7 @@ function Chats({
     const fileExtension = fileName.split(".")[fileName.split(".").length - 1];
 
     try {
+      setUploadingFile(true);
       let cloudFilePath = await uploadFileToCloud(fileToUpload);
       if (cloudFilePath) {
         let publicUrl = getPublicUrlFromSupabase(cloudFilePath);
@@ -675,7 +678,7 @@ function Chats({
             userId,
             userProfilePicture: "/admin-avatar.jpg", /// try catch
             file: {
-              name: fileName,
+              name: fileName, 
               url: publicUrl,
               type: fileExtension,
             },
@@ -683,6 +686,7 @@ function Chats({
           };
 
           handleSendMessage(msgObj, userId, userToken);
+          setUploadingFile(false);
       setTextMessage("");
       setFileToUpload();
         }
@@ -690,6 +694,7 @@ function Chats({
     } catch (error) {
       console.log(error.message);
       setFileToUpload();
+      setUploadingFile(false);
     }
   };
 
@@ -954,10 +959,11 @@ function Chats({
               </p>
             </div>
             <button
-              className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md ml-2"
+            disabled={uploadingFile}
+              className={`${uploadingFile === false ? "bg-indigo-500 hover:bg-indigo-600" : "bg-gray-600 hover:bg-gray-600"} text-white px-4 py-2 rounded-md ml-2`}
               onClick={addFile}
             >
-              Send
+           {uploadingFile === false ? "Send" : "Sending.."}
             </button>
           </div>
         )}

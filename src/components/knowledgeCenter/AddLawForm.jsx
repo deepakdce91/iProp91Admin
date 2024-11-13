@@ -63,7 +63,7 @@ function AddLawForm({ editData, setModeToDisplay, userToken, userId }) {
       console.error("Error fetching public URL:", error);
       return null;
     }
-    return data.publicUrl;
+    return {name : path.split("/")[path.split("/").length-1] ,url : data.publicUrl};
   };
 
 

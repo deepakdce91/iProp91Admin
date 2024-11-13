@@ -50,7 +50,7 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
       type: "",
       files: [],
     },
-    addedBy: "admin",
+    addedBy: userId,
   });
 
   // Upload the file to Supabase S3
@@ -331,6 +331,7 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
 
     if (editData) {
       setAddData({
+        ...editData,
         applicationStatus: editData.applicationStatus,
         state: editData.state,
         city: editData.city,
@@ -350,7 +351,6 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
           type: editData.documents.type,
           files: editData.documents.files,
         },
-        addedBy: "admin",
       });
     }
   }, [editData]);

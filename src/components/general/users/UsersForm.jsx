@@ -13,6 +13,9 @@ import { client } from "../../../config/s3Config";
 
 import { supabase } from "../../../config/supabase";
 
+import { TbAlertSquareRoundedFilled } from "react-icons/tb";
+import { IoCheckboxOutline } from "react-icons/io5";
+
 function UserForm({ editData, setModeToDisplay , userToken, userId }) {
 
   const fileInputRef = useRef(null);
@@ -186,10 +189,10 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
     const fetchData = async () => {
       if (editData) {
         setAddData({
+          ...addData,
           name: editData.name,
           phone: editData.phone,
           email: editData.email,
-          password: editData.password,
           profilePicture: editData.profilePicture || "",
           lastLogin: editData.lastLogin || new Date(),
           suspended: editData.suspended || "false",
@@ -365,14 +368,25 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
                     <label htmlFor="password" className="text-lg font-medium">
                       Password
                     </label>
+                    
+
+                    {editData && <div
+                    className={`w-full mt-[18px]  rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md flex items-center -center`}
+                    >
+                   {editData.password === "" ? <><TbAlertSquareRoundedFilled className="mr-2"/>    <div>{"Password not set"}</div></> : <><IoCheckboxOutline className="mr-2 text-green-400"/>    <div>{"Password Set"}</div></>}
+
+                   {/*   */}
+                    </div>}
+
                     <input
                       type="text"
                       name="password"
                       id="password"
                       value={addData.password}
                       onChange={(e) => changeField("password", e.target.value)}
-                      placeholder="Password"
-                      className="w-full mt-[18px] text-gray-700 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                      placeholder={editData?.password === "" ? "Set password" : "Set new password"}
+                      className={`w-full mt-[18px] text-gray-700 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md flex items-center -center`}
+                      
                     />
                   </div>
                 </div>

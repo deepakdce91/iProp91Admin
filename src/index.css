@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 @import url("https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
 html,
 body,
@@ -41,11 +42,9 @@ body,
 }
 
 
+
 .ck-editor__editable {
-  height: 500px; /* Set desired height here */
   width: 100%;
-
-
 }
 
 /* Add padding to the entire content of the editor */
@@ -64,3 +63,20 @@ body,
 .ck-content li {
   margin-left: 6px; 
 }
+
+.ck-content h1 {
+  font-size: 2em; /* Adjust size as needed */
+}
+.ck-content h2 {
+  font-size: 1.75em;
+}
+.ck-content h3 {
+  font-size: 1.5em;
+}
+
+
+
+.p-chips-input-token{
+  padding: 15px;
+}
+
