@@ -5,21 +5,18 @@ import { tokens } from "../../../theme";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Header from "../../../components/Header";
-import BuildersForm from "../../../components/configurations/BuildersForm";
-import {formatDate} from "../../../MyFunctions"
 import { jwtDecode } from "jwt-decode";
+import AdviseForm from "../../../components/frontendPreview/AdviseForm";
 
 function Index() {
-
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
   const [userId, setUserId] = useState("");
   const [userToken, setUserToken] = useState("");
-
 
   const [mode, setMode] = useState("display");
   const [data, setData] = useState([]);
@@ -27,50 +24,28 @@ function Index() {
   const [editData, setEditData] = useState();
 
   const columns = [
-    { field: "_id", headerName: "ID", flex: 1 },
     {
-      field: "name",
-      headerName: "Builder",
+      field: "serial",
+      headerName: "No.",
+      width: 70,
+      valueGetter: (params) => params.api.getRowIndex(params.id) + 1, // Start numbering from 1
+    },
+    {
+      field: "title",
+      headerName: "Title",
       flex: 1,
       cellClassName: "name-column--cell",
     },
     {
-      field: "state",
-      headerName: "State",
+      field: "file",
+      headerName: "File",
+      valueGetter: (params) => params.value.name,
       flex: 1,
     },
-    {
-      field: "city",
-      headerName: "City",
-      flex: 1,
-    },
-    {
-      field: "addedBy",
-      headerName: "Added By",
-      headerAlign: "left",
-      align: "left",
-      flex: 1,
-    },
-
     {
       field: "enable",
       headerName: "Enabled",
-      headerAlign: "left",
-      align: "left",
-      flex: 0.5,
-    },
-
-    {
-      field: "createdAt",
-      headerName: "Created",
       flex: 1,
-      valueGetter: (params) => formatDate(params.value), 
-    },
-    {
-      field: "updatedAt",
-      headerName: "Updated",
-      flex: 1,
-      valueGetter: (params) => formatDate(params.value), 
     },
 
     {
@@ -97,14 +72,22 @@ function Index() {
     },
   ];
 
-  const fetchBuilder = async (id) => {
+  const setModeToDisplay = () => {
+    setMode("display");
+    fetchAllAdvise(userId, userToken);
+  };
+
+  const FetchAdvise = async (id) => {
     // Make the DELETE request
     await axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/builders/fetchbuilder/${id}?userId=${userId}`, {
+      .get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/advise/FetchAdvise/${id}?userId=${userId}`,
+        {
           headers: {
-            "auth-token" : userToken
+            "auth-token": userToken,
           },
-        })
+        }
+      )
       .then((response) => {
         if (response) {
           setEditData(response.data);
@@ -116,13 +99,16 @@ function Index() {
       });
   };
 
-  const fetchAllBuilders = (userId, userToken) => {
+  const fetchAllAdvise = (userId, userToken) => {
     axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/builders/fetchallbuilders?userId=${userId}`, {
+      .get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/advise/fetchAllAdvise?userId=${userId}`,
+        {
           headers: {
-            "auth-token" : userToken
+            "auth-token": userToken,
           },
-        })
+        }
+      )
       .then((response) => {
         setData(response.data);
       })
@@ -131,18 +117,21 @@ function Index() {
       });
   };
 
-  const deleteBuilderById = async (id) => {
+  const deleteAdviseById = async (id) => {
     // Make the DELETE request
     await axios
-      .delete(`${process.env.REACT_APP_BACKEND_URL}/api/builders/deletebuilder/${id}?userId=${userId}`, {
+      .delete(
+        `${process.env.REACT_APP_BACKEND_URL}/api/advise/deleteAdvise/${id}?userId=${userId}`,
+        {
           headers: {
-            "auth-token" : userToken
+            "auth-token": userToken,
           },
-        })
+        }
+      )
       .then((response) => {
         if (response) {
-          toast.success("Builder deleted!");
-          fetchAllBuilders();
+          fetchAllAdvise(userId, userToken);
+          toast.success("Advise deleted!");
         }
       })
       .catch((error) => {
@@ -160,7 +149,7 @@ function Index() {
         const decoded = jwtDecode(token);
         setUserId(decoded.userId);
         setUserToken(token);
-        fetchAllBuilders(decoded.userId, token);
+        fetchAllAdvise(decoded.userId, token);
       }
     } catch (error) {
       console.log(error);
@@ -173,12 +162,12 @@ function Index() {
 
   const handleCancel = () => {
     setMode("display");
-    fetchAllBuilders(userId, userToken);
+    fetchAllAdvise(userId, userToken);
   };
 
   // Click handler for the edit button
   const handleEdit = (id) => {
-    fetchBuilder(id);
+    FetchAdvise(id);
 
     setTimeout(() => {
       setMode("edit");
@@ -187,17 +176,22 @@ function Index() {
 
   // Click handler for the delete button
   const handleDelete = (id) => {
-    deleteBuilderById(id);
+    deleteAdviseById(id);
   };
-
 
   return (
     <Box m="20px">
       {/* HEADER */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header
-          title="Builders"
-          subtitle={mode === "add" ? "Add a Builder" : (mode === "edit" ? "Edit the builder details" : "Manage builders here")}
+          title="Advise"
+          subtitle={
+            mode === "add"
+              ? "Add Advise"
+              : mode === "edit"
+              ? "Edit Advise"
+              : "Manage Advise here"
+          }
         />
 
         <Box>
@@ -221,7 +215,11 @@ function Index() {
 
       {/* Render form or DataGrid based on mode */}
       {mode === "add" ? (
-        <BuildersForm  userId={userId} userToken = {userToken}/>
+        <AdviseForm
+          setModeToDisplay={setModeToDisplay}
+          userId={userId}
+          userToken={userToken}
+        />
       ) : mode === "edit" ? (
         editData && (
           <Box
@@ -256,7 +254,12 @@ function Index() {
               },
             }}
           >
-            <BuildersForm editData={editData} userId={userId} userToken = {userToken}/>{" "}
+            <AdviseForm
+              editData={editData}
+              setModeToDisplay={setModeToDisplay}
+              userId={userId}
+              userToken={userToken}
+            />{" "}
           </Box>
         )
       ) : (
@@ -301,9 +304,8 @@ function Index() {
           />
         </Box>
       )}
-      <ToastContainer position="top-right" autoClose={2000} />
     </Box>
-  )
+  );
 }
 
-export default Index
+export default Index;

@@ -30,7 +30,7 @@ function Index() {
     { field: "_id", headerName: "ID", flex: 1 },
     {
       field: "name",
-      headerName: "City",
+      headerName: "Project",
       flex: 1,
       cellClassName: "name-column--cell",
     },

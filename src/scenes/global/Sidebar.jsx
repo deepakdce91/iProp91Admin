@@ -18,14 +18,13 @@ import { BsFillInfoSquareFill } from "react-icons/bs";
 import { MdLandscape } from "react-icons/md";
 import { FaUsers } from "react-icons/fa";
 import { IoDocumentLockSharp } from "react-icons/io5";
-
 import { FaLayerGroup } from "react-icons/fa";
 import { IoChatboxEllipsesSharp } from "react-icons/io5";
 import { TbMessageReportFilled } from "react-icons/tb";
-
 import { GiOpenBook } from "react-icons/gi";
-
 import { FaHouseUser } from "react-icons/fa";
+import { MdOutlineRateReview } from "react-icons/md";
+import { FaRegGem } from "react-icons/fa";
 
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
@@ -74,9 +73,8 @@ const Sidebar = () => {
           color: "#6870fa !important",
         },
       }}
-      
     >
-      <ProSidebar collapsed={isCollapsed} >
+      <ProSidebar collapsed={isCollapsed}>
         <Menu iconShape="square" className=" mb-6">
           {/* LOGO AND MENU ICON */}
           <MenuItem
@@ -86,7 +84,6 @@ const Sidebar = () => {
               margin: "10px 0 20px 0",
               color: colors.grey[100],
             }}
-            
           >
             {!isCollapsed && (
               <Box
@@ -94,7 +91,6 @@ const Sidebar = () => {
                 justifyContent="space-between"
                 alignItems="center"
                 ml="15px"
-                
               >
                 <Typography variant="h3" color={colors.grey[100]}>
                   Iprop91
@@ -190,7 +186,7 @@ const Sidebar = () => {
               </Typography>
             )}
 
-<Item
+            <Item
               title="Owners From"
               to="/ownerFrom"
               icon={<FaHouseUser className="h-5 w-5" />}
@@ -314,6 +310,32 @@ const Sidebar = () => {
               title="Case Laws"
               to="/caseLaws"
               icon={<GiOpenBook className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+            {!isCollapsed && (
+              <Typography
+                variant="h6"
+                color={colors.grey[200]}
+                sx={{ m: "15px 0 5px 20px" }}
+              >
+                Additional
+              </Typography>
+            )}
+
+            <Item
+              title="Testimonials"
+              to="/testimonials"
+              icon={<MdOutlineRateReview className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+            <Item
+              title="Advise"
+              to="/advise"
+              icon={<FaRegGem className="h-4 w-4" />}
               selected={selected}
               setSelected={setSelected}
             />

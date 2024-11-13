@@ -1,26 +1,26 @@
-import { Box } from "@mui/material";
-import { useTheme } from "@mui/material";
+import { Box, useTheme } from "@mui/material";
 import { tokens } from "../../theme";
 import { useState, useEffect, useRef } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
-
 import heic2any from "heic2any";
 import { MdEdit } from "react-icons/md";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { client } from "../../config/s3Config";
-
 import { supabase } from "../../config/supabase";
 
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
-
 import CKUploadAdapter from "../../config/CKUploadAdapter";
 
+import { Chips } from "primereact/chips";
 
- 
 function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
+  const urlRegex =
+    /^(https?:\/\/)/;
+  const youtubeRegex = /^https:\/\/youtu/;
+
   const fileInputRef = useRef(null);
 
   const [isUploading, setIsUploading] = useState(false);
@@ -35,14 +35,17 @@ function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
     thumbnail: "",
     title: "",
     content: "",
+    youtubeVideos: [],
+    additionalMediaLinks: [],
     enable: "true",
   });
 
   const editorConfiguration = {
-    // plugins: [ Image, PictureEditing, ImageUpload, CloudServices, CKBox, CKBoxImageEdit, /* ... */ ],
     extraPlugins: [
       function (editor) {
-        editor.plugins.get("FileRepository").createUploadAdapter = (loader) => {
+        editor.plugins.get("FileRepository").createUploadAdapter = function (
+          loader
+        ) {
           return new CKUploadAdapter(loader, supabase);
         };
       },
@@ -203,7 +206,6 @@ function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
     } else {
       toast.error("Fill all the fields.");
     }
-
   };
 
   useEffect(() => {
@@ -213,6 +215,8 @@ function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
           thumbnail: editData.thumbnail || "/default-library-thumbnail.jpg",
           title: editData.title,
           content: editData.content,
+          youtubeVideos: editData.youtubeVideos,
+          additionalMediaLinks: editData.additionalMediaLinks,
           enable: editData.enable,
         });
 
@@ -345,6 +349,10 @@ function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
               <CKEditor
                 editor={ClassicEditor}
                 config={editorConfiguration}
+                // config={{
+                // extraPlugins: [],
+                // toolbar: ['heading', '|', 'bold', 'italic', '|', 'imageUpload', '|', 'undo', 'redo'],
+                // }}
                 data={addData.content}
                 onChange={(event, editor) => {
                   const data = editor.getData();
@@ -353,10 +361,80 @@ function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
               />
             </div>
 
+ {/* youtube urls  */}
+
+            <div className="flex flex-col md:flex-row gap-2">
+              <div className="flex flex-col w-full  pr-0 md:pr-5 ">
+                <div className="w-full pr-3">
+                  <div className="my-4 flex flex-col">
+                    <label htmlFor="ytlinks" className="text-lg mb-2 font-medium">
+                      Youtube Links
+                    </label>
+                    <Chips
+                value={addData.youtubeVideos}
+                onChange={(e) => {
+                  if (e.value.length > addData.additionalMediaLinks.length) {
+                    // ("item added");
+                    const recentItem = e.value[e.value.length - 1];
+                    const isRecentUrl = youtubeRegex.test(recentItem);
+                    if (isRecentUrl === true) {
+                      changeField("youtubeVideos", e.value);
+                    } else {
+                      toast.error("Provide a valid youtube url.")
+                    }
+                  } else {
+                    changeField("youtubeVideos", e.value);
+                  }
+                }}
+              ></Chips>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+
+{/* // additional urls  */}
+
+            <div className="flex flex-col md:flex-row gap-2">
+              <div className="flex flex-col w-full  pr-0 md:pr-5 ">
+                <div className="w-full pr-3">
+                  <div className="my-4 flex flex-col">
+                    <label htmlFor="addlinks" className="text-lg mb-2 font-medium">
+                      Additional media links
+                    </label>
+                 
+                   <Chips
+     
+                value={addData.additionalMediaLinks}
+                onChange={(e) => {
+                  if (e.value.length > addData.additionalMediaLinks.length) {
+                    // ("item added");
+                    const recentItem = e.value[e.value.length - 1];
+                    const isRecentUrl = urlRegex.test(recentItem);
+                    if (isRecentUrl === true) {
+                      changeField("additionalMediaLinks", e.value);
+                    } else {
+                      toast.error("Provide a valid url.")
+                    }
+                  } else {
+                    changeField("additionalMediaLinks", e.value);
+                  }
+                }}
+              ></Chips>
+                   
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              {/* <LinkChips fieldName={"additionalMediaLinks"} preSelected={addData.additionalMediaLinks} updateSelectedArr={changeField} /> */}
+
+              
+            </div>
+
             <div className="my-5">
-              <label className="text-lg font-medium ">
-                Enable?
-              </label>
+              <label className="text-lg font-medium ">Enable?</label>
               <div className="flex items-center space-x-6 mt-2">
                 <div className="flex items-center">
                   <input

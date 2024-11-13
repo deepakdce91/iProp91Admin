@@ -7,7 +7,6 @@ import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 import {
   removeSpaces, 
-  sortArrayByName,
 } from "../../MyFunctions";
 
 import { supabase } from "../../config/supabase";
@@ -17,14 +16,11 @@ import { client } from "../../config/s3Config";
 
 import heic2any from "heic2any";
 
-import { CKEditor } from "@ckeditor/ckeditor5-react";
-import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
-
 import CKUploadAdapter from "../../config/CKUploadAdapter";
 
 
 
-function AddCaseLawForm({ editData, setModeToDisplay, userToken, userId }) {
+function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
 
   const [uploadFile, setUploadFile] = useState();
   const [isUploading, setIsUploading] = useState(false);
@@ -35,21 +31,10 @@ function AddCaseLawForm({ editData, setModeToDisplay, userToken, userId }) {
 
   const [addData, setAddData] = useState({
     title: "",
-    content : "",
     file: "",
-    enable : "true"
+    enable : "false"
    
   });
-
-  const editorConfiguration = {
-    extraPlugins: [
-      function (editor) {
-        editor.plugins.get("FileRepository").createUploadAdapter = (loader) => {
-          return new CKUploadAdapter(loader, supabase);
-        };
-      },
-    ],
-  };
 
   const getPublicUrlFromSupabase = (path) => {
     const { data, error } = supabase.storage.from(process.env.REACT_APP_LIBRARY_BUCKET).getPublicUrl(path);
@@ -136,7 +121,6 @@ function AddCaseLawForm({ editData, setModeToDisplay, userToken, userId }) {
                 setUploadFile("");
                 setFileAddedForUpload(false);
                 toast.success("File uploaded.")
-
                 }
             }
 
@@ -164,13 +148,13 @@ function AddCaseLawForm({ editData, setModeToDisplay, userToken, userId }) {
     } else {
       if (
         addData.title !== "" &&
+        addData.file !== "" &&
         addData.enable !== "" 
       ) {
-        if(!(addData.content === "" && addData.file === "")){
         if (editData) {
           axios
             .put(
-              `${process.env.REACT_APP_BACKEND_URL}/api/caseLaws/updateCaseLaw/${editData._id}?userId=${userId}`,
+              `${process.env.REACT_APP_BACKEND_URL}/api/advise/updateAdvise/${editData._id}?userId=${userId}`,
               addData,
               {
                 headers: {
@@ -180,7 +164,7 @@ function AddCaseLawForm({ editData, setModeToDisplay, userToken, userId }) {
             )
             .then((response) => {
               if (response) {
-                toast.success("Case Law updated!");
+                toast.success("Advise updated!");
                 setTimeout(() => {
                   setModeToDisplay();
                 }, 2000);
@@ -193,7 +177,7 @@ function AddCaseLawForm({ editData, setModeToDisplay, userToken, userId }) {
         } else {
           axios
             .post(
-              `${process.env.REACT_APP_BACKEND_URL}/api/caseLaws/addCaseLaw?userId=${userId}`,
+              `${process.env.REACT_APP_BACKEND_URL}/api/advise/addAdvise?userId=${userId}`,
               addData,
               {
                 headers: {
@@ -203,7 +187,7 @@ function AddCaseLawForm({ editData, setModeToDisplay, userToken, userId }) {
             )
             .then((response) => {
               if (response) {
-                toast.success("Case Law Added!");
+                toast.success("Advise Added!");
                 setTimeout(() => {
                   setModeToDisplay();
                 }, 2000);
@@ -215,9 +199,7 @@ function AddCaseLawForm({ editData, setModeToDisplay, userToken, userId }) {
               toast.error("Some ERROR occurred.");
             });
         }
-        }else{
-            toast.error("Provide either a file or content for Law.")
-        }
+        
       } else {
         toast.error("Fill all the fields.");
       }
@@ -235,7 +217,6 @@ function AddCaseLawForm({ editData, setModeToDisplay, userToken, userId }) {
       setAddData({
         title: editData.title,
         file: editData.file,
-        content : editData.content,
         enable : editData.enable || "true"
       });
 
@@ -359,20 +340,6 @@ function AddCaseLawForm({ editData, setModeToDisplay, userToken, userId }) {
               </div>
             </div>
 
-
-            <h2 className="text-lg font-medium mt-2 mb-3">Content</h2>
-            <div className=" w-full  text-black pr-0 md:pr-5 ">
-              <CKEditor
-                editor={ClassicEditor}
-                config={editorConfiguration}
-                data={addData.content}
-                onChange={(event, editor) => {
-                  const data = editor.getData();
-                  changeField("content", data);
-                }}
-              />
-            </div>
-
             <div className="my-5">
               <label className="text-lg font-medium ">
                 Enable?
@@ -430,7 +397,7 @@ function AddCaseLawForm({ editData, setModeToDisplay, userToken, userId }) {
                 }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
                 disabled={isUploading === true ? true : false}
               >
-                {editData ? "Update Case Law" : "Add Case Law"}
+                {editData ? "Update Advise" : "Add Advise"}
               </button>
             </div>
           </form>
@@ -441,4 +408,4 @@ function AddCaseLawForm({ editData, setModeToDisplay, userToken, userId }) {
   );
 }
 
-export default AddCaseLawForm;
+export default AdviseForm;
