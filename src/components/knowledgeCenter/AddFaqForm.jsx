@@ -34,6 +34,7 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
   const colors = tokens(theme.palette.mode);
 
   const [addData, setAddData] = useState({
+    type:"",
     title: "",
     content : "",
     file: "",
@@ -147,7 +148,7 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
         console.log(error.message);
       }
   
-  };
+  }; 
 
 
   const changeField = (field, value) => {
@@ -164,7 +165,8 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
     } else {
       if (
         addData.title !== "" &&
-        addData.enable !== "" 
+        addData.enable !== "" &&
+        addData.type !== ""
       ) {
         if(!(addData.content === "" && addData.file === "")){
         if (editData) {
@@ -233,6 +235,7 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
 
     if (editData) {
       setAddData({
+        type : editData.type,
         title: editData.title,
         file: editData.file,
         content : editData.content,
@@ -303,6 +306,35 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
       <div className="flex items-center justify-center">
         <div className="w-full">
           <form>
+
+            {/* --- type of Faq  */}
+            <div className="flex flex-col md:flex-row -mx-3">
+              <div className="w-full px-3 md:w-1/2">
+                <div className="mb-5">
+                  <label
+                    htmlFor="type"
+                    className="mb-3 block text-base font-medium"
+                  >
+                    Type
+                  </label> 
+                  <select
+                    id="type"
+                    value={addData.type}
+                    onChange={(e) => changeField("type", e.target.value)}
+                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  >
+                    <option value="">Select...</option>
+                    <option value="knowledge-center">Knowledge Center</option>
+                    <option value="nri">NRI</option>
+                    <option value="site">Site</option>
+
+                  </select>
+                </div>
+              </div>
+
+            </div>
+
+
             {/* // customer name and number  */}
             <div className="flex flex-col md:flex-row -mx-3">
               <div className="w-full px-3 md:w-1/2">

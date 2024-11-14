@@ -12,6 +12,7 @@ import AccordionCustomIcon from "../../ui/Accordion";
 import { handleDownload } from "../../../MyFunctions";
 import { IoMdDownload } from "react-icons/io";
 import AddCommunityModal from "../../ui/AddCommunityModal";
+import AddMoreInfoReasonModal from "../../ui/AddMoreInfoReasonModal";
 
 //get signed url---will be used sooon
 const getSignedUrlForPrivateFile = async (path) => {
@@ -49,8 +50,10 @@ const ShowPropertyDetails = ({ data }) => {
   const [showCommunityModal, setShowCommunityModal] = useState(false);
   const [propertyOwnerData, setPropertyOwnerData] = useState();
 
-  const fetchPropertyOwnerData = async(userId, userToken)=>{
-    const id = data.addedBy
+  const [showMoreInfoReasonModal, setShowMoreInfoReasonModal] = useState(false);
+
+  const fetchPropertyOwnerData = async (userId, userToken) => {
+    const id = data.addedBy;
     await axios
       .get(
         `${process.env.REACT_APP_BACKEND_URL}/api/users/fetchuser/${id}?userId=${userId}`,
@@ -62,18 +65,23 @@ const ShowPropertyDetails = ({ data }) => {
       )
       .then((response) => {
         if (response) {
-          setPropertyOwnerData(response.data)
+          setPropertyOwnerData(response.data);
         }
       })
       .catch((error) => {
         console.error("Error:", error);
         toast.error("Some ERROR occurred.");
       });
-  }
+  };
 
-  const closeModal = ()=>{
+  const closeModal = () => {
     setShowCommunityModal(false);
-  }
+  };
+
+  const closeMoreInfoReasonModal = () => {
+    setShowMoreInfoReasonModal(false);
+  };
+
   const fetchSafeData = async (userToken, userId) => {
     await axios
       .get(
@@ -100,15 +108,27 @@ const ShowPropertyDetails = ({ data }) => {
       setDocumentArray((prevItems) => [...prevItems, url]);
     });
   };
+
+  const updateOriginalData = (field, value) => {
+    setUpdateData((prevData) => ({
+      ...prevData,
+      [field]: value,
+    }));
+  };
+
   const changeField = (field, value) => {
-    // if application status changed to approve...
-    // make a safe with that propertyId
-    if (value === "approved") {
+    if (value === "more-info-required") {
+      setShowMoreInfoReasonModal(true);
+    } else {
+      setUpdateData((prevData) => ({
+        ...prevData,
+        [field]: value,
+      }));
       axios
-        .post(
-          `${process.env.REACT_APP_BACKEND_URL}/api/safe/adminAddNewSafe?userId=${userId}`,
+        .put(
+          `${process.env.REACT_APP_BACKEND_URL}/api/property/updateproperty/${data._id}?userId=${userId}`,
           {
-            propertyId: data._id,
+            applicationStatus: value,
           },
           {
             headers: {
@@ -118,8 +138,32 @@ const ShowPropertyDetails = ({ data }) => {
         )
         .then((response) => {
           if (response) {
-            console.log(response);
-            toast.success("Safe Created!");
+            toast.success("Field updated!");
+            // if application status changed to approve...
+            // make a safe with that propertyId
+            if (value === "approved") {
+              axios
+                .post(
+                  `${process.env.REACT_APP_BACKEND_URL}/api/safe/adminAddNewSafe?userId=${userId}`,
+                  {
+                    propertyId: data._id,
+                  },
+                  {
+                    headers: {
+                      "auth-token": userToken,
+                    },
+                  }
+                )
+                .then((response) => {
+                  if (response) {
+                    toast.success("Safe Created!");
+                  }
+                })
+                .catch((error) => {
+                  console.error("Error:", error);
+                  toast.error("Some ERROR occurred.");
+                });
+            }
           }
         })
         .catch((error) => {
@@ -127,34 +171,6 @@ const ShowPropertyDetails = ({ data }) => {
           toast.error("Some ERROR occurred.");
         });
     }
-
-    setUpdateData((prevData) => ({
-      ...prevData,
-      [field]: value,
-    }));
-
-    axios
-      .put(
-        `${process.env.REACT_APP_BACKEND_URL}/api/property/updateproperty/${data._id}?userId=${userId}`,
-        {
-          applicationStatus: value,
-        },
-        {
-          headers: {
-            "auth-token": userToken,
-          },
-        }
-      )
-      .then((response) => {
-        if (response) {
-          console.log(response);
-          toast.success("Field updated!");
-        }
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        toast.error("Some ERROR occurred.");
-      });
   };
 
   useEffect(() => {
@@ -169,13 +185,11 @@ const ShowPropertyDetails = ({ data }) => {
         setUserId(decoded.userId);
         setUserToken(token);
         fetchSafeData(token, decoded.userId);
-        fetchPropertyOwnerData(decoded.userId,token)
+        fetchPropertyOwnerData(decoded.userId, token);
       }
     } catch (error) {
       console.log(error);
     }
-
-    
   }, []);
 
   return (
@@ -397,7 +411,6 @@ const ShowPropertyDetails = ({ data }) => {
             </div>
           </div>
         </div>
-        
       </div>
 
       {updateData.applicationStatus === "approved" && (
@@ -427,13 +440,26 @@ const ShowPropertyDetails = ({ data }) => {
           )}
 
           <button
-          onClick={()=>{setShowCommunityModal(true)}}
+            onClick={() => {
+              setShowCommunityModal(true);
+            }}
             type="button"
             className="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-green-500 text-white hover:bg-green-600  disabled:opacity-50 disabled:pointer-events-none ml-3"
           >
             Add to community
           </button>
-          {userId && showCommunityModal===true && propertyOwnerData && <AddCommunityModal userId={userId} userToken={userToken} closeModal={closeModal} _id={propertyOwnerData._id} profilePicture={propertyOwnerData.profilePicture} name={propertyOwnerData.name} phone={propertyOwnerData.phone}/>}
+          {userId && showCommunityModal === true && propertyOwnerData && (
+            <AddCommunityModal
+              userId={userId}
+              userToken={userToken}
+              closeModal={closeModal}
+              _id={propertyOwnerData._id}
+              profilePicture={propertyOwnerData.profilePicture}
+              name={propertyOwnerData.name}
+              phone={propertyOwnerData.phone}
+            />
+          )}
+
         </div>
       )}
 
@@ -446,6 +472,16 @@ const ShowPropertyDetails = ({ data }) => {
             safeData={safeData}
           />
         )}
+
+{userId && showMoreInfoReasonModal === true && propertyOwnerData && (
+            <AddMoreInfoReasonModal
+              _id={data._id}
+              updateOriginalData={updateOriginalData}
+              userId={userId}
+              userToken={userToken}
+              closeModal={closeMoreInfoReasonModal}
+            />
+          )}
       </div>
     </>
   );
