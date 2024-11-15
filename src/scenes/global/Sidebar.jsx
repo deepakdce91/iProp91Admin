@@ -25,6 +25,9 @@ import { GiOpenBook } from "react-icons/gi";
 import { FaHouseUser } from "react-icons/fa";
 import { MdOutlineRateReview } from "react-icons/md";
 import { FaRegGem } from "react-icons/fa";
+import { FaMobileAlt } from "react-icons/fa";
+import { FaCodeCompare } from "react-icons/fa6";
+import { MdPermContactCalendar } from "react-icons/md";
 
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
@@ -336,6 +339,30 @@ const Sidebar = () => {
               title="Advise"
               to="/advise"
               icon={<FaRegGem className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+            <Item
+              title="Mobile Tile"
+              to="/mobileTiles"
+              icon={<FaMobileAlt className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+            <Item
+              title="Comparisons"
+              to="/comparisons"
+              icon={<FaCodeCompare className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+            <Item
+              title="Contact Us"
+              to="/contactUs"
+              icon={<MdPermContactCalendar className="h-4 w-4" />}
               selected={selected}
               setSelected={setSelected}
             />

@@ -17,8 +17,7 @@ import CKUploadAdapter from "../../config/CKUploadAdapter";
 import { Chips } from "primereact/chips";
 
 function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
-  const urlRegex =
-    /^(https?:\/\/)/;
+  const urlRegex = /^(https?:\/\/)/;
   const youtubeRegex = /^https:\/\/youtu/;
 
   const fileInputRef = useRef(null);
@@ -32,6 +31,7 @@ function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
   const colors = tokens(theme.palette.mode);
 
   const [addData, setAddData] = useState({
+    priority: 6,
     thumbnail: "",
     title: "",
     content: "",
@@ -154,55 +154,58 @@ function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
     }));
   };
 
-  const handleSubmit = (addData) => {
-    if (addData.title !== "" && addData.content !== "") {
-      if (editData) {
-        axios
-          .put(
-            `${process.env.REACT_APP_BACKEND_URL}/api/library/updateBlog/${editData._id}?userId=${userId}`,
-            addData,
-            {
-              headers: {
-                "auth-token": userToken,
-              },
-            }
-          )
-          .then((response) => {
-            if (response) {
-              toast("Blog updated!");
-              setTimeout(() => {
-                setModeToDisplay();
-              }, 2000);
-            }
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-            toast.error("Some ERROR occurred.");
-          });
-      } else {
-        axios
-          .post(
-            `${process.env.REACT_APP_BACKEND_URL}/api/library/addBlog?userId=${userId}`,
-            addData,
-            {
-              headers: {
-                "auth-token": userToken,
-              },
-            }
-          )
-          .then((response) => {
-            if (response) {
-              toast("Blog added!");
-              setTimeout(() => {
-                setModeToDisplay();
-              }, 2000);
-            }
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-            toast.error("Some ERROR occurred.");
-          });
-      }
+  const handleSubmit = (myData) => {
+    if (myData.title !== "" && myData.content !== "" && myData.priority !== "") {
+
+      const addData = myData;
+      addData.priority = Number(myData.priority);
+        if (editData) {
+          axios
+            .put(
+              `${process.env.REACT_APP_BACKEND_URL}/api/library/updateBlog/${editData._id}?userId=${userId}`,
+              addData,
+              {
+                headers: {
+                  "auth-token": userToken,
+                },
+              }
+            )
+            .then((response) => {
+              if (response) {
+                toast("Blog updated!");
+                setTimeout(() => {
+                  setModeToDisplay();
+                }, 2000);
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              toast.error("Some ERROR occurred.");
+            });
+        } else {
+          axios
+            .post(
+              `${process.env.REACT_APP_BACKEND_URL}/api/library/addBlog?userId=${userId}`,
+              addData,
+              {
+                headers: {
+                  "auth-token": userToken,
+                },
+              }
+            )
+            .then((response) => {
+              if (response) {
+                toast("Blog added!");
+                setTimeout(() => {
+                  setModeToDisplay();
+                }, 2000);
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              toast.error("Some ERROR occurred.");
+            });
+        }
     } else {
       toast.error("Fill all the fields.");
     }
@@ -212,6 +215,7 @@ function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
     const fetchData = async () => {
       if (editData) {
         setAddData({
+          priority: editData.priority,
           thumbnail: editData.thumbnail || "/default-library-thumbnail.jpg",
           title: editData.title,
           content: editData.content,
@@ -341,6 +345,36 @@ function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
                   </div>
                 </div>
               </div>
+
+              <div className="flex flex-col w-full md:w-1/2 pr-0 md:pr-5 ">
+                <div className="w-full pr-3">
+                  <div className="my-4">
+                    <label htmlFor="priority" className="text-lg font-medium">
+                      Priority <span className="font-extralight text-sm">{"( From 1 to 6 )"}</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={"1"}
+                      max={"6"}
+                      name="priority"
+                      id="priority"
+                      value={addData.priority}
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        // Validate if the value is within the range 1-6
+                        if (
+                          newValue === "" ||
+                          (newValue >= 1 && newValue <= 6)
+                        ) {
+                          changeField("priority",newValue);
+                        }
+                      }}
+                      placeholder="Priority"
+                      className="w-full mt-[10px] text-gray-700 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <h2 className="text-lg font-medium mt-2 mb-3">Content</h2>
@@ -361,67 +395,74 @@ function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
               />
             </div>
 
- {/* youtube urls  */}
+            {/* youtube urls  */}
 
             <div className="flex flex-col md:flex-row gap-2">
               <div className="flex flex-col w-full  pr-0 md:pr-5 ">
                 <div className="w-full pr-3">
                   <div className="my-4 flex flex-col">
-                    <label htmlFor="ytlinks" className="text-lg mb-2 font-medium">
+                    <label
+                      htmlFor="ytlinks"
+                      className="text-lg mb-2 font-medium"
+                    >
                       Youtube Links
                     </label>
                     <Chips
-                value={addData.youtubeVideos}
-                onChange={(e) => {
-                  if (e.value.length > addData.additionalMediaLinks.length) {
-                    // ("item added");
-                    const recentItem = e.value[e.value.length - 1];
-                    const isRecentUrl = youtubeRegex.test(recentItem);
-                    if (isRecentUrl === true) {
-                      changeField("youtubeVideos", e.value);
-                    } else {
-                      toast.error("Provide a valid youtube url.")
-                    }
-                  } else {
-                    changeField("youtubeVideos", e.value);
-                  }
-                }}
-              ></Chips>
+                      value={addData.youtubeVideos}
+                      onChange={(e) => {
+                        if (
+                          e.value.length > addData.additionalMediaLinks.length
+                        ) {
+                          // ("item added");
+                          const recentItem = e.value[e.value.length - 1];
+                          const isRecentUrl = youtubeRegex.test(recentItem);
+                          if (isRecentUrl === true) {
+                            changeField("youtubeVideos", e.value);
+                          } else {
+                            toast.error("Provide a valid youtube url.");
+                          }
+                        } else {
+                          changeField("youtubeVideos", e.value);
+                        }
+                      }}
+                    ></Chips>
                   </div>
                 </div>
               </div>
             </div>
 
-
-{/* // additional urls  */}
+            {/* // additional urls  */}
 
             <div className="flex flex-col md:flex-row gap-2">
               <div className="flex flex-col w-full  pr-0 md:pr-5 ">
                 <div className="w-full pr-3">
                   <div className="my-4 flex flex-col">
-                    <label htmlFor="addlinks" className="text-lg mb-2 font-medium">
+                    <label
+                      htmlFor="addlinks"
+                      className="text-lg mb-2 font-medium"
+                    >
                       Additional media links
                     </label>
-                 
-                   <Chips
-     
-                value={addData.additionalMediaLinks}
-                onChange={(e) => {
-                  if (e.value.length > addData.additionalMediaLinks.length) {
-                    // ("item added");
-                    const recentItem = e.value[e.value.length - 1];
-                    const isRecentUrl = urlRegex.test(recentItem);
-                    if (isRecentUrl === true) {
-                      changeField("additionalMediaLinks", e.value);
-                    } else {
-                      toast.error("Provide a valid url.")
-                    }
-                  } else {
-                    changeField("additionalMediaLinks", e.value);
-                  }
-                }}
-              ></Chips>
-                   
+
+                    <Chips
+                      value={addData.additionalMediaLinks}
+                      onChange={(e) => {
+                        if (
+                          e.value.length > addData.additionalMediaLinks.length
+                        ) {
+                          // ("item added");
+                          const recentItem = e.value[e.value.length - 1];
+                          const isRecentUrl = urlRegex.test(recentItem);
+                          if (isRecentUrl === true) {
+                            changeField("additionalMediaLinks", e.value);
+                          } else {
+                            toast.error("Provide a valid url.");
+                          }
+                        } else {
+                          changeField("additionalMediaLinks", e.value);
+                        }
+                      }}
+                    ></Chips>
                   </div>
                 </div>
               </div>
@@ -429,8 +470,6 @@ function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
 
             <div>
               {/* <LinkChips fieldName={"additionalMediaLinks"} preSelected={addData.additionalMediaLinks} updateSelectedArr={changeField} /> */}
-
-              
             </div>
 
             <div className="my-5">

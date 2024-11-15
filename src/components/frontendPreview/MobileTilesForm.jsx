@@ -14,9 +14,7 @@ import { client } from "../../config/s3Config";
 
 import heic2any from "heic2any";
 
-import CKUploadAdapter from "../../config/CKUploadAdapter";
-
-function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
+function MobileTilesForm({ editData, setModeToDisplay, userToken, userId }) {
   const [uploadFile, setUploadFile] = useState();
   const [isUploading, setIsUploading] = useState(false);
   const [fileAddedForUpload, setFileAddedForUpload] = useState(false);
@@ -25,8 +23,7 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
   const colors = tokens(theme.palette.mode);
 
   const [addData, setAddData] = useState({
-    title: "",
-    file: "",
+    image: "",
     enable: "false",
   });
 
@@ -47,7 +44,7 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
   // Upload the file to Supabase S3
   const uploadFileToCloud = async (myFile) => {
     const myFileName = removeSpaces(myFile.name); // removing blank space from name
-    const myPath = `adviseFiles/${myFileName}`;
+    const myPath = `mobileTiles/${myFileName}`;
     try {
       const uploadParams = {
         Bucket: process.env.REACT_APP_SITE_BUCKET,
@@ -110,7 +107,7 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
       if (cloudFilePath) {
         const publicUrl = getPublicUrlFromSupabase(cloudFilePath);
         if (publicUrl) {
-          changeField("file", publicUrl);
+          changeField("image", publicUrl);
 
           setIsUploading(false);
           setUploadFile("");
@@ -136,15 +133,11 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
     if (uploadFile) {
       toast.error("Upload file before submitting form.");
     } else {
-      if (
-        addData.title !== "" &&
-        addData.file !== "" &&
-        addData.enable !== ""
-      ) {
+      if (addData.image !== "" && addData.enable !== "") {
         if (editData) {
           axios
             .put(
-              `${process.env.REACT_APP_BACKEND_URL}/api/advise/updateAdvise/${editData._id}?userId=${userId}`,
+              `${process.env.REACT_APP_BACKEND_URL}/api/mobileTiles/updateMobileTile/${editData._id}?userId=${userId}`,
               addData,
               {
                 headers: {
@@ -154,7 +147,7 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
             )
             .then((response) => {
               if (response) {
-                toast.success("Advise updated!");
+                toast.success("Mobile Tile updated!");
                 setTimeout(() => {
                   setModeToDisplay();
                 }, 2000);
@@ -167,7 +160,7 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
         } else {
           axios
             .post(
-              `${process.env.REACT_APP_BACKEND_URL}/api/advise/addAdvise?userId=${userId}`,
+              `${process.env.REACT_APP_BACKEND_URL}/api/mobileTiles/addMobileTile?userId=${userId}`,
               addData,
               {
                 headers: {
@@ -177,7 +170,7 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
             )
             .then((response) => {
               if (response) {
-                toast.success("Advise Added!");
+                toast.success("Mobile Tile Added!");
                 setTimeout(() => {
                   setModeToDisplay();
                 }, 2000);
@@ -197,9 +190,8 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
   useEffect(() => {
     if (editData) {
       setAddData({
-        title: editData.title,
-        file: editData.file,
-        enable: editData.enable || "true",
+        image: editData.image,
+        enable: editData.enable,
       });
     }
   }, [editData]);
@@ -261,40 +253,19 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
       <div className="flex items-center justify-center">
         <div className="w-full">
           <form>
-            {/* // customer name and number  */}
-            <div className="flex flex-col md:flex-row -mx-3">
-              <div className="w-full px-3 md:w-1/2">
-                <div className="mb-5">
-                  <label
-                    htmlFor="title"
-                    className="mb-3 block text-base font-medium"
-                  >
-                    Title
-                  </label>
-                  <input
-                    type="text"
-                    name="title"
-                    id="title"
-                    value={addData.title}
-                    onChange={(e) => changeField("title", e.target.value)}
-                    placeholder="Title"
-                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                  />
-                </div>
-              </div>
-
-              <div className="w-full items-center flex px-3 md:w-1/2">
+            <div className="flex flex-col  -mx-3">
+              <div className="w-full items-center flex px-3 lg:w-1/2">
                 <div className="mb-5">
                   <label
                     htmlFor="file"
                     className="mb-3 block text-base font-medium"
                   >
-                    File
+                    Image
                   </label>
                   <input
                     type="file"
-                    name="file"
-                    id="file"
+                    name="image"
+                    id="image"
                     onChange={handleFileAdding}
                     className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                   />
@@ -314,6 +285,23 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
                   {`Upload`}
                 </button>
               </div>
+
+              {editData && (
+                <div className="ml-3 flex lg:items-center flex-col lg:flex-row">
+                  <div className="text-lg mb-2 lg:mb-0">
+                    Already Uploaded Image :{" "}
+                  </div>
+                  <div className="lg:ml-2">
+                    <a
+                      target="_blank"
+                      className="underline"
+                      href={editData.image.url}
+                    >
+                      {editData.image.name}
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="my-5">
@@ -370,7 +358,7 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
                 }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
                 disabled={isUploading === true ? true : false}
               >
-                {editData ? "Update Advise" : "Add Advise"}
+                {editData ? "Update Mobile Tile" : "Add Mobile Tile"}
               </button>
             </div>
           </form>
@@ -381,4 +369,4 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
   );
 }
 
-export default AdviseForm;
+export default MobileTilesForm;
