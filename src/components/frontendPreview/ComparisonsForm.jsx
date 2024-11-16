@@ -14,9 +14,7 @@ import { client } from "../../config/s3Config";
 
 import heic2any from "heic2any";
 
-import CKUploadAdapter from "../../config/CKUploadAdapter";
-
-function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
+function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
   const [uploadFile, setUploadFile] = useState();
   const [isUploading, setIsUploading] = useState(false);
   const [fileAddedForUpload, setFileAddedForUpload] = useState(false);
@@ -26,7 +24,9 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
 
   const [addData, setAddData] = useState({
     title: "",
-    file: "",
+    topText: "",
+    bottomText: "",
+    centerImage: "",
     enable: "false",
   });
 
@@ -47,7 +47,7 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
   // Upload the file to Supabase S3
   const uploadFileToCloud = async (myFile) => {
     const myFileName = removeSpaces(myFile.name); // removing blank space from name
-    const myPath = `adviseFiles/${myFileName}`;
+    const myPath = `comparisons/${myFileName}`;
     try {
       const uploadParams = {
         Bucket: process.env.REACT_APP_SITE_BUCKET,
@@ -110,7 +110,7 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
       if (cloudFilePath) {
         const publicUrl = getPublicUrlFromSupabase(cloudFilePath);
         if (publicUrl) {
-          changeField("file", publicUrl);
+          changeField("centerImage", publicUrl);
 
           setIsUploading(false);
           setUploadFile("");
@@ -138,13 +138,15 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
     } else {
       if (
         addData.title !== "" &&
-        addData.file !== "" &&
+        addData.topText !== "" &&
+        addData.bottomText !== "" &&
+        addData.centerImage !== "" &&
         addData.enable !== ""
       ) {
         if (editData) {
           axios
             .put(
-              `${process.env.REACT_APP_BACKEND_URL}/api/advise/updateAdvise/${editData._id}?userId=${userId}`,
+              `${process.env.REACT_APP_BACKEND_URL}/api/comparisons/updateComparison/${editData._id}?userId=${userId}`,
               addData,
               {
                 headers: {
@@ -167,7 +169,7 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
         } else {
           axios
             .post(
-              `${process.env.REACT_APP_BACKEND_URL}/api/advise/addAdvise?userId=${userId}`,
+              `${process.env.REACT_APP_BACKEND_URL}/api/comparisons/addComparison?userId=${userId}`,
               addData,
               {
                 headers: {
@@ -198,8 +200,10 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
     if (editData) {
       setAddData({
         title: editData.title,
-        file: editData.file,
-        enable: editData.enable || "true",
+        topText: editData.topText,
+        bottomText: editData.bottomText,
+        centerImage: editData.centerImage,
+        enable: editData.enable,
       });
     }
   }, [editData]);
@@ -261,7 +265,7 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
       <div className="flex items-center justify-center">
         <div className="w-full">
           <form>
-            {/* // customer name and number  */}
+            {/* // title and top text  */}
             <div className="flex flex-col md:flex-row -mx-3">
               <div className="w-full px-3 md:w-1/2">
                 <div className="mb-5">
@@ -283,36 +287,102 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
                 </div>
               </div>
 
-              <div className="w-full items-center flex px-3 md:w-1/2">
+              <div className="w-full items-center flex-col px-3 md:w-1/2">
+                <div className="items-center flex">
+                  <div className="mb-2">
+                    <label
+                      htmlFor="file"
+                      className="mb-3 block text-base font-medium"
+                    >
+                      Center Image
+                    </label>
+                    <input
+                      type="file"
+                      name="file"
+                      id="file"
+                      onChange={handleFileAdding}
+                      className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleFileUpload}
+                    className={`px-8 py-3 h-fit mx-3 mt-3 ${
+                      fileAddedForUpload === false
+                        ? "bg-gray-600"
+                        : "bg-blue-500"
+                    }  text-white font-medium text-lg rounded-md shadow-md ${
+                      fileAddedForUpload === false
+                        ? "bg-gray-600"
+                        : "hover:bg-blue-600"
+                    }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
+                    disabled={fileAddedForUpload === false ? true : false}
+                  >
+                    {`Upload`}
+                  </button>
+                </div>
+                {editData && editData.centerImage && (
+                  <div className="ml-1 flex lg:items-center flex-col lg:flex-row">
+                    <div className="font-bold mb-2 lg:mb-0">
+                      Already Uploaded Image :{" "}
+                    </div>
+                    <div className="lg:ml-2">
+                      <a
+                        target="_blank"
+                        className="underline"
+                        href={editData.centerImage.url}
+                      >
+                        {editData.centerImage.name}
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* {top text } */}
+            <div className="flex flex-col md:flex-row -mx-3">
+              <div className="w-full px-3 ">
                 <div className="mb-5">
                   <label
-                    htmlFor="file"
+                    htmlFor="bottomText"
                     className="mb-3 block text-base font-medium"
                   >
-                    File
+                    Top Text
                   </label>
-                  <input
-                    type="file"
-                    name="file"
-                    id="file"
-                    onChange={handleFileAdding}
+                  <textarea
+                    type="text"
+                    name="topText"
+                    id="topText"
+                    value={addData.topText}
+                    onChange={(e) => changeField("topText", e.target.value)}
+                    placeholder="Top Text"
                     className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={handleFileUpload}
-                  className={`px-8 py-3 h-fit mx-3 mt-3 ${
-                    fileAddedForUpload === false ? "bg-gray-600" : "bg-blue-500"
-                  }  text-white font-medium text-lg rounded-md shadow-md ${
-                    fileAddedForUpload === false
-                      ? "bg-gray-600"
-                      : "hover:bg-blue-600"
-                  }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
-                  disabled={fileAddedForUpload === false ? true : false}
-                >
-                  {`Upload`}
-                </button>
+              </div>
+            </div>
+
+            {/* { bottom text } */}
+            <div className="flex flex-col md:flex-row -mx-3">
+              <div className="w-full px-3">
+                <div className="mb-5">
+                  <label
+                    htmlFor="bottomText"
+                    className="mb-3 block text-base font-medium"
+                  >
+                    Bottom Text
+                  </label>
+                  <textarea
+                    type="text"
+                    name="bottomText"
+                    id="bottomText"
+                    value={addData.bottomText}
+                    onChange={(e) => changeField("bottomText", e.target.value)}
+                    placeholder="Bottom Text"
+                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  />
+                </div>
               </div>
             </div>
 
@@ -370,7 +440,7 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
                 }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
                 disabled={isUploading === true ? true : false}
               >
-                {editData ? "Update Advise" : "Add Advise"}
+                {editData ? "Update Comparison" : "Add Comparison"}
               </button>
             </div>
           </form>
@@ -381,4 +451,4 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
   );
 }
 
-export default AdviseForm;
+export default ComparisonsForm;

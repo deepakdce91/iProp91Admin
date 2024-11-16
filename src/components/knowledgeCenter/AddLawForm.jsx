@@ -264,9 +264,9 @@ function AddLawForm({ editData, setModeToDisplay, userToken, userId }) {
         type : editData.type,
         state: editData.state || "",
         title: editData.title,
-        file: editData.file,
-        content : editData.content,
-        enable : editData.enable || "true"
+        file: editData.file ,
+        content : editData.content || "",
+        enable : editData.enable 
       });
 
     }
@@ -334,7 +334,7 @@ function AddLawForm({ editData, setModeToDisplay, userToken, userId }) {
         <div className="w-full">
           <form>
             {/* // customer name and number  */}
-            <div className="flex flex-col md:flex-row -mx-3">
+            <div className="flex flex-col md:flex-row -mx-3 mb-2">
               <div className="w-full px-3 md:w-1/2">
                 <div className="mb-5">
                   <label
@@ -355,8 +355,10 @@ function AddLawForm({ editData, setModeToDisplay, userToken, userId }) {
                 </div>
               </div>
 
-              <div className="w-full items-center flex px-3 md:w-1/2">
-                <div className="mb-5">
+              <div className="w-full items-center flex-col px-3 md:w-1/2">
+
+                <div className="items-center flex">
+                <div className="mb-2">
                   <label
                     htmlFor="file"
                     className="mb-3 block text-base font-medium"
@@ -386,6 +388,11 @@ function AddLawForm({ editData, setModeToDisplay, userToken, userId }) {
                     {`Upload`}
                   
                 </button>
+                </div>
+                {editData && editData.file && <div className="ml-1 flex lg:items-center flex-col lg:flex-row">
+                <div className="font-bold mb-2 lg:mb-0">Already Uploaded Image : </div>
+                <div className="lg:ml-2"><a target="_blank" className="underline" href={editData.file.url}>{editData.file.name}</a></div>
+              </div>}
               </div>
             </div>
 

@@ -6,51 +6,43 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 
+const validateEmail = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
 
-function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
+const validatePhone = (phone) => {
+  const phoneRegex = /^[6-9]\d{9}$/; // Validates Indian phone numbers
+  return phoneRegex.test(phone);
+};
+
+function ContactUsForm({ editData, userId, userToken, setModeToDisplay }) {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
   const [addData, setAddData] = useState({
-    title: "",
-    testimonial: "",
-    enable: "no",
-    addedBy: "admin",
+    firstName: "",
+    lastName: "",
+    mobile : "",
+    email : "",
+    message : "",
+    addressed: "no",
   });
 
-  const [myUserId, setMyUserId] = useState("");
-  const [userName, setUserName] = useState("");
-  const [userProfilePic, setUserProfilePic] = useState("");
-
-  const changeTitle = (value) => {
+  const changeField = (field, value) => {
     setAddData((prevData) => ({
       ...prevData,
-      title: value,
+      [field]: value,
     }));
-  };
 
-  const changeEnableStatus = (value) => {
-    setAddData((prevData) => ({
-      ...prevData,
-      enable: value,
-    }));
-  };
+    if(field === "addressed"){
 
-  const handleSubmit = (myData) => {
-    if (myData.title !== "" && myData.testimonial !== "" && myUserId !== "" && userName !== "" && userProfilePic !== "") {
-        const addData = {
-            ...myData,
-            userInfo : {
-                id : myUserId,
-                profilePicture : userProfilePic,
-                name : userName
-            }
-        } 
-      if (editData) {
         axios
           .put(
-            `${process.env.REACT_APP_BACKEND_URL}/api/testimonials/updateTestimonial/${editData._id}?userId=${userId}`,
-            addData,
+            `${process.env.REACT_APP_BACKEND_URL}/api/contactUs/updateContactUs/${editData._id}?userId=${userId}`,
+            {
+              addressed : value
+            },
             {
               headers: {
                 "auth-token": userToken,
@@ -59,7 +51,7 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
           )
           .then((response) => {
             if (response) {
-              toast("Testimonial updated!");
+              toast("Addressed status updated!");
               setTimeout(() => {
                 setModeToDisplay();
               }, 1000);
@@ -69,10 +61,23 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
             console.error("Error:", error);
             toast.error("Some ERROR occurred.");
           });
-      } else {
+     
+
+    }
+  };
+
+
+  const handleSubmit = (addData) => {
+    if (
+      addData.firstName !== "" &&
+      addData.lastName !== "" &&
+      addData.mobile !== "" &&
+      addData.email !== "" &&
+      addData.message !== "" 
+    ) {
         axios
           .post(
-            `${process.env.REACT_APP_BACKEND_URL}/api/testimonials/addTestimonial?userId=${userId}`,
+            `${process.env.REACT_APP_BACKEND_URL}/api/contactUs/addContactUs?userId=${userId}`,
             addData,
             {
               headers: {
@@ -82,7 +87,7 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
           )
           .then((response) => {
             if (response) {
-              toast("Testimonial added!");
+              toast("Contact Us query added!");
               setTimeout(() => {
                 setModeToDisplay();
               }, 1000);
@@ -92,7 +97,7 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
             console.error("Error:", error);
             toast.error("Some ERROR occurred.");
           });
-      }
+      
     } else {
       toast.error("Fill all fields.");
     }
@@ -101,14 +106,14 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
   useEffect(() => {
     if (editData) {
       setAddData({
-        name: editData.name,
-        enable: editData.enable,
-        addedBy: editData.addedBy,
-      });
+        firstName: editData.firstName,
+    lastName: editData.lastName,
+    mobile : editData.mobile,
+    email : editData.email,
+    message : editData.message,
+    addressed: editData.addressed,
 
-      setMyUserId(editData.userInfo.id);
-      setUserName(editData.userInfo.profilePicture);
-      setUserProfilePic(editData.userInfo.name);
+      });
     }
   }, [editData]);
 
@@ -169,23 +174,99 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
               <div className="w-full px-3 sm:w-1/2">
                 <div className="mb-5">
                   <label
-                    htmlFor="title"
+                    htmlFor="firstName"
                     className="mb-3 block text-base font-medium"
                   >
-                    Title
+                    First Name
                   </label>
                   <input
                     type="text"
-                    name="title"
-                    id="title"
+                    name="firstName"
+                    id="firstName"
                     autoComplete="off"
                     list="mystates"
-                    value={addData.title}
+                    value={addData.firstName}
                     onChange={(e) => {
-                      changeTitle(e.target.value);
+                      changeField("firstName",e.target.value);
                     }}
-                    placeholder="Title"
-                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                    placeholder="First Name"
+                    readOnly={editData ? true : false}
+                    className={`${editData ? "bg-gray-300 " : ""} text-gray-600  w-full rounded-md border  border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md`}
+                  />
+                </div>
+              </div>
+
+              <div className="w-full px-3 sm:w-1/2">
+                <div className="mb-5">
+                  <label
+                    htmlFor="lastName"
+                    className="mb-3 block text-base font-medium"
+                  >
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    name="lastName"
+                    id="lastName"
+                    autoComplete="off"
+                    list="mystates"
+                    value={addData.lastName}
+                    onChange={(e) => {
+                      changeField("lastName",e.target.value);
+                    }}
+                    placeholder="Last Name"
+                    readOnly={editData ? true : false}
+                    className={`${editData ? "bg-gray-300 " : ""} text-gray-600  w-full rounded-md border  border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md`}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="-mx-3 flex flex-wrap">
+              <div className="w-full px-3 sm:w-1/2">
+                <div className="mb-5">
+                  <label
+                    htmlFor="mobile"
+                    className="mb-3 block text-base font-medium"
+                  >
+                   Mobile
+                  </label>
+                  <input
+                    type="text"
+                    name="mobile"
+                    id="mobile"
+                    autoComplete="off"
+                    value={addData.mobile}
+                    onChange={(e) => {
+                      changeField("mobile",e.target.value);
+                    }}
+                    placeholder="Mobile number"
+                    readOnly={editData ? true : false}
+                    className={`${editData ? "bg-gray-300 " : ""} text-gray-600  w-full rounded-md border  border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md`}
+                  />
+                </div>
+              </div>
+              <div className="w-full px-3 sm:w-1/2">
+                <div className="mb-5">
+                  <label
+                    htmlFor="email"
+                    className="mb-3 block text-base font-medium"
+                  >
+                    Email
+                  </label>
+                  <input
+                    type="text"
+                    name="email"
+                    id="email"
+                    autoComplete="off"
+                    list="mystates"
+                    value={addData.email}
+                    onChange={(e) => {
+                      changeField("email",e.target.value);
+                    }}
+                    placeholder="Email id"
+                    readOnly={editData ? true : false}
+                    className={`${editData ? "bg-gray-300 " : ""} text-gray-600  w-full rounded-md border  border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md`}
                   />
                 </div>
               </div>
@@ -195,108 +276,34 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
               <div className="w-full px-3 ">
                 <div className="mb-5">
                   <label
-                    htmlFor="testimonial"
+                    htmlFor="message"
                     className="mb-3 block text-base font-medium"
                   >
-                    Testimonial
+                    Message
                   </label>
                   <textarea
-                    name="testimonial"
-                    id="testimonial"
+                    name="message"
+                    id="message"
                     autoComplete="off"
-                    list="mystates"
-                    value={addData.testimonial}
+                    value={addData.message}
                     onChange={(e) => {
                       setAddData({
                         ...addData,
-                        testimonial: e.target.value,
+                        message: e.target.value,
                       });
                     }}
                     placeholder="Write here"
-                    className="w-full h-48 rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                    readOnly={editData ? true : false}
+                    className={`${editData ? "bg-gray-300 h-32 " : "h-48"} text-gray-600  w-full rounded-md border  border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md `}
                   />
                 </div>
               </div>
             </div>
 
-            <div className="-mx-3 flex flex-wrap">
-              <div className="w-full px-3 sm:w-1/2">
-                <div className="mb-5">
-                  <label
-                    htmlFor="userid"
-                    className="mb-3 block text-base font-medium"
-                  >
-                    User Id
-                  </label>
-                  <input
-                    type="text"
-                    name="userid"
-                    id="userid"
-                    autoComplete="off"
-                    list="mystates"
-                    value={myUserId}
-                    onChange={(e) => {
-                      setMyUserId(e.target.value);
-                    }}
-                    placeholder="User Id"
-                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                  />
-                </div>
-              </div>
-              <div className="w-full px-3 sm:w-1/2">
-                <div className="mb-5">
-                  <label
-                    htmlFor="username"
-                    className="mb-3 block text-base font-medium"
-                  >
-                    User Name
-                  </label>
-                  <input
-                    type="text"
-                    name="username"
-                    id="username"
-                    autoComplete="off"
-                    list="mystates"
-                    value={userName}
-                    onChange={(e) => {
-                        setUserName(e.target.value);
-                    }}
-                    placeholder="Username"
-                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                  />
-                </div>
-              </div>
-            </div>
 
-            <div className="-mx-3 flex flex-wrap">
-              <div className="w-full px-3 sm:w-2/3">
-                <div className="mb-5">
-                  <label
-                    htmlFor="userpfp"
-                    className="mb-3 block text-base font-medium"
-                  >
-                    User Profile Picture Url
-                  </label>
-                  <input
-                    type="text"
-                    name="userpfp"
-                    id="userpfp"
-                    autoComplete="off"
-                    list="mystates"
-                    value={userProfilePic}
-                    onChange={(e) => {
-                      setUserProfilePic(e.target.value);
-                    }}
-                    placeholder="User Picture"
-                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="mb-5">
+            {editData && <div className="mb-5">
               <label className="mb-3 block text-base font-medium">
-                Enable ?
+                Addressed the query ?
               </label>
               <div className="flex items-center space-x-6">
                 <div className="flex items-center">
@@ -306,8 +313,8 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
                     value="yes"
                     className="h-5 w-5"
                     id="radioButton1"
-                    checked={addData.enable === "yes"}
-                    onChange={(e) => changeEnableStatus(e.target.value)}
+                    checked={addData.addressed === "yes"}
+                    onChange={(e) => changeField("addressed",e.target.value)}
                   />
                   <label
                     htmlFor="radioButton1"
@@ -323,8 +330,8 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
                     value="no"
                     className="h-5 w-5"
                     id="radioButton2"
-                    checked={addData.enable === "no"}
-                    onChange={(e) => changeEnableStatus(e.target.value)}
+                    checked={addData.addressed === "no"}
+                    onChange={(e) => changeField("addressed",e.target.value)}
                   />
                   <label
                     htmlFor="radioButton2"
@@ -334,9 +341,9 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
                   </label>
                 </div>
               </div>
-            </div>
+            </div>}
 
-            <div>
+            {!editData && <div className="flex justify-center"> 
               <button
                 style={{ backgroundColor: colors.blueAccent[500] }}
                 className="hover:shadow-htmlForm rounded-md py-3 px-8 text-center text-base font-semibold text-white outline-none"
@@ -347,7 +354,8 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
               >
                 {editData ? "Update" : "Submit"}
               </button>
-            </div>
+            </div>}
+
           </form>
         </div>
       </div>
@@ -356,4 +364,4 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
   );
 }
 
-export default TestimonialForm;
+export default ContactUsForm;

@@ -40,8 +40,14 @@ import useAuthToken from "./hooks/useAuthToken"; // Custom hook for JWT token ha
 import useMetaTags from "./hooks/useMetaTags"; // Custom hook for meta tags
 
 import OwnerFrom from "./scenes/configurations/ownersFrom";
+
 import Testimonials from "./scenes/frontendPreview/Testimonials/Index";
 import Advise from "./scenes/frontendPreview/Advise/Index";
+import MobileTiles from "./scenes/frontendPreview/MobileTiles/Index";
+import Comparisons from "./scenes/frontendPreview/Comparisons/Index";
+import ContactUs from "./scenes/frontendPreview/ContactUs/Index";
+
+
 
 // Constants for routes
 const routes = {
@@ -70,8 +76,13 @@ const routes = {
   caseLaws: "/caseLaws",
 
   ownerFrom: "/ownerFrom",
+
   testimonials: "/testimonials",
   advise: "/advise",
+  mobileTiles : "/mobileTiles",
+  comparisons : "/comparisons",
+  contactUs : "/contactUs"
+
 };
 
 function App() {
@@ -188,6 +199,9 @@ function App() {
                     element={<Testimonials />}
                   />
                   <Route path={routes.advise} element={<Advise />} />
+                  <Route path={routes.mobileTiles} element={<MobileTiles />} />
+                  <Route path={routes.comparisons} element={<Comparisons />} />
+                  <Route path={routes.contactUs} element={<ContactUs />} />
                 </>
               )}
             </Routes>

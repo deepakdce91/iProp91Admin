@@ -59,7 +59,7 @@ const [myMoreInfoReason, setMyMoreInfoReason] = useState("");
                 <div className='flex  justify-center'><HiMiniUserGroup className='h-24 w-24 '/></div>
                     <h4 className=" text-lg font-semibold mt-4">Add a reason why and what more info is required?</h4>
 
-                    <textarea className='w-full  text-gray-600 mt-2 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md' name="moreInfoReason" id="moreInfoReason" value={myMoreInfoReason} onChange={(e)=>{setMyMoreInfoReason(e.target.value)}}/>
+                    <textarea placeholder='Type here' className='w-full  text-gray-600 mt-2 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md' name="moreInfoReason" id="moreInfoReason" value={myMoreInfoReason} onChange={(e)=>{setMyMoreInfoReason(e.target.value)}}/>
 
                     
                 </div>

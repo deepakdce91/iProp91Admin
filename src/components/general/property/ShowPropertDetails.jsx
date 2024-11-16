@@ -378,6 +378,15 @@ const ShowPropertyDetails = ({ data }) => {
           </div>
         </div>
 
+        {data.moreInfoReason && data.moreInfoReason.length > 0 && <div className="flex flex-wrap -mx-3 mb-6">
+          <div className="w-full px-3 mb-6 md:mb-0">
+            <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
+              More info reason 
+            </label>
+            <p className="text-gray-900">{data.moreInfoReason}</p>
+          </div>
+        </div>}
+
         <div className="mb-5 uppercase tracking-wide text-gray-700 text-xs font-bold">
           <label className="mb-3 block ">Delete Property?</label>
           <div className="flex items-center space-x-6">

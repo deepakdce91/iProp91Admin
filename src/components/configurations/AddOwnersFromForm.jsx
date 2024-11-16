@@ -345,6 +345,7 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
                 </button>
               </div>
             </div>
+            
 
 
             <div className="my-5">
