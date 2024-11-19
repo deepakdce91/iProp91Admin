@@ -31,6 +31,12 @@ function Index() {
       valueGetter: (params) => params.api.getRowIndex(params.id) + 1, // Start numbering from 1
     },
     {
+      field: "title",
+      headerName: "Title",
+      flex: 1,
+      valueGetter: (params) => params.value
+    },
+    {
       field: "image",
       headerName: "Image",
       flex: 1,

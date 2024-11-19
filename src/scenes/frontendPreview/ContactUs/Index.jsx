@@ -2,7 +2,6 @@ import { Box, IconButton, useTheme } from "@mui/material";
 import { useState, useEffect } from "react";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "../../../theme";
-import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -10,6 +9,7 @@ import "react-toastify/dist/ReactToastify.css";
 import Header from "../../../components/Header";
 import ContactUsForm from "../../../components/frontendPreview/ContactUsForm";
 import { formatDate } from "../../../MyFunctions";
+import { FaEye } from "react-icons/fa";
 
 import { jwtDecode } from "jwt-decode";
 
@@ -33,20 +33,21 @@ function Index() {
         valueGetter: (params) => params.api.getRowIndex(params.id) + 1, // Start numbering from 1
       },
     {
-      field: "firstName",
-      headerName: "First Name",
+      field: "name",
+      headerName: "Name",
       flex: 1,
       cellClassName: "name-column--cell",
     },
-    {
-      field: "lastName",
-      headerName: "Last Name",
-      flex: 1,
-      // valueGetter: (params) => params.value.id,
-    },
+   
     {
       field: "mobile",
       headerName: "Mobile",
+      flex: 1,
+    },
+
+    {
+      field: "email",
+      headerName: "Email",
       flex: 1,
     },
 
@@ -72,7 +73,7 @@ function Index() {
             // color="primary"
             className="text-grey-400"
           >
-            <EditIcon />
+            <FaEye />
           </IconButton>
           <IconButton
             onClick={() => handleDelete(params.row._id)}
@@ -198,7 +199,7 @@ function Index() {
             mode === "add"
               ? "Add Contact Us Query"
               : mode === "edit"
-              ? "Edit Contact Us Query "
+              ? "Review Contact Us Query "
               : "Manage Contact Us Queries here"
           }
         /> 

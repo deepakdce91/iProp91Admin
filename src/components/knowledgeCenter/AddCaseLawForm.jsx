@@ -9,6 +9,7 @@ import {
   removeSpaces, 
 } from "../../MyFunctions";
 
+
 import { supabase } from "../../config/supabase";
 
 import { PutObjectCommand } from "@aws-sdk/client-s3";
@@ -20,7 +21,6 @@ import { CKEditor } from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 
 import CKUploadAdapter from "../../config/CKUploadAdapter";
-
 
 
 function AddCaseLawForm({ editData, setModeToDisplay, userToken, userId }) {
@@ -438,6 +438,7 @@ function AddCaseLawForm({ editData, setModeToDisplay, userToken, userId }) {
                 {editData ? "Update Case Law" : "Add Case Law"}
               </button>
             </div>
+
           </form>
           <ToastContainer position="top-center" autoClose={2000} />
         </div>
