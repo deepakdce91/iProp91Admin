@@ -14,10 +14,18 @@ import { client } from "../../config/s3Config";
 
 import heic2any from "heic2any";
 
+import { CKEditor } from "@ckeditor/ckeditor5-react";
+import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
+import CKUploadAdapter from "../../config/CKUploadAdapter";
+
 function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
-  const [uploadFile, setUploadFile] = useState();
+  const [uploadFile1, setUploadFile1] = useState();
+  const [fileAddedForUpload1, setFileAddedForUpload1] = useState(false);
+
   const [isUploading, setIsUploading] = useState(false);
-  const [fileAddedForUpload, setFileAddedForUpload] = useState(false);
+
+  const [uploadFile2, setUploadFile2] = useState();
+  const [fileAddedForUpload2, setFileAddedForUpload2] = useState(false);
 
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -26,9 +34,22 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
     title: "",
     topText: "",
     bottomText: "",
-    centerImage: "",
+    centerImage1: "",
+    centerImage2: "",
     enable: "false",
   });
+
+  const editorConfiguration = {
+    extraPlugins: [
+      function (editor) {
+        editor.plugins.get("FileRepository").createUploadAdapter = function (
+          loader
+        ) {
+          return new CKUploadAdapter(loader, supabase);
+        };
+      },
+    ],
+  };
 
   const getPublicUrlFromSupabase = (path) => {
     const { data, error } = supabase.storage
@@ -64,7 +85,7 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
     }
   };
 
-  const handleFileAdding = async (event) => {
+  const handleFileAdding = async (event, name) => {
     const file = event.target.files[0];
 
     // checking for .heic files and converting it into jpeg before adding
@@ -85,41 +106,63 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
           }
         );
 
-        setUploadFile(convertedFile);
-        setFileAddedForUpload(true);
+        if (name === "centerImage1") {
+          setUploadFile1(convertedFile);
+          setFileAddedForUpload1(true);
+        } else {
+          setUploadFile2(convertedFile);
+          setFileAddedForUpload2(true);
+        }
       } catch (error) {
         console.error("Error converting HEIC file:", error);
       }
     } else {
       // if file is not jpeg..adding directly
-      setUploadFile(file);
-      setFileAddedForUpload(true);
+      if (name === "centerImage1") {
+        setUploadFile1(file);
+        setFileAddedForUpload1(true);
+      } else {
+        setUploadFile2(file);
+        setFileAddedForUpload2(true);
+      }
     }
   };
 
-  const handleFileUpload = async (e) => {
+  const handleFileUpload = async (e, name) => {
     e.preventDefault();
 
     try {
       setIsUploading(true);
       toast("Uploading file.");
 
-      let cloudFilePath = await uploadFileToCloud(uploadFile);
+      let cloudFilePath;
+
+      if (name === "centerImage1") {
+        cloudFilePath = await uploadFileToCloud(uploadFile1);
+      } else {
+        cloudFilePath = await uploadFileToCloud(uploadFile2);
+      }
 
       // when in last iteration
       if (cloudFilePath) {
         const publicUrl = getPublicUrlFromSupabase(cloudFilePath);
         if (publicUrl) {
-          changeField("centerImage", publicUrl);
-
-          setIsUploading(false);
-          setUploadFile("");
-          setFileAddedForUpload(false);
+          changeField(name, publicUrl);
           toast.success("File uploaded.");
+          setIsUploading(false);
+
+          if (name === "centerImage1") {
+            setUploadFile1("");
+            setFileAddedForUpload1(false);
+          } else {
+            setUploadFile2("");
+            setFileAddedForUpload2(false);
+          }
         }
       }
     } catch (error) {
       setIsUploading(false);
+
       toast.error("Some error occured while uploading.");
       console.log(error.message);
     }
@@ -133,14 +176,14 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
   };
 
   const handleSubmit = () => {
-    if (uploadFile) {
+    if (uploadFile1 || uploadFile2) {
       toast.error("Upload file before submitting form.");
     } else {
       if (
         addData.title !== "" &&
         addData.topText !== "" &&
         addData.bottomText !== "" &&
-        addData.centerImage !== "" &&
+        addData.centerImage1 !== "" &&
         addData.enable !== ""
       ) {
         if (editData) {
@@ -156,7 +199,7 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
             )
             .then((response) => {
               if (response) {
-                toast.success("Advise updated!");
+                toast.success("Comparisons updated!");
                 setTimeout(() => {
                   setModeToDisplay();
                 }, 2000);
@@ -179,7 +222,7 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
             )
             .then((response) => {
               if (response) {
-                toast.success("Advise Added!");
+                toast.success("Comparisons Added!");
                 setTimeout(() => {
                   setModeToDisplay();
                 }, 2000);
@@ -198,13 +241,18 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
 
   useEffect(() => {
     if (editData) {
-      setAddData({
+      let myObj = {
         title: editData.title,
         topText: editData.topText,
         bottomText: editData.bottomText,
-        centerImage: editData.centerImage,
+        centerImage1: editData.centerImage1,
         enable: editData.enable,
-      });
+      };
+      if (editData.centerImage2) {
+        myObj.centerImage2 = editData.centerImage2;
+      }
+
+      setAddData(myObj);
     }
   }, [editData]);
 
@@ -286,42 +334,44 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                   />
                 </div>
               </div>
+            </div>
 
+            <div className="flex flex-col md:flex-row -mx-3">
               <div className="w-full items-center flex-col px-3 md:w-1/2">
                 <div className="items-center flex">
-                  <div className="mb-2">
+                  <div className="mb-5">
                     <label
                       htmlFor="file"
                       className="mb-3 block text-base font-medium"
                     >
-                      Center Image
+                      Center Image 1
                     </label>
                     <input
                       type="file"
                       name="file"
                       id="file"
-                      onChange={handleFileAdding}
+                      onChange={(e) => handleFileAdding(e, "centerImage1")}
                       className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                     />
                   </div>
                   <button
                     type="button"
-                    onClick={handleFileUpload}
+                    onClick={(e) => handleFileUpload(e, "centerImage1")}
                     className={`px-8 py-3 h-fit mx-3 mt-3 ${
-                      fileAddedForUpload === false
+                      fileAddedForUpload1 === false
                         ? "bg-gray-600"
                         : "bg-blue-500"
                     }  text-white font-medium text-lg rounded-md shadow-md ${
-                      fileAddedForUpload === false
+                      fileAddedForUpload1 === false
                         ? "bg-gray-600"
                         : "hover:bg-blue-600"
                     }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
-                    disabled={fileAddedForUpload === false ? true : false}
+                    disabled={fileAddedForUpload1 === false ? true : false}
                   >
                     {`Upload`}
                   </button>
                 </div>
-                {editData && editData.centerImage && (
+                {editData && editData.centerImage1 && (
                   <div className="ml-1 flex lg:items-center flex-col lg:flex-row">
                     <div className="font-bold mb-2 lg:mb-0">
                       Already Uploaded Image :{" "}
@@ -330,9 +380,61 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                       <a
                         target="_blank"
                         className="underline"
-                        href={editData.centerImage.url}
+                        href={editData.centerImage1.url}
                       >
-                        {editData.centerImage.name}
+                        {editData.centerImage1.name}
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="w-full items-center flex-col px-3 md:w-1/2">
+                <div className="items-center flex">
+                  <div className="mb-5">
+                    <label
+                      htmlFor="file2"
+                      className="mb-3 block text-base font-medium"
+                    >
+                      Center Image 2
+                    </label>
+                    <input
+                      type="file"
+                      name="file2"
+                      id="file2"
+                      onChange={(e) => handleFileAdding(e, "centerImage2")}
+                      className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => handleFileUpload(e, "centerImage2")}
+                    className={`px-8 py-3 h-fit mx-3 mt-3 ${
+                      fileAddedForUpload2 === false
+                        ? "bg-gray-600"
+                        : "bg-blue-500"
+                    }  text-white font-medium text-lg rounded-md shadow-md ${
+                      fileAddedForUpload2 === false
+                        ? "bg-gray-600"
+                        : "hover:bg-blue-600"
+                    }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
+                    disabled={fileAddedForUpload2 === false ? true : false}
+                  >
+                    {`Upload`}
+                  </button>
+                </div>
+                {editData && editData.centerImage2 && (
+                  <div className="ml-1 flex lg:items-center flex-col lg:flex-row">
+                    <div className="font-bold mb-2 lg:mb-0">
+                      Already Uploaded Image :{" "}
+                    </div>
+                    <div className="lg:ml-2">
+                      <a
+                        target="_blank"
+                        className="underline"
+                        href={editData.centerImage2.url}
+                      >
+                        {editData.centerImage2.name}
                       </a>
                     </div>
                   </div>
@@ -341,7 +443,7 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
             </div>
 
             {/* {top text } */}
-            <div className="flex flex-col md:flex-row -mx-3">
+            <div className="flex flex-col md:flex-row -mx-3 mt-4">
               <div className="w-full px-3 ">
                 <div className="mb-5">
                   <label
@@ -350,15 +452,18 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                   >
                     Top Text
                   </label>
-                  <textarea
-                    type="text"
-                    name="topText"
-                    id="topText"
-                    value={addData.topText}
-                    onChange={(e) => changeField("topText", e.target.value)}
-                    placeholder="Top Text"
-                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                  />
+
+                  <div className=" w-full  text-black pr-0 md:pr-5 ">
+                    <CKEditor
+                      editor={ClassicEditor}
+                      config={editorConfiguration}
+                      data={addData.topText}
+                      onChange={(event, editor) => {
+                        const data = editor.getData();
+                        changeField("topText", data);
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -373,15 +478,18 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                   >
                     Bottom Text
                   </label>
-                  <textarea
-                    type="text"
-                    name="bottomText"
-                    id="bottomText"
-                    value={addData.bottomText}
-                    onChange={(e) => changeField("bottomText", e.target.value)}
-                    placeholder="Bottom Text"
-                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                  />
+
+                  <div className=" w-full  text-black pr-0 md:pr-5 ">
+                    <CKEditor
+                      editor={ClassicEditor}
+                      config={editorConfiguration}
+                      data={addData.bottomText}
+                      onChange={(event, editor) => {
+                        const data = editor.getData();
+                        changeField("bottomText", data);
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -443,6 +551,9 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                 {editData ? "Update Comparison" : "Add Comparison"}
               </button>
             </div>
+
+            {/* <Muheheh/> */}
+            {/* <Editor/> */}
           </form>
           <ToastContainer position="top-center" autoClose={2000} />
         </div>

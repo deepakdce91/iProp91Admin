@@ -45,6 +45,11 @@ function Index() {
       flex: 1,
     },
     {
+      field: "priority",
+      headerName: "Priority",
+      flex: 1,
+    },
+    {
         field: "createdAt",
         headerName: "Created At",
         flex: 1,

@@ -48,6 +48,11 @@ function Index() {
         headerName: "Type",
         flex: 1,
       },
+      {
+        field: "state",
+        headerName: "State",
+        flex: 1,
+      },
     {
       field: "enable",
       headerName: "Enabled",

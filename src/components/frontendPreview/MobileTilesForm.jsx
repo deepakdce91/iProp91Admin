@@ -23,6 +23,7 @@ function MobileTilesForm({ editData, setModeToDisplay, userToken, userId }) {
   const colors = tokens(theme.palette.mode);
 
   const [addData, setAddData] = useState({
+    title : "",
     image: "",
     enable: "false",
   });
@@ -133,7 +134,7 @@ function MobileTilesForm({ editData, setModeToDisplay, userToken, userId }) {
     if (uploadFile) {
       toast.error("Upload file before submitting form.");
     } else {
-      if (addData.image !== "" && addData.enable !== "") {
+      if (addData.title !== "" && addData.image !== "" && addData.enable !== "") {
         if (editData) {
           axios
             .put(
@@ -190,6 +191,7 @@ function MobileTilesForm({ editData, setModeToDisplay, userToken, userId }) {
   useEffect(() => {
     if (editData) {
       setAddData({
+        title: editData.title,
         image: editData.image,
         enable: editData.enable,
       });
@@ -253,8 +255,30 @@ function MobileTilesForm({ editData, setModeToDisplay, userToken, userId }) {
       <div className="flex items-center justify-center">
         <div className="w-full">
           <form>
-            <div className="flex flex-col  -mx-3">
-              <div className="w-full items-center flex px-3 lg:w-1/2">
+          <div className="flex flex-col lg:flex-row -mx-3">
+              <div className="w-full lg:px-3 lg:w-1/2">
+                <div className="mb-5">
+                  <label
+                    htmlFor="title"
+                    className="mb-3 block text-base font-medium"
+                  >
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    id="title"
+                    value={addData.title}
+                    onChange={(e) => changeField("title", e.target.value)}
+                    placeholder="Title"
+                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col  -mx-3 ">
+              
+              <div className="w-full items-center flex px-3 ">
                 <div className="mb-5">
                   <label
                     htmlFor="file"
@@ -303,6 +327,8 @@ function MobileTilesForm({ editData, setModeToDisplay, userToken, userId }) {
                 </div>
               )}
             </div>
+              </div>
+            
 
             <div className="my-5">
               <label className="text-lg font-medium ">Enable?</label>

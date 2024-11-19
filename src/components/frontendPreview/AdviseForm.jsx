@@ -261,7 +261,7 @@ function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
       <div className="flex items-center justify-center">
         <div className="w-full">
           <form>
-            {/* // customer name and number  */}
+
             <div className="flex flex-col md:flex-row -mx-3">
               <div className="w-full px-3 md:w-1/2">
                 <div className="mb-5">

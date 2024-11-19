@@ -9,6 +9,7 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Header from "../../../components/Header";
 import { jwtDecode } from "jwt-decode";
+import { formatDate } from "../../../MyFunctions";
 import ComparisonsForm from "../../../components/frontendPreview/ComparisonsForm";
 
 function Index() {
@@ -36,16 +37,18 @@ function Index() {
       flex: 1,
       cellClassName: "name-column--cell",
     },
-    {
-      field: "centerImage",
-      headerName: "Image ",
-      valueGetter: (params) => params.value.name,
-      flex: 1,
-    },
+    
     {
       field: "enable",
       headerName: "Enabled",
       flex: 1,
+    },
+
+    {
+      field: "createdAt",
+      headerName: "Received at",
+      flex: 1,
+      valueGetter: (params) => formatDate(params.value),
     },
 
     {

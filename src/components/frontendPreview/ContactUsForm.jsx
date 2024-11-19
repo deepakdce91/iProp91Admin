@@ -21,8 +21,7 @@ function ContactUsForm({ editData, userId, userToken, setModeToDisplay }) {
   const colors = tokens(theme.palette.mode);
 
   const [addData, setAddData] = useState({
-    firstName: "",
-    lastName: "",
+    name: "",
     mobile : "",
     email : "",
     message : "",
@@ -69,8 +68,7 @@ function ContactUsForm({ editData, userId, userToken, setModeToDisplay }) {
 
   const handleSubmit = (addData) => {
     if (
-      addData.firstName !== "" &&
-      addData.lastName !== "" &&
+      addData.name !== "" &&
       addData.mobile !== "" &&
       addData.email !== "" &&
       addData.message !== "" 
@@ -106,13 +104,11 @@ function ContactUsForm({ editData, userId, userToken, setModeToDisplay }) {
   useEffect(() => {
     if (editData) {
       setAddData({
-        firstName: editData.firstName,
-    lastName: editData.lastName,
-    mobile : editData.mobile,
-    email : editData.email,
-    message : editData.message,
-    addressed: editData.addressed,
-
+        name: editData.name,
+        mobile : editData.mobile,
+        email : editData.email,
+        message : editData.message,
+        addressed: editData.addressed,
       });
     }
   }, [editData]);
@@ -171,55 +167,31 @@ function ContactUsForm({ editData, userId, userToken, setModeToDisplay }) {
         <div className="w-full">
           <form>
             <div className="-mx-3 flex flex-wrap">
-              <div className="w-full px-3 sm:w-1/2">
+              <div className="w-full px-3 ">
                 <div className="mb-5">
                   <label
-                    htmlFor="firstName"
+                    htmlFor="name"
                     className="mb-3 block text-base font-medium"
                   >
-                    First Name
+                    Name
                   </label>
                   <input
                     type="text"
-                    name="firstName"
-                    id="firstName"
+                    name="name"
+                    id="name"
                     autoComplete="off"
                     list="mystates"
-                    value={addData.firstName}
+                    value={addData.name}
                     onChange={(e) => {
-                      changeField("firstName",e.target.value);
+                      changeField("name",e.target.value);
                     }}
-                    placeholder="First Name"
+                    placeholder="Full Name"
                     readOnly={editData ? true : false}
                     className={`${editData ? "bg-gray-300 " : ""} text-gray-600  w-full rounded-md border  border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md`}
                   />
                 </div>
               </div>
 
-              <div className="w-full px-3 sm:w-1/2">
-                <div className="mb-5">
-                  <label
-                    htmlFor="lastName"
-                    className="mb-3 block text-base font-medium"
-                  >
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    name="lastName"
-                    id="lastName"
-                    autoComplete="off"
-                    list="mystates"
-                    value={addData.lastName}
-                    onChange={(e) => {
-                      changeField("lastName",e.target.value);
-                    }}
-                    placeholder="Last Name"
-                    readOnly={editData ? true : false}
-                    className={`${editData ? "bg-gray-300 " : ""} text-gray-600  w-full rounded-md border  border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md`}
-                  />
-                </div>
-              </div>
             </div>
 
             <div className="-mx-3 flex flex-wrap">
@@ -355,7 +327,6 @@ function ContactUsForm({ editData, userId, userToken, setModeToDisplay }) {
                 {editData ? "Update" : "Submit"}
               </button>
             </div>}
-
           </form>
         </div>
       </div>
