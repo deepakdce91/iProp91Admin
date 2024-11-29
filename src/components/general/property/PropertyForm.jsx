@@ -50,7 +50,7 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
       type: "",
       files: [],
     },
-    addedBy: userId,
+    addedBy: "",
   });
 
   // Upload the file to Supabase S3
@@ -238,6 +238,7 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
         addData.floorNumber !== "" &&
         addData.unit !== "" &&
         addData.size !== "" &&
+        addData.addedBy !== "" &&
         addData.nature !== "" &&
         addData.status !== "" &&
         addData.user !== "" &&
@@ -336,6 +337,7 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
         state: editData.state,
         city: editData.city,
         builder: editData.builder,
+        addedBy : editData.addedBy,
         project: editData.project,
         tower: editData.tower,
         unit: editData.unit,
@@ -454,13 +456,38 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
               <div className="w-full px-3 md:w-1/2">
                 <div className="mb-5">
                   <label
+                    htmlFor="custid"
+                    className="mb-3 block text-base font-medium"
+                  >
+                    Customer Id
+                  </label>
+                  <input
+                    type="text"
+                    name="custid"
+                    id="custid"
+                    value={addData.addedBy}
+                    onChange={(e) => changeField("addedBy", e.target.value)}
+                    placeholder="Customer Id"
+                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  />
+                </div>
+              </div>
+            </div>
+
+
+            {/* Basic property name and state  */}
+            <div className="flex flex-col lg:flex-row -mx-3">
+
+            <div className="w-full px-3 lg:w-1/2">
+                <div className="mb-5">
+                  <label
                     htmlFor="h-num"
                     className="mb-3 block text-base font-medium"
                   >
                     House number
                   </label>
                   <input
-                    type="tel"
+                    type="text"
                     name="houseNumber"
                     id="h-num"
                     value={addData.houseNumber}
@@ -470,12 +497,8 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
                   />
                 </div>
               </div>
-            </div>
 
-
-            {/* Basic property name and state  */}
-            <div className="flex flex-col md:flex-row -mx-3">
-              <div className="w-full px-3 md:w-1/2">
+              <div className="w-full px-3 lg:w-1/2">
                 <div className="mb-5">
                   <label
                     htmlFor="floorNumber"
@@ -495,7 +518,7 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
                 </div>
               </div>
 
-              <div className="w-full px-3 md:w-1/2">
+              <div className="w-full px-3 lg:w-1/2">
                 <div className="mb-5">
                   <label
                     htmlFor="tower"
@@ -521,10 +544,10 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
            
 
             {/*  City and builder */}
-            <div className="flex flex-col md:flex-row -mx-3">
+            <div className="flex flex-col lg:flex-row -mx-3">
 
             {/* state  */}
-              <div className="flex mx-3 flex-col w-full md:w-1/2 pr-5 pb-5">
+              <div className="flex mx-3 flex-col w-full lg:w-1/2 pr-5 pb-5">
               <label className="text-lg font-medium">
                   Select state
                 </label>
@@ -549,7 +572,7 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
               </div>
 
               {/* city  */}
-              <div className="flex flex-col w-full md:w-1/2 pr-0 md:pr-5 pb-6">
+              <div className="flex flex-col w-full lg:w-1/2 pl-3 lg:pl-0 pr-0 md:pr-5 pb-6">
               <label className="text-lg font-medium">
                   Select city
                 </label>
@@ -574,7 +597,7 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
                 </datalist>
               </div>
 
-              <div className="w-full px-3 md:w-1/2">
+              <div className="w-full px-3 lg:w-1/2">
                 <div className="mb-5">
                   <label className="text-lg font-medium">
                   Select Builder
