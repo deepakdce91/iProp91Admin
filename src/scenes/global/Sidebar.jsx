@@ -29,6 +29,9 @@ import { FaMobileAlt } from "react-icons/fa";
 import { FaCodeCompare } from "react-icons/fa6";
 import { MdPermContactCalendar } from "react-icons/md";
 
+import { FaClipboardQuestion } from "react-icons/fa6";
+import { MdOutlineAttachEmail } from "react-icons/md";
+
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -275,6 +278,14 @@ const Sidebar = () => {
               setSelected={setSelected}
             />
 
+            <Item
+              title="Email Templates"
+              to="/emailTemplates"
+              icon={<MdOutlineAttachEmail className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
             {!isCollapsed && (
               <Typography
                 variant="h6"
@@ -363,6 +374,14 @@ const Sidebar = () => {
               title="Contact Us"
               to="/contactUs"
               icon={<MdPermContactCalendar className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+            <Item
+              title="Question Builder"
+              to="/questionBuilder"
+              icon={<FaClipboardQuestion className="h-4 w-4" />}
               selected={selected}
               setSelected={setSelected}
             />

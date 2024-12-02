@@ -7,7 +7,6 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { client } from "../../config/s3Config"; 
 
 import Header from "../../components/Header";
-import QuestionBuilder from "../../components/QuestionBuilder";
 
 
 
@@ -39,7 +38,7 @@ const Dashboard = () => {
   return (
     <Box m="20px">
       {/* HEADER */}
-      {/* <Box display="flex" justifyContent="space-between" alignItems="center">
+      <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header title="DASHBOARD" subtitle="Welcome to your dashboard" /> 
       </Box>
 
@@ -49,9 +48,7 @@ const Dashboard = () => {
 
       <button className="p-3 mt-5 text-gray-300 bg-red-500" onClick={handleLogout}>
         logout 
-      </button> */}
-
-<QuestionBuilder/>
+      </button>
 
 
     </Box>
