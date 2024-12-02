@@ -5,39 +5,23 @@ import { useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
-import {
-  removeSpaces, 
-  sortArrayByName,
-} from "../../MyFunctions";
-
 import { supabase } from "../../config/supabase";
-
-import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { client } from "../../config/s3Config";
-
-import heic2any from "heic2any";
-
 import { CKEditor } from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
-
 import CKUploadAdapter from "../../config/CKUploadAdapter";
 
 
 
-function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
+function EmailTemplateForm({ editData, setModeToDisplay, userToken, userId }) {
 
-  const [uploadFile, setUploadFile] = useState();
   const [isUploading, setIsUploading] = useState(false);
-  const [fileAddedForUpload, setFileAddedForUpload] = useState(false);
 
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
   const [addData, setAddData] = useState({
-    type:"",
     title: "",
-    content : "",
-    file: "",
+    template : "",
     enable : "true"
    
   });
@@ -52,104 +36,6 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
     ],
   };
 
-  const getPublicUrlFromSupabase = (path) => {
-    const { data, error } = supabase.storage.from(process.env.REACT_APP_LIBRARY_BUCKET).getPublicUrl(path);
-    if (error) {
-      console.error("Error fetching public URL:", error);
-      return null;
-    }
-    return {name : path.split("/")[path.split("/").length-1] ,url : data.publicUrl};
-  };
-
-
-
-  // Upload the file to Supabase S3
-  const uploadFileToCloud = async (myFile) => {
-    const myFileName = removeSpaces(myFile.name); // removing blank space from name
-    const myPath = `lawFiles/${myFileName}`;
-    try {
-      const uploadParams = {
-        Bucket: process.env.REACT_APP_LIBRARY_BUCKET,
-        Key: myPath,
-        Body: myFile, // The file content
-        ContentType: myFile.type, // The MIME type of the file
-      };
-      const command = new PutObjectCommand(uploadParams);
-      await client.send(command);
-      return myPath; //  return the file path
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      throw error;
-    }
-  };
-  
-
-  const handleFileAdding = async (event) => {
-    const file = event.target.files[0];
-
-      // checking for .heic files and converting it into jpeg before adding
-      if (file.type === "image/heic") {
-        try {
-          // Convert .heic file to .png
-          const convertedBlob = await heic2any({
-            blob: file,
-            toType: "image/jpeg",
-          });
-
-          // Create a new File object from the Blob
-          const convertedFile = new File(
-            [convertedBlob],
-            file.name.replace(/\.heic$/i, ".jpeg"),
-            {
-              type: "image/jpeg",
-            }
-          );
-
-          setUploadFile(convertedFile);
-          setFileAddedForUpload(true);
-        } catch (error) {
-          console.error("Error converting HEIC file:", error);
-        }
-      } else {
-        // if file is not jpeg..adding directly
-        setUploadFile(file);
-        setFileAddedForUpload(true);
-      }
-    
-  };
-
-
-  const handleFileUpload = async(e) => {
-    e.preventDefault();
-
-      try {
-        setIsUploading(true);
-        toast("Uploading file.")
-        
-            let cloudFilePath = await uploadFileToCloud(uploadFile);
-            
- 
-            // when in last iteration
-            if (cloudFilePath) {
-              const publicUrl = getPublicUrlFromSupabase(cloudFilePath);
-                if(publicUrl){
-                  changeField("file", publicUrl)
-   
-                setIsUploading(false);
-                setUploadFile("");
-                setFileAddedForUpload(false);
-                toast.success("File uploaded.")
-                }
-            }
-
-      } catch (error) {
-        setIsUploading(false);
-        toast.error("Some error occured while uploading.");
-        console.log(error.message);
-      }
-  
-  }; 
-
 
   const changeField = (field, value) => {
     setAddData((prevData) => ({
@@ -160,19 +46,15 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
 
 
   const handleSubmit = () => {
-    if (uploadFile) {
-      toast.error("Upload file before submitting form.");
-    } else {
+
       if (
         addData.title !== "" &&
-        addData.enable !== "" &&
-        addData.type !== ""
+        addData.template !== "" 
       ) {
-        if(!(addData.content === "" && addData.file === "")){
         if (editData) {
           axios
             .put(
-              `${process.env.REACT_APP_BACKEND_URL}/api/faqs/updateFAQ/${editData._id}?userId=${userId}`,
+              `${process.env.REACT_APP_BACKEND_URL}/api/emailTemplates/updateEmailTemplate/${editData._id}?userId=${userId}`,
               addData,
               {
                 headers: {
@@ -182,7 +64,7 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
             )
             .then((response) => {
               if (response) {
-                toast.success("Faq updated!");
+                toast.success("Email Template updated!");
                 setTimeout(() => {
                   setModeToDisplay();
                 }, 2000);
@@ -195,7 +77,7 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
         } else {
           axios
             .post(
-              `${process.env.REACT_APP_BACKEND_URL}/api/faqs/addFAQ?userId=${userId}`,
+              `${process.env.REACT_APP_BACKEND_URL}/api/emailTemplates/addEmailTemplate?userId=${userId}`,
               addData,
               {
                 headers: {
@@ -206,7 +88,7 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
             .then((response) => {
               if (response) {
      
-                toast.success("Faq added!");
+                toast.success("Email Template added!");
                 setTimeout(() => {
                     setModeToDisplay();
                   }, 2000);
@@ -217,28 +99,22 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
               toast.error("Some ERROR occurred.");
             });
         }
-        }else{
-            toast.error("Provide either a file or content for Law.")
-        }
+        
       } else {
         toast.error("Fill all the fields.");
       }
-    }
+    
 
     
   };
-
-
 
 
   useEffect(() => {
 
     if (editData) {
       setAddData({
-        type : editData.type,
         title: editData.title,
-        file: editData.file ,
-        content : editData.content || "",
+        template : editData.template || "",
         enable : editData.enable || "true"
       });
 
@@ -307,37 +183,9 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
         <div className="w-full">
           <form>
 
-            {/* --- type of Faq  */}
-            <div className="flex flex-col md:flex-row -mx-3">
-              <div className="w-full px-3 md:w-1/2">
-                <div className="mb-5">
-                  <label
-                    htmlFor="type"
-                    className="mb-3 block text-base font-medium"
-                  >
-                    Type
-                  </label> 
-                  <select
-                    id="type"
-                    value={addData.type}
-                    onChange={(e) => changeField("type", e.target.value)}
-                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                  >
-                    <option value="">Select...</option>
-                    <option value="knowledge-center">Knowledge Center</option>
-                    <option value="nri">NRI</option>
-                    <option value="site">Site</option>
-
-                  </select>
-                </div>
-              </div>
-
-            </div>
-
-
             {/* // customer name and number  */}
             <div className="flex flex-col md:flex-row -mx-3">
-              <div className="w-full px-3 md:w-1/2">
+              <div className="w-full px-3 ">
                 <div className="mb-5">
                   <label
                     htmlFor="title"
@@ -356,57 +204,18 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
                   />
                 </div>
               </div>
-
-              <div className="w-full items-center flex-col px-3 md:w-1/2">
-                <div className="items-center flex ">
-                <div className="mb-2">
-                  <label
-                    htmlFor="file"
-                    className="mb-3 block text-base font-medium"
-                  >
-                    File
-                  </label>
-                  <input
-                    type="file"
-                    name="file"
-                    id="file"
-                    onChange={handleFileAdding}
-                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleFileUpload}
-                  className={`px-8 py-3 h-fit mx-3 mt-3 ${
-                    fileAddedForUpload === false ? "bg-gray-600" : "bg-blue-500"
-                  }  text-white font-medium text-lg rounded-md shadow-md ${
-                    fileAddedForUpload === false
-                      ? "bg-gray-600"
-                      : "hover:bg-blue-600"
-                  }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
-                  disabled={fileAddedForUpload === false ? true : false}
-                >
-                    {`Upload`}
-                  
-                </button>
-                </div>
-                {editData && editData.file && <div className="ml-1 flex lg:items-center flex-col lg:flex-row">
-                <div className="font-bold mb-2 lg:mb-0">Already Uploaded Image : </div>
-                <div className="lg:ml-2"><a target="_blank" className="underline" href={editData.file.url}>{editData.file.name}</a></div>
-              </div>}
-              </div>
             </div>
 
 
-            <h2 className="text-lg font-medium mt-2 mb-3">Content</h2>
+            <h2 className="text-lg font-medium mt-2 mb-3">Template</h2>
             <div className=" w-full  text-black pr-0 md:pr-5 ">
               <CKEditor
                 editor={ClassicEditor}
                 config={editorConfiguration}
-                data={addData.content}
+                data={addData.template}
                 onChange={(event, editor) => {
                   const data = editor.getData();
-                  changeField("content", data);
+                  changeField("template", data);
                 }}
               />
             </div>
@@ -468,7 +277,7 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
                 }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
                 disabled={isUploading === true ? true : false}
               >
-                {editData ? "Update FAQ" : "Add FAQ"}
+                {editData ? "Update Template" : "Add Template"}
               </button>
             </div>
           </form>
@@ -479,5 +288,5 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
   );
 }
 
-export default AddFaqForm;
+export default EmailTemplateForm;
 

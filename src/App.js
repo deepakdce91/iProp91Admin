@@ -26,6 +26,8 @@ import GroupFormation from "./scenes/configurations/groupFormation";
 import Conversations from "./scenes/configurations/conversations";
 import ReportedMessages from "./scenes/configurations/reportedMessages";
 
+import EmailTemplates from "./scenes/configurations/emailTemplates/Index.jsx";
+
 import Faqs from "./scenes/knowledgeCenter/faqs";
 import Laws from "./scenes/knowledgeCenter/laws";
 import Library from "./scenes/knowledgeCenter/library";
@@ -46,6 +48,8 @@ import Advise from "./scenes/frontendPreview/Advise/Index";
 import MobileTiles from "./scenes/frontendPreview/MobileTiles/Index";
 import Comparisons from "./scenes/frontendPreview/Comparisons/Index";
 import ContactUs from "./scenes/frontendPreview/ContactUs/Index";
+import QuestionBuilder from "./scenes/frontendPreview/QuestionBuilder/Index.jsx";
+
 
 
 
@@ -61,6 +65,7 @@ const routes = {
   documentType: "/documentType",
   rejectedReasons: "/rejectedReasons",
   moreInfoReasons: "/moreInfoReasons",
+  emailTemplates : "/emailTemplates",
 
   groupFormation: "/groupFormation",
   conversations: "/conversations",
@@ -81,7 +86,8 @@ const routes = {
   advise: "/advise",
   mobileTiles : "/mobileTiles",
   comparisons : "/comparisons",
-  contactUs : "/contactUs"
+  contactUs : "/contactUs",
+  questionBuilder : "/questionBuilder"
 
 };
 
@@ -182,6 +188,10 @@ function App() {
                     path={routes.reportedMessages}
                     element={<ReportedMessages />}
                   />
+                  <Route
+                    path={routes.emailTemplates}
+                    element={<EmailTemplates />}
+                  />
 
                   <Route path={routes.property} element={<Property />} />
                   <Route path={routes.users} element={<Users />} />
@@ -202,6 +212,7 @@ function App() {
                   <Route path={routes.mobileTiles} element={<MobileTiles />} />
                   <Route path={routes.comparisons} element={<Comparisons />} />
                   <Route path={routes.contactUs} element={<ContactUs />} />
+                  <Route path={routes.questionBuilder} element={<QuestionBuilder />} />
                 </>
               )}
             </Routes>

@@ -7,7 +7,7 @@
     "@aws-sdk/s3-request-presigner": "^3.649.0",
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
     "@ckeditor/ckeditor5-build-classic": "^43.2.0",
-    "@ckeditor/ckeditor5-image": "^43.3.1", 
+    "@ckeditor/ckeditor5-image": "^43.3.1",
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.4",
     "@fullcalendar/core": "^5.11.3",
@@ -96,6 +96,6 @@
     "ckeditor5": "^43.3.1",
     "customize-cra": "^1.0.0",
     "react-app-rewired": "^2.2.1",
-    "tailwindcss": "^3.4.10"
+    "tailwindcss": "^3.4.15"
   }
 }

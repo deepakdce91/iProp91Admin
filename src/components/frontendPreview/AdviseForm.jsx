@@ -14,7 +14,6 @@ import { client } from "../../config/s3Config";
 
 import heic2any from "heic2any";
 
-import CKUploadAdapter from "../../config/CKUploadAdapter";
 
 function AdviseForm({ editData, setModeToDisplay, userToken, userId }) {
   const [uploadFile, setUploadFile] = useState();
