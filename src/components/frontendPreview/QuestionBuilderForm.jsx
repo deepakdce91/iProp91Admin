@@ -259,7 +259,7 @@ const QuestionBuilder = ({
 
       <div>
         {questions.length > 0 ? renderQuestions(questions) : null}
-       {questions.length > 0 && <button
+       {dataArray.length > 0 && <button
             className="bg-green-500 mt-8 text-[15px] hover:bg-green-600 text-white rounded-sm px-4 py-1 ml-6"
             onClick={handleSubmit}
             disabled={isUploading}

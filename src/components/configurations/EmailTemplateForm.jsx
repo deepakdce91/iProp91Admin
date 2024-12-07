@@ -10,20 +10,17 @@ import { CKEditor } from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 import CKUploadAdapter from "../../config/CKUploadAdapter";
 
-
-
 function EmailTemplateForm({ editData, setModeToDisplay, userToken, userId }) {
-
   const [isUploading, setIsUploading] = useState(false);
 
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
   const [addData, setAddData] = useState({
-    title: "",
-    template : "",
-    enable : "true"
-   
+    templateName: "",
+    subject: "",
+    body: "",
+    enable: "true",
   });
 
   const editorConfiguration = {
@@ -36,7 +33,6 @@ function EmailTemplateForm({ editData, setModeToDisplay, userToken, userId }) {
     ],
   };
 
-
   const changeField = (field, value) => {
     setAddData((prevData) => ({
       ...prevData,
@@ -44,89 +40,78 @@ function EmailTemplateForm({ editData, setModeToDisplay, userToken, userId }) {
     }));
   };
 
-
   const handleSubmit = () => {
-
-      if (
-        addData.title !== "" &&
-        addData.template !== "" 
-      ) {
-        if (editData) {
-          axios
-            .put(
-              `${process.env.REACT_APP_BACKEND_URL}/api/emailTemplates/updateEmailTemplate/${editData._id}?userId=${userId}`,
-              addData,
-              {
-                headers: {
-                  "auth-token": userToken,
-                },
-              }
-            )
-            .then((response) => {
-              if (response) {
-                toast.success("Email Template updated!");
-                setTimeout(() => {
-                  setModeToDisplay();
-                }, 2000);
-              }
-            })
-            .catch((error) => {
-              console.error("Error:", error);
-              toast.error("Some ERROR occurred.");
-            });
-        } else {
-          axios
-            .post(
-              `${process.env.REACT_APP_BACKEND_URL}/api/emailTemplates/addEmailTemplate?userId=${userId}`,
-              addData,
-              {
-                headers: {
-                  "auth-token": userToken,
-                },
-              }
-            )
-            .then((response) => {
-              if (response) {
-     
-                toast.success("Email Template added!");
-                setTimeout(() => {
-                    setModeToDisplay();
-                  }, 2000);
-              }
-            })
-            .catch((error) => {
-              console.error("Error:", error);
-              toast.error("Some ERROR occurred.");
-            });
-        }
-        
+    if (
+      addData.templateName !== "" &&
+      addData.subject !== "" &&
+      addData.body !== ""
+    ) {
+      if (editData) {
+        axios
+          .put(
+            `${process.env.REACT_APP_BACKEND_URL}/api/emailTemplates/updateEmailTemplate/${editData._id}?userId=${userId}`,
+            addData,
+            {
+              headers: {
+                "auth-token": userToken,
+              },
+            }
+          )
+          .then((response) => {
+            if (response) {
+              toast.success("Email Template updated!");
+              setTimeout(() => {
+                setModeToDisplay();
+              }, 2000);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            toast.error("Some ERROR occurred.");
+          });
       } else {
-        toast.error("Fill all the fields.");
+        axios
+          .post(
+            `${process.env.REACT_APP_BACKEND_URL}/api/emailTemplates/addEmailTemplate?userId=${userId}`,
+            addData,
+            {
+              headers: {
+                "auth-token": userToken,
+              },
+            }
+          )
+          .then((response) => {
+            if (response) {
+              toast.success("Email Template added!");
+              setTimeout(() => {
+                setModeToDisplay();
+              }, 2000);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            toast.error("Some ERROR occurred.");
+          });
       }
-    
-
-    
+    } else {
+      toast.error("Fill all the fields.");
+    }
   };
 
-
   useEffect(() => {
-
     if (editData) {
       setAddData({
-        title: editData.title,
-        template : editData.template || "",
-        enable : editData.enable || "true"
+        templateName: editData.templateName,
+        subject: editData.subject || "",
+        body: editData.body || "",
+        enable: editData.enable || "true",
       });
-
     }
   }, [editData]);
 
-
-  
-
   return (
     <Box
-    sx={{
+      sx={{
         padding: "24px",
         "& .MuiInputBase-root": {
           backgroundColor: colors.primary[400],
@@ -177,53 +162,86 @@ function EmailTemplateForm({ editData, setModeToDisplay, userToken, userId }) {
           color: colors.grey[200],
         },
       }}
-      
     >
       <div className="flex items-center justify-center">
         <div className="w-full">
           <form>
-
-            {/* // customer name and number  */}
+            {/* // template name  */}
             <div className="flex flex-col md:flex-row -mx-3">
-              <div className="w-full px-3 ">
+              <div className="w-full px-3 md:w-2/3 lg:w-1/2">
                 <div className="mb-5">
                   <label
-                    htmlFor="title"
+                    htmlFor="templateName"
                     className="mb-3 block text-base font-medium"
                   >
-                    Title 
+                    Template Name
                   </label>
                   <input
                     type="text"
-                    name="title"
-                    id="title"
-                    value={addData.title}
-                    onChange={(e) => changeField("title", e.target.value)}
-                    placeholder="Title"
+                    name="templateName"
+                    id="templateName"
+                    value={addData.templateName}
+                    onChange={(e) =>
+                      changeField("templateName", e.target.value)
+                    }
+                    placeholder="Template Name"
                     className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                   />
                 </div>
               </div>
             </div>
 
+            {/* // subject  */}
+            <div className="flex flex-col md:flex-row -mx-3">
+              <div className="w-full px-3 mr-5">
+                <div className="mb-5">
+                  <label
+                    htmlFor="subject"
+                    className="mb-3 block text-base font-medium"
+                  >
+                    Subject
+                  </label>
+                  <input
+                    type="text"
+                    name="subject"
+                    id="subject"
+                    value={addData.subject}
+                    onChange={(e) => changeField("subject", e.target.value)}
+                    placeholder="Subject"
+                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  />
+                </div>
+              </div>
+            </div>
 
-            <h2 className="text-lg font-medium mt-2 mb-3">Template</h2>
+            {editData && editData.totalVariables > 0 && (
+              <div>
+                <div>
+                  <strong> Varaibles : </strong>{" "}
+                </div>
+                <div>
+                  {editData.variableNames.split(",").map((item, index) => {
+                    return <p key={index + "var"}>{item}</p>;
+                  })}
+                </div>
+              </div>
+            )}
+
+            <h2 className="text-lg font-medium mt-2 mb-3">Body</h2>
             <div className=" w-full  text-black pr-0 md:pr-5 ">
               <CKEditor
                 editor={ClassicEditor}
                 config={editorConfiguration}
-                data={addData.template}
+                data={addData.body}
                 onChange={(event, editor) => {
                   const data = editor.getData();
-                  changeField("template", data);
+                  changeField("body", data);
                 }}
               />
             </div>
 
             <div className="my-5">
-              <label className="text-lg font-medium ">
-                Enable?
-              </label>
+              <label className="text-lg font-medium ">Enable?</label>
               <div className="flex items-center space-x-6 mt-2">
                 <div className="flex items-center">
                   <input
@@ -262,13 +280,12 @@ function EmailTemplateForm({ editData, setModeToDisplay, userToken, userId }) {
               </div>
             </div>
 
-           
             <div className="flex justify-center mt-5">
               <button
                 type="button"
-                onClick={() => { 
-                    handleSubmit()
-                    // console.log(addData)
+                onClick={() => {
+                  handleSubmit();
+                  // console.log(addData)
                 }}
                 className={`px-8 py-3 ${
                   isUploading === true ? "bg-gray-600" : "bg-[#6A64F1]"
@@ -289,4 +306,3 @@ function EmailTemplateForm({ editData, setModeToDisplay, userToken, userId }) {
 }
 
 export default EmailTemplateForm;
-

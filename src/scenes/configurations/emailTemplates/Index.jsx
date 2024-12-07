@@ -11,6 +11,8 @@ import Header from "../../../components/Header";
 import EmailTemplateForm from "../../../components/configurations/EmailTemplateForm";
 import { formatDate } from "../../../MyFunctions";
 import { jwtDecode } from "jwt-decode";
+import { FaPaperPlane } from "react-icons/fa";
+import SendEmailModal from "../../../components/ui/SendEmailModal";
 
 function Index() {
   const theme = useTheme();
@@ -24,6 +26,19 @@ function Index() {
 
   const [editData, setEditData] = useState();
 
+  const [showEmailModal, setShowEmailModal ] = useState(false);
+
+  const handleOpenEmailModal = (data) =>{
+    setEditData(data);
+    setShowEmailModal(true);
+    
+  }
+
+  const handleCloseEmailModal = ()=>{
+    setShowEmailModal(false);
+    setEditData();
+  }
+
   const columns = [
     {
         field: "serial",
@@ -32,8 +47,15 @@ function Index() {
         valueGetter: (params) => params.api.getRowIndex(params.id) + 1, // Start numbering from 1
       },
     {
-      field: "title",
-      headerName: "Title",
+      field: "templateName",
+      headerName: "Template Name",
+      flex: 1,
+      cellClassName: "name-column--cell",
+    },
+
+    {
+      field: "totalVariables",
+      headerName: "Variables",
       flex: 1,
       cellClassName: "name-column--cell",
     },
@@ -65,6 +87,13 @@ function Index() {
       flex: 1,
       renderCell: (params) => (
         <Box>
+          <IconButton
+            onClick={()=>handleOpenEmailModal(params.row)}
+            // color="primary"
+            className="text-grey-400 h-8 w-8"
+          >
+            <FaPaperPlane />
+          </IconButton>
           <IconButton
             onClick={() => handleEdit(params.row._id)}
             // color="primary"
@@ -309,8 +338,11 @@ function Index() {
             getRowId={(row) => row._id}
             autoHeight
           />
+          {editData && showEmailModal === true && <SendEmailModal data = {editData} closeModal={handleCloseEmailModal}/>}
         </Box>
+        
       )}
+
       <ToastContainer position="top-right" autoClose={2000} />
     </Box>
   );
