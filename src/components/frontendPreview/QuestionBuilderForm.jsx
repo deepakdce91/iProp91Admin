@@ -246,7 +246,7 @@ const QuestionBuilder = ({
 
   return (
     <div>
-      {(questions.length === 0) && <div className="flex justify-start items-center">
+      {questions && (questions.length === 0) && <div className="flex justify-start items-center">
         <p className="text-lg mr-4">No questions yet!</p>
 
         <button
@@ -258,8 +258,8 @@ const QuestionBuilder = ({
       </div>}
 
       <div>
-        {questions.length > 0 ? renderQuestions(questions) : null}
-       {dataArray.length > 0 && <button
+        {questions && questions.length > 0 ? renderQuestions(questions) : null}
+       {questions && questions.length > 0 && <button
             className="bg-green-500 mt-8 text-[15px] hover:bg-green-600 text-white rounded-sm px-4 py-1 ml-6"
             onClick={handleSubmit}
             disabled={isUploading}
