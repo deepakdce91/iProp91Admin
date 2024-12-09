@@ -51,6 +51,16 @@ function Index() {
       flex: 1,
     },
     {
+      field: "project",
+      headerName: "City",
+      flex: 1,
+    },
+    {
+      field: "builder",
+      headerName: "Builder",
+      flex: 1,
+    },
+    {
       field: "addedBy",
       headerName: "Added By",
       headerAlign: "left",

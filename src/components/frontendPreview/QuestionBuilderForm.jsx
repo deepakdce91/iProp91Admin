@@ -208,7 +208,7 @@ const QuestionBuilder = ({
 
   return (
     <div>
-      {questions.length === 0 && (
+      {questions && questions.length === 0 && (
         <div className="flex justify-start items-center">
           <p className="text-lg mr-4">No questions yet!</p>
           <button
@@ -221,7 +221,7 @@ const QuestionBuilder = ({
       )}
 
       <div>
-        {questions.length > 0 && (
+        {questions && questions.length > 0 && (
           <>
             {renderQuestions(questions)}
             <button
