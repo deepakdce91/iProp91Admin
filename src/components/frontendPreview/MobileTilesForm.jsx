@@ -26,6 +26,7 @@ function MobileTilesForm({ editData, setModeToDisplay, userToken, userId }) {
     title : "",
     image: "",
     enable: "false",
+    redirectionLink : ""
   });
 
   const getPublicUrlFromSupabase = (path) => {
@@ -194,6 +195,7 @@ function MobileTilesForm({ editData, setModeToDisplay, userToken, userId }) {
         title: editData.title,
         image: editData.image,
         enable: editData.enable,
+        redirectionLink : editData.redirectionLink || ""
       });
     }
   }, [editData]);
@@ -327,6 +329,28 @@ function MobileTilesForm({ editData, setModeToDisplay, userToken, userId }) {
                 </div>
               )}
             </div>
+              </div>
+
+              <div className="flex flex-col lg:flex-row -mx-3">
+              <div className="w-full lg:px-3 lg:w-1/2">
+                <div className="mb-5">
+                  <label
+                    htmlFor="redirectionLink"
+                    className="mb-3 block text-base font-medium"
+                  >
+                    Redirection Link
+                  </label>
+                  <input
+                    type="text"
+                    name="redirectionLink"
+                    id="redirectionLink"
+                    value={addData.redirectionLink}
+                    onChange={(e) => changeField("redirectionLink", e.target.value)}
+                    placeholder="Redirection Link"
+                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  />
+                </div>
+              </div>
               </div>
             
 
