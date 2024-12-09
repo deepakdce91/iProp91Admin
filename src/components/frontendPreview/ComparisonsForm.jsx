@@ -18,6 +18,8 @@ import { CKEditor } from "@ckeditor/ckeditor5-react";
 import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 import CKUploadAdapter from "../../config/CKUploadAdapter";
 
+import { RiDeleteBinFill } from "react-icons/ri";
+
 function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
   const [uploadFile1, setUploadFile1] = useState();
   const [fileAddedForUpload1, setFileAddedForUpload1] = useState(false);
@@ -36,6 +38,7 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
     bottomText: "",
     centerImage1: "",
     centerImage2: "",
+    redirectionLink : "",
     enable: "false",
   });
 
@@ -251,6 +254,9 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
       if (editData.centerImage2) {
         myObj.centerImage2 = editData.centerImage2;
       }
+      if(editData.redirectionLink){
+        myObj.redirectionLink = editData.redirectionLink
+      }
 
       setAddData(myObj);
     }
@@ -334,6 +340,26 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                   />
                 </div>
               </div>
+              
+              <div className="w-full px-3 md:w-1/2">
+                <div className="mb-5">
+                  <label
+                    htmlFor="redirectionLink"
+                    className="mb-3 block text-base font-medium"
+                  >
+                    Redirection Link
+                  </label>
+                  <input
+                    type="text"
+                    name="redirectionLink"
+                    id="redirectionLink"
+                    value={addData.redirectionLink}
+                    onChange={(e) => changeField("redirectionLink", e.target.value)}
+                    placeholder="Redirection Link"
+                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-col md:flex-row -mx-3">
@@ -371,20 +397,35 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                     {`Upload`}
                   </button>
                 </div>
-                {editData && editData.centerImage1 && (
-                  <div className="ml-1 flex lg:items-center flex-col lg:flex-row">
-                    <div className="font-bold mb-2 lg:mb-0">
-                      Already Uploaded Image :{" "}
+                {editData && editData.centerImage1 && addData.centerImage1 !== "" &&(
+                  <div className="flex flex-col">
+                    <div className="ml-1 flex lg:items-center flex-col lg:flex-row">
+                      <div className="font-bold mb-2 lg:mb-0">
+                        Already Uploaded Image :{" "}
+                      </div>
+                      <div className="lg:ml-2">
+                        <a
+                          target="_blank"
+                          className="underline"
+                          href={editData.centerImage1.url}
+                        >
+                          {editData.centerImage1.name}
+                        </a>
+                      </div>
                     </div>
-                    <div className="lg:ml-2">
-                      <a
-                        target="_blank"
-                        className="underline"
-                        href={editData.centerImage1.url}
-                      >
-                        {editData.centerImage1.name}
-                      </a>
-                    </div>
+
+                   {addData && addData.centerImage1 !== "" && <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        changeField("centerImage1", "");
+                        toast("Image 1 removed.")
+      
+                      }}
+                      className=" my-2 items-center justify-center flex border border-gray-400 w-fit px-2 transform transition-transform duration-300 hover:scale-110"
+                    >
+                      <RiDeleteBinFill className="text-red-400 h-4 w-4 mr-1" />
+                      <div className="text-">Delete Uploaded Image</div>
+                    </button>}
                   </div>
                 )}
               </div>
@@ -423,20 +464,34 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                     {`Upload`}
                   </button>
                 </div>
-                {editData && editData.centerImage2 && (
-                  <div className="ml-1 flex lg:items-center flex-col lg:flex-row">
-                    <div className="font-bold mb-2 lg:mb-0">
-                      Already Uploaded Image :{" "}
+                {editData && editData.centerImage2 && addData.centerImage2 !== "" && (
+                  <div className="flex flex-col">
+                    <div className="ml-1 flex lg:items-center flex-col lg:flex-row">
+                      <div className="font-bold mb-2 lg:mb-0">
+                        Already Uploaded Image :{" "}
+                      </div>
+                      <div className="lg:ml-2">
+                        <a
+                          target="_blank"
+                          className="underline"
+                          href={editData.centerImage2.url}
+                        >
+                          {editData.centerImage2.name}
+                        </a>
+                      </div>
                     </div>
-                    <div className="lg:ml-2">
-                      <a
-                        target="_blank"
-                        className="underline"
-                        href={editData.centerImage2.url}
-                      >
-                        {editData.centerImage2.name}
-                      </a>
-                    </div>
+
+                   <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        changeField("centerImage2", "");
+                        toast("Image 2 removed.")
+                      }}
+                      className=" my-2 items-center justify-center flex border border-gray-400 w-fit px-2 transform transition-transform duration-300 hover:scale-110"
+                    >
+                      <RiDeleteBinFill className="text-red-400 h-4 w-4 mr-1" />
+                      <div className="text-">Delete Uploaded Image</div>
+                    </button>
                   </div>
                 )}
               </div>

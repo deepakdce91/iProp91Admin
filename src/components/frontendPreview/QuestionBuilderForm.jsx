@@ -14,133 +14,96 @@ const QuestionBuilder = ({
   const [modalType, setModalType] = useState("");
   const [modalData, setModalData] = useState({});
   const [inputValue, setInputValue] = useState("");
-
+  const [redirectionLink, setRedirectionLink] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
   const inputRef = useRef(null);
-  
 
   const openModal = (type, data = {}) => {
     setModalType(type);
     setModalData(data);
     setInputValue("");
+    setRedirectionLink("");
     setShowModal(true);
   };
 
   const closeModal = () => setShowModal(false);
 
-  const handleSubmit = () => {
-      if (questions.length > 0) {
-        setIsUploading(true);
-        if (dataArray.length > 0) {
-          axios
-            .put(
-              `${process.env.REACT_APP_BACKEND_URL}/api/questions/updateQuestion/${questionId}?userId=${userId}`,
-              {
-                data : questions
-              },
-              {
-                headers: {
-                  "auth-token": userToken,
-                },
-              }
-            )
-            .then((response) => {
-              if (response) {
-                toast.success("Questions updated!");
-                setIsUploading(false);
-                setTimeout(() => {
-                  setModeToDisplay();
-                }, 2000);
-              }
-            })
-            .catch((error) => {
-              setIsUploading(false);
-              console.error("Error:", error);
-              toast.error("Some ERROR occurred.");
-            });
-        } else {
-          axios
-            .post(
-              `${process.env.REACT_APP_BACKEND_URL}/api/questions/addQuestion?userId=${userId}`,
-              {
-                data : questions
-              },
-              {
-                headers: {
-                  "auth-token": userToken,
-                },
-              }
-            )
-            .then((response) => {
-              if (response) {
-                toast.success("Questions Added!");
-                setIsUploading(false);
-                setTimeout(() => {
-                  setModeToDisplay();
-                }, 2000);
-              }
-            })
-            .catch((error) => {
-              setIsUploading(false);
-              console.error("Error:", error);
-              toast.error("Some ERROR occurred.");
-            });
-        }
-      } else {
-        toast.error("Add questions first.");
-      }
-    
-  };
-
   useEffect(() => {
     if (showModal && inputRef.current) inputRef.current.focus();
   }, [showModal]);
 
+  const handleSubmit = () => {
+    if (questions.length > 0) {
+      setIsUploading(true);
+      const endpoint = dataArray.length > 0 
+        ? `${process.env.REACT_APP_BACKEND_URL}/api/questions/updateQuestion/${questionId}?userId=${userId}`
+        : `${process.env.REACT_APP_BACKEND_URL}/api/questions/addQuestion?userId=${userId}`;
+      
+      const method = dataArray.length > 0 ? 'put' : 'post';
+
+      axios({
+        method,
+        url: endpoint,
+        data: { data: questions },
+        headers: { "auth-token": userToken }
+      })
+        .then(response => {
+          if (response) {
+            toast.success(dataArray.length > 0 ? "Questions updated!" : "Questions Added!");
+            setIsUploading(false);
+            setTimeout(() => setModeToDisplay(), 2000);
+          }
+        })
+        .catch(error => {
+          setIsUploading(false);
+          console.error("Error:", error);
+          toast.error("Some ERROR occurred.");
+        });
+    } else {
+      toast.error("Add questions first.");
+    }
+  };
+
   const handleAdd = () => {
-    if (modalType === "root") addRootQuestion();
-    else if (modalType === "option") addOption(modalData.parentId);
-    else if (modalType === "sub-question") addSubQuestion(modalData.optionId);
-    closeModal();
-  };
-
-  const addRootQuestion = () => {
-    const newQuestion = {
+    if (!inputValue.trim()) return;
+    
+    const payload = {
       id: Date.now(),
-      questionText: inputValue,
-      options: [],
+      text: inputValue,
+      redirectionLink: redirectionLink.trim() || null
     };
-    setQuestions([...questions, newQuestion]);
-  };
 
-  const addOption = (parentId) => {
-    const updatedQuestions = updateNestedStructure(
-      questions,
-      parentId,
-      (item) => ({
-        ...item,
-        options: [
-          ...item.options,
-          { id: Date.now(), text: inputValue, subQuestions: [] },
-        ],
-      })
-    );
-    setQuestions(updatedQuestions);
-  };
-
-  const addSubQuestion = (optionId) => {
-    const updatedQuestions = updateNestedStructure(
-      questions,
-      optionId,
-      (option) => ({
-        ...option,
-        subQuestions: [
-          ...option.subQuestions,
-          { id: Date.now(), questionText: inputValue, options: [] },
-        ],
-      })
-    );
-    setQuestions(updatedQuestions);
+    if (modalType === "root") {
+      payload.questionText = inputValue;
+      payload.options = [];
+      delete payload.text;
+      setQuestions([...questions, payload]);
+    } else if (modalType === "option") {
+      const updatedQuestions = updateNestedStructure(
+        questions,
+        modalData.parentId,
+        (item) => ({
+          ...item,
+          options: [...item.options, { ...payload, subQuestions: [] }]
+        })
+      );
+      setQuestions(updatedQuestions);
+    } else if (modalType === "sub-question") {
+      payload.questionText = inputValue;
+      payload.options = [];
+      delete payload.text;
+      const updatedQuestions = updateNestedStructure(
+        questions,
+        modalData.optionId,
+        (option) => ({
+          ...option,
+          subQuestions: [...option.subQuestions, payload]
+        })
+      );
+      setQuestions(updatedQuestions);
+    }
+    closeModal();
   };
 
   const updateNestedStructure = (items, id, callback) =>
@@ -196,6 +159,9 @@ const QuestionBuilder = ({
             Delete
           </button>
           <span>{opt.text}</span>
+          {opt.redirectionLink && (
+            <span className="ml-2 text-blue-600">→ {opt.redirectionLink}</span>
+          )}
           {opt.subQuestions && (
             <button
               className="bg-white hover:bg-gray-200 rounded-lg text-gray-700 px-2 py-1 ml-2"
@@ -213,16 +179,14 @@ const QuestionBuilder = ({
             </button>
           )}
         </div>
-        {opt.subQuestions?.length > 0 && (
-          <div>{renderQuestions(opt.subQuestions)}</div>
-        )}
+        {opt.subQuestions?.length > 0 && <div>{renderQuestions(opt.subQuestions)}</div>}
         {opt.options?.length > 0 && <div>{renderOptions(opt.options)}</div>}
       </div>
     ));
 
   const renderQuestions = (items) =>
     items.map((q) => (
-      <div key={`${new Date()}`} className="relative ml-8 pl-4 border-l border-gray-300" >
+      <div key={`${new Date()}`} className="relative ml-8 pl-4 border-l border-gray-300">
         <div className="flex items-center mb-4">
           <button
             className="bg-red-500 hover:bg-red-600 text-white rounded-lg px-2 py-1 mr-2"
@@ -242,50 +206,46 @@ const QuestionBuilder = ({
       </div>
     ));
 
-
-
   return (
     <div>
-      {questions && (questions.length === 0) && <div className="flex justify-start items-center">
-        <p className="text-lg mr-4">No questions yet!</p>
-
-        <button
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
-          onClick={() => openModal("root")}
-        >
-          {"Add Root Question"}
-        </button>
-      </div>}
+      {questions.length === 0 && (
+        <div className="flex justify-start items-center">
+          <p className="text-lg mr-4">No questions yet!</p>
+          <button
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
+            onClick={() => openModal("root")}
+          >
+            Add Root Question
+          </button>
+        </div>
+      )}
 
       <div>
-        {questions && questions.length > 0 ? renderQuestions(questions) : null}
-       {questions && questions.length > 0 && <button
-            className="bg-green-500 mt-8 text-[15px] hover:bg-green-600 text-white rounded-sm px-4 py-1 ml-6"
-            onClick={handleSubmit}
-            disabled={isUploading}
-          >
-            Save question
-          </button>}
+        {questions.length > 0 && (
+          <>
+            {renderQuestions(questions)}
+            <button
+              className="bg-green-500 mt-8 text-[15px] hover:bg-green-600 text-white rounded-sm px-4 py-1 ml-6"
+              onClick={handleSubmit}
+              disabled={isUploading}
+            >
+              Save question
+            </button>
+          </>
+        )}
       </div>
-
- 
 
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white relative rounded-lg p-6 w-80">
+          <div className="bg-white relative rounded-lg p-6 w-96">
             <button
-              className="absolute top-2 right-3 hover:g text-gray-700"
+              className="absolute top-2 right-3 hover:text-gray-500 text-gray-700"
               onClick={closeModal}
             >
-              {"Close"}
+              Close
             </button>
             <h3 className="mb-4 text-gray-800 text-xl">
-              Add{" "}
-              {modalType === "root"
-                ? "Root Question"
-                : modalType === "option"
-                ? "Option"
-                : "Sub-Question"}
+              Add {modalType === "root" ? "Root Question" : modalType === "option" ? "Option" : "Sub-Question"}
             </h3>
             <input
               ref={inputRef}
@@ -295,6 +255,13 @@ const QuestionBuilder = ({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyPress}
+            />
+            <input
+              type="text"
+              className="w-full border text-gray-700 border-gray-300 rounded px-3 py-2 mb-4"
+              placeholder="Redirection Link (optional)"
+              value={redirectionLink}
+              onChange={(e) => setRedirectionLink(e.target.value)}
             />
             <button
               className="bg-green-500 text-white px-4 py-2 rounded w-full"
