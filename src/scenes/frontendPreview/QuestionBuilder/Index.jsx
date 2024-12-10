@@ -23,83 +23,10 @@ function Index() {
   const [data, setData] = useState([]);
   const [questionId, setQuestionId] = useState();
 
-  const [editData, setEditData] = useState();
-
-  const columns = [
-    {
-      field: "serial",
-      headerName: "No.",
-      width: 70,
-      valueGetter: (params) => params.api.getRowIndex(params.id) + 1, // Start numbering from 1
-    },
-    {
-      field: "title",
-      headerName: "Title",
-      flex: 1,
-      valueGetter: (params) => params.value
-    },
-    {
-      field: "image",
-      headerName: "Image",
-      flex: 1,
-      valueGetter: (params) => params.value.name
-    },
-    {
-      field: "enable",
-      headerName: "Enabled",
-      flex: 1,
-    },
-
-    {
-      field: "action",
-      headerName: "Action",
-      flex: 1,
-      renderCell: (params) => (
-        <Box>
-          <IconButton
-            onClick={() => handleEdit(params.row._id)}
-            // color="primary"
-            className="text-grey-400"
-          >
-            <EditIcon />
-          </IconButton>
-          <IconButton
-            onClick={() => handleDelete(params.row._id)}
-            color="secondary"
-          >
-            <DeleteIcon />
-          </IconButton>
-        </Box>
-      ),
-    },
-  ];
 
   const setModeToDisplay = () => {
     setMode("display");
     fetchAllQuestions(userId, userToken);
-  };
-
-  const fetchQuestion = async () => {
-    // Make the DELETE request
-    await axios
-      .get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/questions/fetchQuestion/${questionId}?userId=${userId}`,
-        {
-          headers: {
-            "auth-token": userToken,
-          },
-        }
-      )
-      .then((response) => {
-        if (response) {
-          // console.log(response.data);
-          setEditData(response.data.data);
-        }
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        toast.error("Some ERROR occured.");
-      });
   };
 
   const fetchAllQuestions = (userId, userToken) => {
@@ -124,28 +51,7 @@ function Index() {
       });
   };
 
-  const deleteQuestionById = async (id) => {
-    // Make the DELETE request
-    await axios
-      .delete(
-        `${process.env.REACT_APP_BACKEND_URL}/api/questions/deleteQuestion/${id}?userId=${userId}`,
-        {
-          headers: {
-            "auth-token": userToken,
-          },
-        }
-      )
-      .then((response) => {
-        if (response) {
-          fetchAllQuestions(userId, userToken);
-          toast.success("Question deleted!");
-        }
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        toast.error("Some ERROR occured.");
-      });
-  };
+ 
 
   // useeffecttt
   useEffect(() => {
@@ -174,17 +80,10 @@ function Index() {
 
   // Click handler for the edit button
   const handleEdit = () => {
-    fetchQuestion();
-
-    setTimeout(() => {
       setMode("edit");
-    }, 500);
+
   };
 
-  // Click handler for the delete button
-  const handleDelete = (id) => {
-    deleteQuestionById(id);
-  };
 
   return (
     <Box m="20px">
@@ -256,7 +155,7 @@ function Index() {
             }}
           >
             <QuestionBuilderForm
-              dataArray={editData}
+              dataArray={data}
               questionId={questionId}
               setModeToDisplay={setModeToDisplay}
               userId={userId}

@@ -112,9 +112,11 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
         if (name === "centerImage1") {
           setUploadFile1(convertedFile);
           setFileAddedForUpload1(true);
+          handleFileUpload(convertedFile, "centerImage1")
         } else {
           setUploadFile2(convertedFile);
           setFileAddedForUpload2(true);
+          handleFileUpload(convertedFile, "centerImage2")
         }
       } catch (error) {
         console.error("Error converting HEIC file:", error);
@@ -124,28 +126,23 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
       if (name === "centerImage1") {
         setUploadFile1(file);
         setFileAddedForUpload1(true);
+        handleFileUpload(file, "centerImage1")
       } else {
         setUploadFile2(file);
         setFileAddedForUpload2(true);
+        handleFileUpload(file, "centerImage2")
       }
     }
   };
 
-  const handleFileUpload = async (e, name) => {
-    e.preventDefault();
+  const handleFileUpload = async (file, name) => {
 
     try {
       setIsUploading(true);
       toast("Uploading file.");
 
-      let cloudFilePath;
-
-      if (name === "centerImage1") {
-        cloudFilePath = await uploadFileToCloud(uploadFile1);
-      } else {
-        cloudFilePath = await uploadFileToCloud(uploadFile2);
-      }
-
+      let cloudFilePath = await uploadFileToCloud(file);
+ 
       // when in last iteration
       if (cloudFilePath) {
         const publicUrl = getPublicUrlFromSupabase(cloudFilePath);
@@ -370,7 +367,7 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                       htmlFor="file"
                       className="mb-3 block text-base font-medium"
                     >
-                      Center Image 1
+                      Center Image 1 
                     </label>
                     <input
                       type="file"
@@ -379,23 +376,9 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                       onChange={(e) => handleFileAdding(e, "centerImage1")}
                       className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                     />
+                    <span className="text-xs font-light mt-2">Size : 1080 x 1080 px</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={(e) => handleFileUpload(e, "centerImage1")}
-                    className={`px-8 py-3 h-fit mx-3 mt-3 ${
-                      fileAddedForUpload1 === false
-                        ? "bg-gray-600"
-                        : "bg-blue-500"
-                    }  text-white font-medium text-lg rounded-md shadow-md ${
-                      fileAddedForUpload1 === false
-                        ? "bg-gray-600"
-                        : "hover:bg-blue-600"
-                    }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
-                    disabled={fileAddedForUpload1 === false ? true : false}
-                  >
-                    {`Upload`}
-                  </button>
+
                 </div>
                 {addData && addData.centerImage1 && addData.centerImage1 !== "" &&(
                   <div className="flex flex-col">
@@ -428,6 +411,7 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                     </button>}
                   </div>
                 )}
+                
               </div>
 
               <div className="w-full items-center flex-col px-3 md:w-1/2">
@@ -446,23 +430,9 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                       onChange={(e) => handleFileAdding(e, "centerImage2")}
                       className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                     />
+                    <span className="text-xs font-light mt-2">Size : 1080 x 1080 px</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={(e) => handleFileUpload(e, "centerImage2")}
-                    className={`px-8 py-3 h-fit mx-3 mt-3 ${
-                      fileAddedForUpload2 === false
-                        ? "bg-gray-600"
-                        : "bg-blue-500"
-                    }  text-white font-medium text-lg rounded-md shadow-md ${
-                      fileAddedForUpload2 === false
-                        ? "bg-gray-600"
-                        : "hover:bg-blue-600"
-                    }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
-                    disabled={fileAddedForUpload2 === false ? true : false}
-                  >
-                    {`Upload`}
-                  </button>
+
                 </div>
                 {addData && addData.centerImage2 && addData.centerImage2 !== "" && (
                   <div className="flex flex-col">
