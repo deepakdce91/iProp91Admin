@@ -96,14 +96,14 @@ function MobileTilesForm({ editData, setModeToDisplay, userToken, userId }) {
     }
   };
 
-  const handleFileUpload = async (e) => {
+  const handleFileUpload = async (e, myFile) => {
     e.preventDefault();
 
     try {
       setIsUploading(true);
       toast("Uploading file.");
 
-      let cloudFilePath = await uploadFileToCloud(uploadFile);
+      let cloudFilePath = await uploadFileToCloud(myFile);
 
       // when in last iteration
       if (cloudFilePath) {
@@ -292,24 +292,14 @@ function MobileTilesForm({ editData, setModeToDisplay, userToken, userId }) {
                     type="file"
                     name="image"
                     id="image"
-                    onChange={handleFileAdding}
+                    onChange={(e)=>{
+                      handleFileUpload(e,e.target.files[0])
+                    }}
                     className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                   />
+                  <span className="text-xs font-light mt-2">Size : 2480 x 4000 px</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleFileUpload}
-                  className={`px-8 py-3 h-fit mx-3 mt-3 ${
-                    fileAddedForUpload === false ? "bg-gray-600" : "bg-blue-500"
-                  }  text-white font-medium text-lg rounded-md shadow-md ${
-                    fileAddedForUpload === false
-                      ? "bg-gray-600"
-                      : "hover:bg-blue-600"
-                  }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
-                  disabled={fileAddedForUpload === false ? true : false}
-                >
-                  {`Upload`}
-                </button>
+  
               </div>
 
               {editData && (
