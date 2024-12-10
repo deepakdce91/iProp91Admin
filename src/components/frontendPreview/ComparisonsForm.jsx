@@ -397,7 +397,7 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                     {`Upload`}
                   </button>
                 </div>
-                {editData && editData.centerImage1 && addData.centerImage1 !== "" &&(
+                {addData && addData.centerImage1 && addData.centerImage1 !== "" &&(
                   <div className="flex flex-col">
                     <div className="ml-1 flex lg:items-center flex-col lg:flex-row">
                       <div className="font-bold mb-2 lg:mb-0">
@@ -407,9 +407,9 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                         <a
                           target="_blank"
                           className="underline"
-                          href={editData.centerImage1.url}
+                          href={addData.centerImage1.url}
                         >
-                          {editData.centerImage1.name}
+                          {addData.centerImage1.name}
                         </a>
                       </div>
                     </div>
@@ -464,7 +464,7 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                     {`Upload`}
                   </button>
                 </div>
-                {editData && editData.centerImage2 && addData.centerImage2 !== "" && (
+                {addData && addData.centerImage2 && addData.centerImage2 !== "" && (
                   <div className="flex flex-col">
                     <div className="ml-1 flex lg:items-center flex-col lg:flex-row">
                       <div className="font-bold mb-2 lg:mb-0">
@@ -474,9 +474,9 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                         <a
                           target="_blank"
                           className="underline"
-                          href={editData.centerImage2.url}
+                          href={addData.centerImage2.url}
                         >
-                          {editData.centerImage2.name}
+                          {addData.centerImage2.name}
                         </a>
                       </div>
                     </div>
