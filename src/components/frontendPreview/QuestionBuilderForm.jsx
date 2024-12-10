@@ -1,6 +1,7 @@
 import axios from "axios";
 import React, { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
+import { RiDeleteBinFill } from "react-icons/ri";
 
 const QuestionBuilder = ({
   dataArray,
@@ -156,13 +157,14 @@ const QuestionBuilder = ({
             className="bg-red-500 hover:bg-red-600 text-white rounded-lg px-2 py-1 mr-2"
             onClick={() => deleteItem(opt.id)}
           >
-            Delete
+            <RiDeleteBinFill className="h-4 w-4"/>
           </button>
           <span>{opt.text}</span>
           {opt.redirectionLink && (
             <span className="ml-2 text-blue-600">→ {opt.redirectionLink}</span>
           )}
-          {opt.subQuestions && (
+          {/* Only show Add Sub-Question button if there's no redirectionLink */}
+          {opt.subQuestions && !opt.redirectionLink && (
             <button
               className="bg-white hover:bg-gray-200 rounded-lg text-gray-700 px-2 py-1 ml-2"
               onClick={() => openModal("sub-question", { optionId: opt.id })}
@@ -192,7 +194,7 @@ const QuestionBuilder = ({
             className="bg-red-500 hover:bg-red-600 text-white rounded-lg px-2 py-1 mr-2"
             onClick={() => deleteItem(q.id)}
           >
-            Delete
+            <RiDeleteBinFill className="h-4 w-4"/>
           </button>
           <span>{q.questionText}</span>
           <button
@@ -256,13 +258,13 @@ const QuestionBuilder = ({
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyPress}
             />
-            <input
+            {modalType !== "sub-question" && <input
               type="text"
               className="w-full border text-gray-700 border-gray-300 rounded px-3 py-2 mb-4"
               placeholder="Redirection Link (optional)"
               value={redirectionLink}
               onChange={(e) => setRedirectionLink(e.target.value)}
-            />
+            />}
             <button
               className="bg-green-500 text-white px-4 py-2 rounded w-full"
               onClick={handleAdd}

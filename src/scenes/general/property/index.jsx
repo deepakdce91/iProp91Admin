@@ -51,13 +51,13 @@ function Index() {
       flex: 1,
     },
     {
-      field: "project",
-      headerName: "City",
+      field: "builder",
+      headerName: "Builder",
       flex: 1,
     },
     {
-      field: "builder",
-      headerName: "Builder",
+      field: "project",
+      headerName: "Project",
       flex: 1,
     },
     {
