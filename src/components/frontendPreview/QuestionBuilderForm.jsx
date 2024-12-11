@@ -2,6 +2,7 @@ import axios from "axios";
 import React, { useState, useEffect, useRef } from "react";
 import { toast } from "react-toastify";
 import { RiDeleteBinFill } from "react-icons/ri";
+import { FiEdit } from "react-icons/fi";
 
 const QuestionBuilder = ({
   dataArray,
@@ -17,18 +18,34 @@ const QuestionBuilder = ({
   const [inputValue, setInputValue] = useState("");
   const [redirectionLink, setRedirectionLink] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editItemId, setEditItemId] = useState(null);
 
   const inputRef = useRef(null);
 
-  const openModal = (type, data = {}) => {
+  const openModal = (type, data = {}, isEdit = false) => {
     setModalType(type);
     setModalData(data);
-    setInputValue("");
-    setRedirectionLink("");
+    setIsEditing(isEdit);
+    if (isEdit) {
+      setEditItemId(data.id);
+      setInputValue(data.questionText || data.text || "");
+      setRedirectionLink(data.redirectionLink || "");
+    } else {
+      setInputValue("");
+      setRedirectionLink("");
+      setEditItemId(null);
+    }
     setShowModal(true);
   };
 
-  const closeModal = () => setShowModal(false);
+  const closeModal = () => {
+    setShowModal(false);
+    setIsEditing(false);
+    setEditItemId(null);
+  };
 
   useEffect(() => {
     if (showModal && inputRef.current) inputRef.current.focus();
@@ -66,7 +83,35 @@ const QuestionBuilder = ({
     }
   };
 
+  const updateItem = () => {
+    if (!inputValue.trim()) return;
+
+    const updatedQuestions = updateNestedStructure(questions, editItemId, (item) => {
+      if (modalType === "root" || modalType === "sub-question") {
+        return {
+          ...item,
+          questionText: inputValue
+        };
+      } else if (modalType === "option") {
+        return {
+          ...item,
+          text: inputValue,
+          redirectionLink: redirectionLink.trim() || null
+        };
+      }
+      return item;
+    });
+
+    setQuestions(updatedQuestions);
+    closeModal();
+  };
+
   const handleAdd = () => {
+    if (isEditing) {
+      updateItem();
+      return;
+    }
+
     if (!inputValue.trim()) return;
     
     const payload = {
@@ -140,9 +185,16 @@ const QuestionBuilder = ({
       })
       .filter(Boolean);
 
-  const deleteItem = (id) => {
-    const updatedQuestions = deleteNestedStructure(questions, id);
+  const confirmDelete = (id) => {
+    setItemToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  const handleDelete = () => {
+    const updatedQuestions = deleteNestedStructure(questions, itemToDelete);
     setQuestions(updatedQuestions);
+    setShowDeleteModal(false);
+    setItemToDelete(null);
   };
 
   const handleKeyPress = (e) => {
@@ -155,21 +207,27 @@ const QuestionBuilder = ({
         <div className="flex items-center mb-4">
           <button
             className="bg-red-500 hover:bg-red-600 text-white rounded-lg px-2 py-1 mr-2"
-            onClick={() => deleteItem(opt.id)}
+            onClick={() => confirmDelete(opt.id)}
           >
             <RiDeleteBinFill className="h-4 w-4"/>
           </button>
-          <span>{opt.text}</span>
+          <button
+            className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-2 py-1 mr-2"
+            onClick={() => openModal("option", { ...opt, id: opt.id }, true)}
+          >
+            <FiEdit className="h-4 w-4"/>
+          </button>
+          <span className="border-2 border-dotted border-gray-500 px-4 py-2 rounded-md hover:border-white">{opt.text}</span>
           {opt.redirectionLink && (
             <span className="ml-2 text-blue-600">→ {opt.redirectionLink}</span>
           )}
-          {/* Only show Add Sub-Question button if there's no redirectionLink */}
-          {opt.subQuestions && !opt.redirectionLink && (
+          {/* Only show Add Heading button if there are no existing sub-questions */}
+          {opt.subQuestions && !opt.redirectionLink && opt.subQuestions.length === 0 && (
             <button
               className="bg-white hover:bg-gray-200 rounded-lg text-gray-700 px-2 py-1 ml-2"
               onClick={() => openModal("sub-question", { optionId: opt.id })}
             >
-              Add Sub-Question
+              Add Heading
             </button>
           )}
           {opt.options && (
@@ -188,13 +246,19 @@ const QuestionBuilder = ({
 
   const renderQuestions = (items) =>
     items.map((q) => (
-      <div key={`${new Date()}`} className="relative ml-8 pl-4 border-l border-gray-300">
+      <div key={q.id} className="relative ml-8 pl-4 border-l border-gray-300">
         <div className="flex items-center mb-4">
           <button
             className="bg-red-500 hover:bg-red-600 text-white rounded-lg px-2 py-1 mr-2"
-            onClick={() => deleteItem(q.id)}
+            onClick={() => confirmDelete(q.id)}
           >
             <RiDeleteBinFill className="h-4 w-4"/>
+          </button>
+          <button
+            className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-2 py-1 mr-2"
+            onClick={() => openModal(q.subQuestions ? "sub-question" : "root", { ...q, id: q.id }, true)}
+          >
+            <FiEdit className="h-4 w-4"/>
           </button>
           <span>{q.questionText}</span>
           <button
@@ -237,6 +301,7 @@ const QuestionBuilder = ({
         )}
       </div>
 
+      {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
           <div className="bg-white relative rounded-lg p-6 w-96">
@@ -247,7 +312,7 @@ const QuestionBuilder = ({
               Close
             </button>
             <h3 className="mb-4 text-gray-800 text-xl">
-              Add {modalType === "root" ? "Root Question" : modalType === "option" ? "Option" : "Sub-Question"}
+              {isEditing ? "Edit" : "Add"} {modalType === "root" ? "Root Question" : modalType === "option" ? "Option" : "Heading"}
             </h3>
             <input
               ref={inputRef}
@@ -258,7 +323,7 @@ const QuestionBuilder = ({
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyPress}
             />
-            {modalType !== "sub-question" && <input
+            {modalType === "option" && <input
               type="text"
               className="w-full border text-gray-700 border-gray-300 rounded px-3 py-2 mb-4"
               placeholder="Redirection Link (optional)"
@@ -269,8 +334,32 @@ const QuestionBuilder = ({
               className="bg-green-500 text-white px-4 py-2 rounded w-full"
               onClick={handleAdd}
             >
-              Add
+              {isEditing ? "Update" : "Add"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white relative rounded-lg p-6 w-96">
+            <h3 className="mb-4 text-gray-800 text-xl">Confirm Delete</h3>
+            <p className="mb-6 text-gray-600">Are you sure you want to delete this item? This action cannot be undone.</p>
+            <div className="flex justify-end space-x-4">
+              <button
+                className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
+                onClick={handleDelete}
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -278,4 +367,4 @@ const QuestionBuilder = ({
   );
 };
 
-export default QuestionBuilder; 
+export default QuestionBuilder;
