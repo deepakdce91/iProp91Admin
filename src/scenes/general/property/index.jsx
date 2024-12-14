@@ -14,7 +14,7 @@ import ShowPropertDetails from "../../../components/general/property/ShowPropert
 import { formatDate } from "../../../MyFunctions";
 import { jwtDecode } from "jwt-decode";
 
-function Index() {
+function Index({setRefetchNotification}) {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -116,6 +116,32 @@ function Index() {
     },
   ];
 
+  const resetCounter = async (userId, userToken,type) => {
+    await axios
+      .post(
+        `${process.env.REACT_APP_BACKEND_URL}/api/notifications/resetCounter?userId=${userId}`,
+
+        {
+          type,
+        },
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
+      .then((response) => {
+        if (response) {
+          console.log("Item viewed.");
+          setRefetchNotification(); //reset value on sidebar
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        toast.error("Some ERROR occured.");
+      });
+  };
+
   const fetchProperty = async (id) => {
     // Make the DELETE request
     await axios
@@ -145,11 +171,13 @@ function Index() {
         {
           headers: {
             "auth-token": userToken,
-          },
+          }, 
         }
       )
       .then((response) => {
         setData(response.data);
+        // also reset counter when item displayed
+        resetCounter(userId, userToken,"newProperties");
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -193,7 +221,6 @@ function Index() {
     } catch (error) {
       console.log(error);
     }
-
   }, []);
 
   const handleAddMore = () => {
@@ -271,13 +298,18 @@ function Index() {
 
       {/* Render form or DataGrid based on mode */}
       {mode === "add" ? (
-        <PropertyForm setModeToDisplay={setModeToDisplay} userId={userId} userToken={userToken} />
+        <PropertyForm
+          setModeToDisplay={setModeToDisplay}
+          userId={userId}
+          userToken={userToken}
+        />
       ) : mode === "edit" ? (
         editData && (
           <>
             {/* <ShowPropertDetails data={editData} /> */}
             <PropertyForm
-            userId={userId} userToken={userToken}
+              userId={userId}
+              userToken={userToken}
               editData={editData}
               setModeToDisplay={setModeToDisplay}
             />

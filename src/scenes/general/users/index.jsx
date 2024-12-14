@@ -12,7 +12,7 @@ import UsersForm from "../../../components/general/users/UsersForm";
 import { formatDate } from "../../../MyFunctions";
 import { jwtDecode } from "jwt-decode";
 
-function Index() {
+function Index({setRefetchNotification}) {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -104,6 +104,31 @@ function Index() {
       ),
     },
   ];
+  const resetCounter = async (userId, userToken,type) => {
+    await axios
+      .post(
+        `${process.env.REACT_APP_BACKEND_URL}/api/notifications/resetCounter?userId=${userId}`,
+
+        {
+          type,
+        },
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
+      .then((response) => {
+        if (response) {
+          console.log("Item viewed.");
+          setRefetchNotification(); //reset value on sidebar
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        toast.error("Some ERROR occured.");
+      });
+  };
 
   const fetchUser = async (id) => {
     // Make the DELETE request
@@ -133,6 +158,8 @@ function Index() {
             })
           .then((response) => {
         setData(response.data);
+        // also reset counter when item displayed
+        resetCounter(userId, userToken,"newUsers");
       })
       .catch((error) => {
         console.error("Error:", error);

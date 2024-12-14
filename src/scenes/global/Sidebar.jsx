@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ProSidebar, Menu, MenuItem } from "react-pro-sidebar";
 import { Box, IconButton, Typography, useTheme } from "@mui/material";
 import { Link } from "react-router-dom";
@@ -31,8 +31,9 @@ import { MdPermContactCalendar } from "react-icons/md";
 
 import { FaClipboardQuestion } from "react-icons/fa6";
 import { MdOutlineAttachEmail } from "react-icons/md";
+import axios from "axios";
 
-const Item = ({ title, to, icon, selected, setSelected }) => {
+const Item = ({ title, to, icon, selected, setSelected, badge }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   return (
@@ -44,17 +45,48 @@ const Item = ({ title, to, icon, selected, setSelected }) => {
       onClick={() => setSelected(title)}
       icon={icon}
     >
-      <Typography>{title}</Typography>
+      <Typography>{title} {badge}</Typography>
+      
       <Link to={to} />
     </MenuItem>
   );
 };
 
-const Sidebar = () => {
+const Sidebar = ({userId, userToken, refetchNotification}) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [selected, setSelected] = useState("Dashboard");
+
+  const [newUsers, setNewUsers] = useState();
+  const [newProperties, setNewProperties] = useState();
+  const [newDocuments, setNewDocuments] = useState();
+
+  const FetchNotifications = async () => {
+    await axios
+      .get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/notifications/getNotifications?userId=${userId}`,
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
+      .then((response) => {
+        if (response) {
+          setNewUsers(response.data.newUsers);
+          setNewProperties(response.data.newProperties);
+          setNewDocuments(response.data.newDocuments);
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  };
+
+  useEffect(() => {
+    FetchNotifications()
+  }, [refetchNotification]);
 
   return (
     <Box
@@ -157,17 +189,26 @@ const Sidebar = () => {
               </Typography>
             )}
 
+            <div>
             <Item
               title="Users"
               to="/users"
+              badge = {newUsers > 0 ? <span className={`absolute ${!isCollapsed ? "top-5 right-6" : "top-3 right-3"} grid min-h-[24px] min-w-[24px] translate-x-2/4 -translate-y-2/4 place-items-center rounded-full bg-red-600 py-1 px-1 text-xs text-white`}>
+              {newUsers}
+            </span> : null}
               icon={<FaUsers className="h-5 w-5" />}
               selected={selected}
               setSelected={setSelected}
             />
+            
+            </div>
 
             <Item
               title="Property"
               to="/property"
+              badge = {newProperties > 0 ? <span className={`absolute ${!isCollapsed ? "top-5 right-6" : "top-3 right-3"} grid min-h-[24px] min-w-[24px] translate-x-2/4 -translate-y-2/4 place-items-center rounded-full bg-red-600 py-1 px-1 text-xs text-white`}>
+              {newProperties}
+            </span> : null}
               icon={<MdLandscape className="h-5 w-5" />}
               selected={selected}
               setSelected={setSelected}
@@ -176,6 +217,9 @@ const Sidebar = () => {
             <Item
               title="Documents"
               to="/documents"
+              badge = {newDocuments > 0 ? <span className={`absolute ${!isCollapsed ? "top-5 right-6" : "top-3 right-3"} grid min-h-[24px] min-w-[24px] translate-x-2/4 -translate-y-2/4 place-items-center rounded-full bg-red-600 py-1 px-1 text-xs text-white`}>
+                {newDocuments}
+              </span> : null}
               icon={<IoDocumentLockSharp className="h-5 w-5" />}
               selected={selected}
               setSelected={setSelected}
