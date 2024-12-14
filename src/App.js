@@ -102,6 +102,8 @@ function App() {
   const [userId, setUserId] = useState();
   const [userToken, setUserToken] = useState();
 
+  const [refetchNotification, setRefetchNotification] = useState(false);
+
   const changeLoginStatus = () => {
     setLoggedIn(!loggedIn);
   };
@@ -140,7 +142,7 @@ function App() {
         <CssBaseline />
 
         <div className="app">
-          {!isAuthRoute && <Sidebar isSidebar={isSidebar} />}
+          {!isAuthRoute && userId&& userToken && <Sidebar refetchNotification={refetchNotification} userId = {userId} userToken={userToken} isSidebar={isSidebar} />}
 
           <main className="content h-full overflow-scroll">
             {!isAuthRoute && <Topbar setIsSidebar={setIsSidebar} />}
@@ -192,10 +194,10 @@ function App() {
                     path={routes.emailTemplates}
                     element={<EmailTemplates />}
                   />
-
-                  <Route path={routes.property} element={<Property />} />
-                  <Route path={routes.users} element={<Users />} />
-                  <Route path={routes.documents} element={<Documents />} />
+ 
+                  <Route path={routes.property} element={<Property setRefetchNotification={setRefetchNotification} />} />
+                  <Route path={routes.users} element={<Users setRefetchNotification={setRefetchNotification} />} />
+                  <Route path={routes.documents} element={<Documents setRefetchNotification={setRefetchNotification} />} />
 
                   <Route path={routes.faqs} element={<Faqs />} />
                   <Route path={routes.laws} element={<Laws />} />
