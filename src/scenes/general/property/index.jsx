@@ -132,7 +132,6 @@ function Index({setRefetchNotification}) {
       )
       .then((response) => {
         if (response) {
-          console.log("Item viewed.");
           setRefetchNotification(); //reset value on sidebar
         }
       })

@@ -10,7 +10,7 @@ import { getNameList, getUniqueItems, removeSpaces, sortArrayByName } from "../.
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { client } from "../../../config/s3Config";
 
-import heic2any from "heic2any";
+import heic2any from "heic2any"; 
 
  
 
@@ -158,6 +158,7 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
     .then((response) => {
 
       setCities(sortArrayByName(response.data));
+      
     })
     .catch((error) => {
       console.error("Error:", error);
