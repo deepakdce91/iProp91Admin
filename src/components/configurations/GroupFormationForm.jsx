@@ -19,12 +19,18 @@ import { client } from "../../config/s3Config";
 
 import heic2any from "heic2any";
 
-import ChipComponent from "../ui/ChipComponent";
-import ChipComponentUsers from "../ui/ChipComponentUsers";
+import ChipComponentUsers from "../ui/ChipComponentUsers"; 
+
+// const superAdminData = {
+//   _id: "IPA008",
+//   profilePicture: "",
+//   name: "Super Admin",
+//   phone: "----------",
+//   admin : "true"
+// }
 
 
-
-function GroupFormationForm({ editData, setModeToDisplay, userToken, userId }) {
+function GroupFormationForm({propertyData, propertyOwnerId, editData, closeModal, setModeToDisplay, userToken, userId }) {
 
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
@@ -44,7 +50,7 @@ function GroupFormationForm({ editData, setModeToDisplay, userToken, userId }) {
     state: "",
     city: "",
     builder: "",
-    projects: [],
+    projects: "",
     customers: [],
   });
 
@@ -57,19 +63,35 @@ function GroupFormationForm({ editData, setModeToDisplay, userToken, userId }) {
     return data.publicUrl;
   };
 
-  const [selectedProjects, setSelectedProjects] = useState([]);
-  const handleProjectChange = (arr) =>{
-    setSelectedProjects(arr);
-    changeField("projects", arr);
-  }
+
+  const [projectUsers, setProjectUsers] = useState([]);
 
   const [allUsers, setAllUsers] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([])
+
   const handleUsersChange = (arr) =>{
     setSelectedUsers(arr);
     changeField("customers", arr);
   }
 
+
+  const fetchProjectUsers = (myBuilder,myProject) => {
+    
+      axios
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/users/fetchallusersByBuilderAndProject?userId=${userId}&builder=${myBuilder}&project=${myProject}`,  {
+              headers: {
+                "auth-token" : userToken
+              },
+            })
+          .then((response) => {
+            setProjectUsers(response.data);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+
+    
+  };
 
   const fetchAllUsers = () => {
     axios
@@ -265,7 +287,12 @@ function GroupFormationForm({ editData, setModeToDisplay, userToken, userId }) {
       if (response) {
         toast.success("Message collection created!");
         setTimeout(() => {
-          setModeToDisplay();
+          if(propertyData){
+            closeModal();
+          }else{
+            setModeToDisplay();
+          }
+          
         }, 2000);
       }
     })
@@ -285,7 +312,7 @@ function GroupFormationForm({ editData, setModeToDisplay, userToken, userId }) {
         addData.city !== "" &&
         addData.builder !== "" &&
         addData.customers.length !== 0 &&
-        addData.projects.length !== 0 
+        addData.projects !== "" 
       ) {
 
 
@@ -378,15 +405,41 @@ function GroupFormationForm({ editData, setModeToDisplay, userToken, userId }) {
       // fetches all builders
       fetchProjectByBuilder(editData.builder);
 
-      setSelectedProjects(editData.projects);
+      // setSelectedProjects(editData.projects);
       setSelectedUsers(editData.customers);
+    }
+
+
+    // autofill data from user's property
+    if(propertyData){
+setAddData({
+  thumbnail: "",
+  name: "",
+  state: propertyData.state,
+  city: propertyData.city,
+  builder: propertyData.builder,
+  projects: propertyData.project,
+  customers: [],
+})
     }
   }, [editData]);
 
   useEffect(() => {
-    fetchAllUsers()
-  
+    fetchAllUsers();
+    
   }, [])
+
+  useEffect(() => {
+    if(propertyData){
+      fetchProjectUsers(propertyData.builder,propertyData.project);
+      }else{
+        if(addData.builder !== "" && addData.projects !== ""){
+          fetchProjectUsers(addData.builder,addData.projects);
+        }
+      }
+  
+  }, [addData.builder, addData.projects])
+  
   
 
   return (
@@ -444,6 +497,26 @@ function GroupFormationForm({ editData, setModeToDisplay, userToken, userId }) {
       }}
       
     >
+      {propertyData && <div className="flex items-center mb-4 justify-between">
+        <h2 className="text-2xl font-bold ">Make new group</h2>
+        <button onClick={closeModal} >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          
+          className="w-3 cursor-pointer shrink-0 fill-gray-400 hover:fill-red-500 float-right"
+          viewBox="0 0 320.591 320.591"
+        >
+          <path
+            d="M30.391 318.583a30.37 30.37 0 0 1-21.56-7.288c-11.774-11.844-11.774-30.973 0-42.817L266.643 10.665c12.246-11.459 31.462-10.822 42.921 1.424 10.362 11.074 10.966 28.095 1.414 39.875L51.647 311.295a30.366 30.366 0 0 1-21.256 7.288z"
+            data-original="#000000"
+          ></path>
+          <path
+            d="M287.9 318.583a30.37 30.37 0 0 1-21.257-8.806L8.83 51.963C-2.078 39.225-.595 20.055 12.143 9.146c11.369-9.736 28.136-9.736 39.504 0l259.331 257.813c12.243 11.462 12.876 30.679 1.414 42.922-.456.487-.927.958-1.414 1.414a30.368 30.368 0 0 1-23.078 7.288z"
+            data-original="#000000"
+          ></path>
+        </svg>
+        </button>
+        </div>}
       <div className="flex items-center justify-center">
         <div className="w-full">
           <form>
@@ -546,7 +619,13 @@ function GroupFormationForm({ editData, setModeToDisplay, userToken, userId }) {
                 </datalist>
               </div>
 
-              <div className="w-full px-3 md:w-1/2">
+              
+            </div>
+
+            {/* builder and projects */}
+            <div className="flex flex-col md:flex-row -mx-3">
+
+            <div className="w-full px-3 md:w-1/2">
                 <div className="mb-5">
                   <label className="text-lg font-medium">Select Builder</label>
                   <input
@@ -567,22 +646,29 @@ function GroupFormationForm({ editData, setModeToDisplay, userToken, userId }) {
                   </datalist>
                 </div>
               </div>
-            </div>
 
-            {/* Additional Fields */}
-            <div className="flex flex-col md:flex-row -mx-3">
-              <div className="w-full px-3 ">
-                <div className="mb-5 flex flex-col">
+              <div className="w-full px-3 md:w-1/2">
+                <div className="mb-5 ">
                   <label className="text-lg font-medium pb-3">
-                    Select Projects
+                    Select Project
                   </label>
 
-                  <ChipComponent
-                      itemArray={projects.length > 0 ? projects : []}
-                      preSelected={selectedProjects}
-                      updateSelectedArr={handleProjectChange}
-                      disabled={addData.builder.length > 0 ? false : true}
-                    />  
+                  <input
+                    list="projects"
+                    autoComplete="off"
+                    disabled={addData.builder.length > 0 ? false : true}
+                    name="myProject"
+                    className="w-full text-gray-600 mt-2 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                    placeholder="Select Project..."
+                    value={addData.projects}
+                    onChange={(e) => changeField("projects", e.target.value)}
+                  />
+                   <datalist id="projects">
+                    {projects.length > 0 &&
+                      projects.map((item, index) => (
+                        <option key={index} value={item} />
+                      ))}
+                  </datalist>
                 </div>
               </div>
             </div>
@@ -594,23 +680,35 @@ function GroupFormationForm({ editData, setModeToDisplay, userToken, userId }) {
                     Select Customers
                   </label>
 
-                  <ChipComponentUsers
+                 {allUsers.length > 0 && <ChipComponentUsers
+                  propertyOwnerId = {propertyOwnerId}
+                      projectUsers = {projectUsers.length > 0 ? projectUsers : []}
                       itemArray={allUsers.length > 0 ? allUsers : []}
                       preSelected={selectedUsers}
                       updateSelectedArr={handleUsersChange}
-                    />  
+                    />  }
                 </div>
               </div>
             </div>
 
             <div className="flex justify-center mt-5">
+              {propertyData && <button
+                type="button"
+                onClick={() => {
+                    setModeToDisplay();
+                }}
+                className={`px-8 py-3 bg-red-500 text-gray-200 hover:bg-red-600 hover:text-white rounded-lg mr-3 focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
+
+              >
+                Cancel
+              </button> }
               <button
                 type="button"
                 onClick={() => {
                     handleSubmit()
                     // console.log(addData)
                 }}
-                className={`px-8 py-3 ${
+                className={`px-8 py-3 text-sm ${
                   isUploading === true ? "bg-gray-600" : "bg-[#6A64F1]"
                 }  text-white font-medium text-lg rounded-md shadow-md ${
                   isUploading === true ? "bg-gray-600" : "hover:bg-[#5a52e0]"

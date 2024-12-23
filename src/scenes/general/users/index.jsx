@@ -14,13 +14,14 @@ import { jwtDecode } from "jwt-decode";
 
 function Index({setRefetchNotification}) {
   const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
+  const colors = tokens(theme.palette.mode); 
 
   const [userId, setUserId] = useState("");
   const [userToken, setUserToken] = useState("");
 
   const [mode, setMode] = useState("display"); //display add edit showDetails
-  const [data, setData] = useState([]);
+
+  const [allData, setAllData] = useState([]);
 
   const [editData, setEditData] = useState();
 
@@ -28,74 +29,131 @@ function Index({setRefetchNotification}) {
     { field: "_id", headerName: "ID", flex: 1 },
     {
       field: "name",
-      headerName: "Username",
+      headerName: "Name",
       flex: 1,
+      valueGetter: (params) => params.row.userData.name,
       cellClassName: "name-column--cell",
     },
     {
       field: "phone",
       headerName: "Number",
       flex: 1,
+      valueGetter: (params) => params.row.userData.phone,
     },
     {
       field: "email",
       headerName: "Email",
       flex: 1,
+      valueGetter: (params) => params.row.userData.email,
     },
     {
       field: "lastLogin",
-      headerName: "Builder",
+      headerName: "Last Login",
       flex: 1,
+      valueGetter: (params) => formatDate(params.row.userData.lastLogin),
     },
     {
       field: "fraud",
       headerName: "Fraud",
+      valueGetter: (params) => params.row.userData.fraud,
       flex: 1,
     },
     {
       field: "suspended",
       headerName: "Suspended",
       headerAlign: "left",
+      valueGetter: (params) => params.row.userData.suspended,
       align: "left",
       flex: 1,
     },
-
     {
       field: "createdAt",
       headerName: "Created",
       flex: 1,
-      valueGetter: (params) => formatDate(params.value),
+      valueGetter: (params) => formatDate(params.row.userData.createdAt),
     },
     {
-      field: "updatedAt",
-      headerName: "Updated",
+      field: "avatarSelected",
+      headerName: "Avatar",
       flex: 1,
-      valueGetter: (params) => formatDate(params.value),
+      valueGetter: (params) => {
+        if(params.row.userData.avatar && params.row.userData.avatar !== ""){
+          return "Yes";
+        }else{
+          return "No";
+        }
+      },
     },
+    {
+      field: "properties",
+      headerName: "Properties",
+      flex: 1,
+      align: "center",
+      renderCell: (params) => (
+        <button
+        onClick={() => console.log(params.row.properties)}
+        >
+          <span
+            className="text-grey-400 text-sm hover:underline cursor-pointer p-2 rounded-sm hover:bg-gray-200 hover:bg-opacity-20"
+          >
+           { params.row.properties.length}
+          </span>
+        </button>
+      ),
 
+    },
+    {
+      field: "safes",
+      headerName: "Safes",
+      flex: 1,
+      align: "center",
+      renderCell: (params) => (
+        <button
+        onClick={() => console.log(params.row.safes)}
+        >
+          <span
+            className="text-grey-400 text-sm hover:underline cursor-pointer p-2 rounded-sm hover:bg-gray-200 hover:bg-opacity-20"
+          >
+           { params.row.safes.length}
+          </span>
+        </button>
+      ),
+
+    },
+    {
+      field: "groups",
+      headerName: "Groups",
+      flex: 1,
+      align: "center",
+      renderCell: (params) => (
+        <button
+        onClick={() => console.log(params.row.communities)}
+        >
+          <span
+            className="text-grey-400 text-sm hover:underline cursor-pointer p-2 rounded-sm hover:bg-gray-200 hover:bg-opacity-20"
+          >
+           { params.row.communities.length}
+          </span>
+        </button>
+      ),
+
+    },
     {
       field: "action",
       headerName: "Action",
       flex: 2,
       renderCell: (params) => (
         <Box>
-          {/* <IconButton
-            onClick={() => handleShowDetails(params.row._id)}
-            // color="primary"
-            className="text-grey-400"
-          >
-            <VisibilityIcon/>
-          </IconButton> */}
 
           <IconButton
-            onClick={() => handleEdit(params.row._id)}
+            onClick={() => handleEdit(params.row.userData._id)}
             // color="primary"
             className="text-grey-400"
           >
             <EditIcon />
           </IconButton>
           <IconButton
-            onClick={() => handleDelete(params.row._id)}
+            onClick={() => handleDelete(params.row.userData._id)}
             color="secondary"
           >
             <DeleteIcon />
@@ -120,7 +178,6 @@ function Index({setRefetchNotification}) {
       )
       .then((response) => {
         if (response) {
-          console.log("Item viewed.");
           setRefetchNotification(); //reset value on sidebar
         }
       })
@@ -149,23 +206,6 @@ function Index({setRefetchNotification}) {
       });
   };
 
-  const fetchAllUsers = (userId, userToken) => {
-    axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/users/fetchallusers?userId=${userId}`,  {
-              headers: {
-                "auth-token" : userToken
-              },
-            })
-          .then((response) => {
-        setData(response.data);
-        // also reset counter when item displayed
-        resetCounter(userId, userToken,"newUsers");
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
-  };
-
   const deleteUserById = async (id) => {
     // Make the DELETE request
     await axios
@@ -177,7 +217,7 @@ function Index({setRefetchNotification}) {
           .then((response) => {
         if (response) {
           toast("User deleted!");
-          fetchAllUsers(userId, userToken);
+          getCompleteUserDetails(userId, userToken);
         }
       })
       .catch((error) => {
@@ -186,8 +226,29 @@ function Index({setRefetchNotification}) {
       });
   };
 
+  // get complete user detailsss
+  const getCompleteUserDetails = async (userId, userToken) => {
+    // Make the GET request
+    await axios
+      .get(`${process.env.REACT_APP_BACKEND_URL}/api/users/getUsersCompleteDetails?userId=${userId}`,  {
+              headers: {
+                "auth-token" : userToken
+              },
+            })
+          .then((response) => {
+        if (response) {
+          setAllData(response.data.data);
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        toast.error("Some ERROR occured.");
+      });
+  }
+
   // useeffecttt
   useEffect(() => {
+    
     try {
       // getting userId and userToken
       let token = localStorage.getItem("iProp-token");
@@ -195,7 +256,7 @@ function Index({setRefetchNotification}) {
         const decoded = jwtDecode(token);
         setUserId(decoded.userId);
         setUserToken(token);
-        fetchAllUsers(decoded.userId, token);
+        getCompleteUserDetails(decoded.userId, token);
       }
     } catch (error) {
       console.log(error);
@@ -208,7 +269,7 @@ function Index({setRefetchNotification}) {
 
   const handleCancel = () => {
     setMode("display");
-    fetchAllUsers(userId, userToken);
+    getCompleteUserDetails(userId, userToken);
   };
 
   // Click handler for the edit button
@@ -223,7 +284,7 @@ function Index({setRefetchNotification}) {
 
   const setModeToDisplay = () => {
     setMode("display");
-    fetchAllUsers(userId, userToken);
+    getCompleteUserDetails(userId, userToken);
   };
 
   // Click handler for the delete button
@@ -315,7 +376,7 @@ function Index({setRefetchNotification}) {
           }}
         >
           <DataGrid
-            rows={data}
+            rows={allData}
             columns={columns}
             components={{ Toolbar: GridToolbar }}
             getRowId={(row) => row._id}

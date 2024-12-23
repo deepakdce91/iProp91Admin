@@ -1,134 +1,242 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import { useTheme } from "@mui/material";
+import { toast } from "react-toastify";
 
-function ChipComponentUsers({ preSelected, itemArray, updateSelectedArr }) {
+function ChipComponentUsers({
+  propertyOwnerId,
+  preSelected,
+  itemArray,
+  projectUsers,
+  updateSelectedArr,
+}) {
   const theme = useTheme();
   const myRef = useRef();
+  const dropdownRef = useRef();
   const [focused, setFocused] = useState(false);
   const [currentInputValue, setCurrentInputValue] = useState("");
-  const [filteredItemArray, setFilteredItemArray] = useState(itemArray); // Initialize with full itemArray
+  const [filteredProjectUsers, setFilteredProjectUsers] = useState(
+    projectUsers || []
+  );
   const [selectedItems, setSelectedItems] = useState([]);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
-  // Sync preSelected with selectedItems whenever preSelected changes
   useEffect(() => {
-    if (preSelected) {
-      setSelectedItems(preSelected);
+    if (!propertyOwnerId) {
+      if (preSelected) {
+        setSelectedItems(preSelected);
+      }
     }
   }, [preSelected]);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target) &&
+        !myRef.current.contains(event.target)
+      ) {
+        setFocused(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const removeSelectedItem = (e, item) => {
     e.preventDefault();
-    const updatedItems = selectedItems.filter(selectedItem => selectedItem._id !== item._id);
+    const updatedItems = selectedItems.filter(
+      (selectedItem) => selectedItem._id !== item._id
+    );
     setSelectedItems(updatedItems);
     updateSelectedArr(updatedItems);
   };
 
   const addSelectedItem = (item) => {
-    if (!selectedItems.some(selectedItem => selectedItem._id === item._id)) {
+    if (!selectedItems.some((selectedItem) => selectedItem._id === item._id)) {
       const updatedItems = [...selectedItems, item];
       setSelectedItems(updatedItems);
       updateSelectedArr(updatedItems);
+      setHighlightedIndex(-1);
     }
   };
 
-  const handleEnterPressed = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === "Enter") {
-      const inputValue = e.target.value.toLowerCase();
-      const matchedItem = itemArray.find(item =>
-        (item.name.toLowerCase().includes(inputValue) && item.name) ||
-        (item.phone.includes(inputValue) && !item.name)
-      );
-      if (matchedItem) {
-        addSelectedItem(matchedItem);
+      e.preventDefault();
+
+      // If an item is highlighted in dropdown, select it
+      if (highlightedIndex >= 0 && filteredProjectUsers.length > 0) {
+        addSelectedItem(filteredProjectUsers[highlightedIndex]);
+        setCurrentInputValue("");
+        setHighlightedIndex(-1);
+        return;
       }
-      setCurrentInputValue("");
+
+      // If no item is highlighted but there's input, check if it matches a user ID
+      if (currentInputValue.trim()) {
+        // First check in itemArray (all users) - now case insensitive
+        const userById = itemArray.find(
+          (item) =>
+            item._id.toLowerCase() === currentInputValue.trim().toLowerCase()
+        );
+        if (userById) {
+          addSelectedItem(userById);
+          setCurrentInputValue("");
+          setHighlightedIndex(-1);
+        } else {
+          // Show error toast if user not found
+          toast.error("User not found");
+        }
+      }
+    } else if (e.key === "ArrowDown" && filteredProjectUsers.length > 0) {
+      e.preventDefault();
+      setHighlightedIndex((prev) =>
+        prev < filteredProjectUsers.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === "ArrowUp" && filteredProjectUsers.length > 0) {
+      e.preventDefault();
+      setHighlightedIndex((prev) => (prev > 0 ? prev - 1 : prev));
+    } else if (e.key === "Escape") {
+      setFocused(false);
+      setHighlightedIndex(-1);
     }
   };
+
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setCurrentInputValue(value);
+    setHighlightedIndex(-1);
+
+    // Filter only from projectUsers for dropdown suggestions
+    const filtered = projectUsers
+      ? projectUsers.filter(
+          (item) =>
+            (item.name &&
+              item.name.toLowerCase().includes(value.toLowerCase())) ||
+            (item.phone && item.phone.includes(value))
+        )
+      : [];
+
+    setFilteredProjectUsers(filtered);
+  };
+
+  useEffect(() => {
+
+    const getProjUsers = async () => {
+      if (itemArray && propertyOwnerId) {
+        const ownerUser = await itemArray.find(
+          (item) => item._id === propertyOwnerId
+        );
+        setSelectedItems([ownerUser]);
+        updateSelectedArr([ownerUser]);
+      }
+    };
+
+    getProjUsers();
+  }, []);
 
   return (
-    <>
+    <div className="relative w-full">
       <div
-        className={`w-[100%] ${theme.palette.mode === "dark" ? "bg-[#141B2D] border-[1px] border-gray-600" : "bg-white border-[1px] border-gray-300"} overflow rounded-sm px-3 h-auto flex-wrap flex items-center border-1 ${focused ? "border-gray-400" : "border-gray-300"}`}
-        onClick={() => {
-          myRef.current.focus();
-        }}
+        className={`w-full ${
+          theme.palette.mode === "dark"
+            ? "bg-[#141B2D] border-gray-600"
+            : "bg-white border-gray-300"
+        } rounded-md border transition-all duration-200 px-3 min-h-[48px] flex flex-wrap items-center gap-2 ${
+          focused ? "border-blue-500 ring-2 ring-blue-100" : ""
+        }`}
+        onClick={() => myRef.current.focus()}
       >
-        {/* Display selected items */}
-        {selectedItems.length > 0 && selectedItems.map((item, index) => (
-          <div key={index} className='mr-3 my-2 px-2 py-[6px] rounded-xs border-1 border-gray-300 flex items-center justify-center bg-[#2a94f2] text-white'>
-            <div className='text-[16px]'>{item.name || item.phone}</div>
-            <button className='h-[100%] text-sm pl-1'
-              onClick={(e) => {
-                removeSelectedItem(e, item);
-              }}
+        {selectedItems.map((item, index) => (
+          <div
+            key={index}
+            className="flex items-center gap-1 px-2 py-1 bg-blue-500 text-white rounded-md text-sm transition-all hover:bg-blue-600"
+          >
+            <span>{item.name || item.phone}</span>
+            <span className="text-xs opacity-75">({item._id})</span>
+            <button
+              onClick={(e) => removeSelectedItem(e, item)}
+              className="ml-1 hover:bg-blue-600 rounded-full p-1 transition-colors"
             >
-              <span className='text-xs ml-2 mr-1'>X</span>
+              ×
             </button>
           </div>
         ))}
-        <div className='relative'>
-          <input
-            type="text"
-            autoComplete='off'
-            className={`w-40 mr-3 my-2 text-sm py-2 px-2 rounded-sm ${theme.palette.mode === "dark" ? "bg-[#141B2D]" : "bg-white"} border-[1px] border-white`}
-            placeholder={`Enter Name or Phone`}
-            value={currentInputValue}
-            onChange={(e) => {
-              setFocused(true);
-              setCurrentInputValue(e.target.value);
-              setFilteredItemArray(
-                itemArray.filter((item) =>
-                  (item.name && item.name.toLowerCase().includes(e.target.value.toLowerCase())) ||
-                  (item.phone.includes(e.target.value) && !item.name)
-                )
-              );
-            }}
-            onKeyUp={handleEnterPressed}
-            ref={myRef}
-            onFocus={() => {
-              setFocused(true);
-              // Show the full list on focus if no input value is present
-              setFilteredItemArray(itemArray);
-            }}
-            onBlur={() => {
-              setTimeout(() => {
-                setFocused(false);
-              }, 100);
-            }}
-            onClick={() => {
-              setFocused(true);
-              if (!currentInputValue) {
-                // Ensure the dropdown is shown even without input value
-                setFilteredItemArray(itemArray);
-              }
-            }}
-          />
 
-          {/* Suggestions dropdown */}
-          {focused && filteredItemArray.length > 0 && (
-            <div className='absolute top-11 z-20'>
-              <ul className='bg-white text-gray-900 border-1 border-gray-400 rounded-sm w-60'>
-                {filteredItemArray.map((item) => (
-                  <li
-                    key={item._id}
-                    className='pl-3 py-1 hover:bg-gray-200 cursor-pointer'
-                    onClick={() => {
-                      addSelectedItem(item);
-                      setCurrentInputValue("");
-                    }}
-                  >
-                    {/* Display name and phone number */}
-                    {item.name && item.phone
-                      ? `${item.name} (${item.phone})`
-                      : item.phone || item.name}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
+        <input
+          ref={myRef}
+          type="text"
+          autoComplete="off"
+          className={`flex-1 min-w-[120px] py-2 outline-none text-sm ${
+            theme.palette.mode === "dark"
+              ? "bg-[#141B2D] text-white"
+              : "bg-white text-gray-900"
+          }`}
+          placeholder="Search project users or enter exact User ID"
+          value={currentInputValue}
+          onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
+          onFocus={() => {
+            setFocused(true);
+            setFilteredProjectUsers(projectUsers || []);
+          }}
+        />
       </div>
-    </>
+
+      {focused && filteredProjectUsers.length > 0 && (
+        <div
+          ref={dropdownRef}
+          className="absolute left-0 right-0 mt-1 z-50 max-h-60 overflow-auto rounded-md shadow-lg"
+        >
+          <ul
+            className={`py-1 ${
+              theme.palette.mode === "dark"
+                ? "bg-[#1F2A40] border-gray-600"
+                : "bg-white border-gray-200"
+            } border rounded-md`}
+          >
+            {filteredProjectUsers.map((item, index) => (
+              <li
+                key={item._id}
+                className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
+                  highlightedIndex === index
+                    ? theme.palette.mode === "dark"
+                      ? "bg-gray-700 text-white"
+                      : "bg-blue-50 text-blue-700"
+                    : theme.palette.mode === "dark"
+                    ? "text-gray-200 hover:bg-gray-700"
+                    : "text-gray-900 hover:bg-gray-50"
+                }`}
+                onClick={() => {
+                  addSelectedItem(item);
+                  setCurrentInputValue("");
+                  myRef.current.focus();
+                }}
+              >
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    {item.name && (
+                      <span className="font-medium">{item.name}</span>
+                    )}
+                    {item.phone && (
+                      <span
+                        className={`${
+                          item.name ? "text-gray-500" : "font-medium"
+                        }`}
+                      >
+                        {item.name ? `(${item.phone})` : item.phone}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-xs text-gray-500">ID: {item._id}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }
 

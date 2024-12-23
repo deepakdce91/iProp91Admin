@@ -455,10 +455,12 @@ const ShowPropertyDetails = ({ data }) => {
             type="button"
             className="py-3 px-4 inline-flex items-center gap-x-2 text-sm font-medium rounded-lg border border-transparent bg-green-500 text-white hover:bg-green-600  disabled:opacity-50 disabled:pointer-events-none ml-3"
           >
-            Add to community
-          </button>
+            Add to community 
+          </button> 
           {userId && showCommunityModal === true && propertyOwnerData && (
             <AddCommunityModal
+            propertyData = {data}
+            propertyOwnerData = {propertyOwnerData}
               userId={userId}
               userToken={userToken}
               closeModal={closeModal}

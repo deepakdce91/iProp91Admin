@@ -193,7 +193,7 @@ function App() {
                   <Route
                     path={routes.emailTemplates}
                     element={<EmailTemplates />}
-                  />
+                  /> 
  
                   <Route path={routes.property} element={<Property setRefetchNotification={setRefetchNotification} />} />
                   <Route path={routes.users} element={<Users setRefetchNotification={setRefetchNotification} />} />

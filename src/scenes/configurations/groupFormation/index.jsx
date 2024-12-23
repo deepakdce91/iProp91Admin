@@ -41,7 +41,7 @@ function Index() {
       field: "projects",
       headerName: "Projects",
       flex: 1,
-      valueGetter: (params) => params.value.join(","), 
+      // valueGetter: (params) => params.value.join(","), 
     },
 
     {

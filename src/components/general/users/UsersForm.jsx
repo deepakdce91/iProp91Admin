@@ -16,12 +16,17 @@ import { supabase } from "../../../config/supabase";
 import { TbAlertSquareRoundedFilled } from "react-icons/tb";
 import { IoCheckboxOutline } from "react-icons/io5";
 
-function UserForm({ editData, setModeToDisplay , userToken, userId }) {
+import { removeSpaces } from "../../../MyFunctions";
 
-  const fileInputRef = useRef(null);
+function UserForm({ editData, setModeToDisplay, userToken, userId }) {
+  const fileInputRef1 = useRef(null);
+  const fileInputRef2 = useRef(null);
 
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("/default-profile-pic.jpg");
+
+  const [avatarPreview, setAvatarPreview] = useState("/default-avatar-pic.jpg");
+  const [isAvatarUploading, setIsAvatarUploading] = useState(false);
 
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -32,28 +37,42 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
     email: "",
     password: "",
     profilePicture: "",
+    avatar: "",
     lastLogin: new Date(),
     suspended: "false",
     fraud: "false",
   });
 
   const getPublicUrlFromSupabase = (path) => {
-    const { data, error } = supabase.storage.from(process.env.REACT_APP_PROFILE_PIC_BUCKET).getPublicUrl(path);
+    const { data, error } = supabase.storage
+      .from(process.env.REACT_APP_PROFILE_PIC_BUCKET)
+      .getPublicUrl(path);
     if (error) {
       console.error("Error fetching public URL:", error);
       return null;
-    } 
+    }
     return data.publicUrl;
   };
 
-  const handleDivClick = () => {
+  const handleDivClick1 = () => {
     // Trigger the click event on the file input
-    fileInputRef.current.click();
-  }; 
+    fileInputRef1.current.click();
+  };
+
+  const handleDivClick2 = () => {
+    // Trigger the click event on the file input
+    fileInputRef2.current.click();
+  };
 
   // Upload the file to Supabase S3
-  const uploadFileToCloud = async (myFile) => {
-    const myPath = `usersProfilePic/${myFile.name}`;
+  const uploadFileToCloud = async (myFile, localName) => {
+    let myPath = "";
+    if (localName === "avatar") {
+      myPath = removeSpaces(`userAvatar/${myFile.name}`);
+    } else {
+      myPath = removeSpaces(`userProfilePicture/${myFile.name}`);
+    }
+
     try {
       const uploadParams = {
         Bucket: process.env.REACT_APP_PROFILE_PIC_BUCKET,
@@ -64,7 +83,11 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
       const command = new PutObjectCommand(uploadParams);
       let success = await client.send(command);
       if (success) {
-        changeField("profilePicture", myPath);
+        if (localName === "avatar") {
+          changeField("avatar", myPath);
+        } else {
+          changeField("profilePicture", myPath);
+        }
         return myPath; //  return the file path
       }
       return;
@@ -76,8 +99,15 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
 
   const handleFileUpload = async (event) => {
     event.preventDefault();
+    const localName = event.target.name;
+    console.log(localName);
 
-    setIsUploading(true);
+    if (localName === "avatar") {
+      setIsAvatarUploading(true);
+    } else {
+      setIsUploading(true);
+    }
+
     toast("Uploading Image.");
     const file = event.target.files[0];
     // checking for .heic files and converting it into jpeg before adding
@@ -90,39 +120,63 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
         });
 
         // Create a new File object from the Blob
-        const convertedFile = new File([convertedBlob], file.name.replace(/\.heic$/i, ".jpeg"), {
-          type: "image/jpeg",
-        });
+        const convertedFile = new File(
+          [convertedBlob],
+          file.name.replace(/\.heic$/i, ".jpeg"),
+          {
+            type: "image/jpeg",
+          }
+        );
 
         file = convertedFile;
-
       } catch (error) {
         console.error("Error converting HEIC file:", error);
       }
     }
 
     try {
-      let cloudFilePath = await uploadFileToCloud(file);
+      let cloudFilePath = await uploadFileToCloud(
+        file,
+        `${localName === "avatar" ? "userAvatar" : "userProfilePicture"}`
+      );
 
       if (cloudFilePath) {
         setAddData((prevData) => ({
           ...prevData,
           profilePicture: cloudFilePath,
         }));
-        let publicUrl =  getPublicUrlFromSupabase(cloudFilePath);
+        let publicUrl = getPublicUrlFromSupabase(cloudFilePath);
         if (publicUrl) {
-          toast.success("Profile picture changed!");
-          setIsUploading(false);
-          setPreviewUrl(publicUrl);
-          console.log(publicUrl);
-          setAddData((prevData) => ({
-            ...prevData,
-            profilePicture: publicUrl, 
-          }))
+          toast.success(
+            `${localName === "avatar" ? "Avatar" : "Profile picture"} changed!`
+          );
+
+          if (localName === "avatar") {
+            setAvatarPreview(publicUrl);
+            setIsAvatarUploading(false);
+          } else {
+            setPreviewUrl(publicUrl);
+            setIsUploading(false);
+          }
+          if (localName === "avatar") {
+            setAddData((prevData) => ({
+              ...prevData,
+              avatar: publicUrl,
+            }));
+          } else {
+            setAddData((prevData) => ({
+              ...prevData,
+              profilePicture: publicUrl,
+            }));
+          }
         }
       }
     } catch (error) {
-      setIsUploading(true);
+      if (localName === "avatar") {
+        setIsAvatarUploading(false);
+      } else {
+        setIsUploading(false);
+      }
       toast.error("Some error occured while uploading.");
       console.log(error.message);
     }
@@ -138,13 +192,13 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
   const handleSubmit = (addData) => {
     if (addData.name !== "" && addData.phone !== "") {
       if (editData) {
-
         axios
           .put(
             `${process.env.REACT_APP_BACKEND_URL}/api/users/updateuser/${editData._id}?userId=${userId}`,
-            addData, {
+            addData,
+            {
               headers: {
-                "auth-token" : userToken
+                "auth-token": userToken,
               },
             }
           )
@@ -162,11 +216,15 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
           });
       } else {
         axios
-          .post(`${process.env.REACT_APP_BACKEND_URL}/api/users/adduser?userId=${userId}`, addData, {
-            headers: {
-              "auth-token" : userToken
-            },
-          })
+          .post(
+            `${process.env.REACT_APP_BACKEND_URL}/api/users/adduser?userId=${userId}`,
+            addData,
+            {
+              headers: {
+                "auth-token": userToken,
+              },
+            }
+          )
           .then((response) => {
             if (response) {
               toast("User added!");
@@ -194,11 +252,12 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
           phone: editData.phone,
           email: editData.email,
           profilePicture: editData.profilePicture || "",
+          avatar: editData.avatar || "",
           lastLogin: editData.lastLogin || new Date(),
           suspended: editData.suspended || "false",
           fraud: editData.fraud || "false",
         });
-  
+
         if (editData.profilePicture !== "") {
           try {
             setPreviewUrl(editData.profilePicture); // Set the preview URL
@@ -206,13 +265,19 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
             console.error("Error fetching signed URL:", error);
           }
         }
+
+        if (editData.avatar && editData.avatar !== "") {
+          try {
+            setAvatarPreview(editData.avatar); // Set the preview URL
+          } catch (error) {
+            console.error("Error fetching signed URL:", error);
+          }
+        }
       }
     };
-  
-    fetchData(); 
-  
+
+    fetchData();
   }, [editData]);
-  
 
   return (
     <Box
@@ -267,39 +332,83 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
       <div className="flex items-center justify-center">
         <div className="w-full">
           <form>
-            <div className="relative w-fit">
-              <img
-                src={previewUrl}
-                className="h-32 w-32 rounded-full mb-5"
-                alt="profile-picture"
-              />
-
-              {isUploading === true ? (
+            <div className="flex mb-6">
+              {/* // profile picture  */}
+              <div className="flex flex-col justify-end relative mr-20">
                 <img
-                  className="ml-2 mt-2 h-8 w-7 absolute bottom-0 -right-6 "
-                  src={`${
-                    theme.palette.mode === "dark"
-                      ? "/spinner-white.svg"
-                      : "/spinner.svg"
-                  }`}
-                  alt="upload-spinner"
+                  src={previewUrl}
+                  className="h-32 w-32 rounded-full mb-5"
+                  alt="profile-picture"
                 />
-              ) : (
-                <div
-                  onClick={handleDivClick}
-                  className="flex text-gray-400 hover:text-white absolute bottom-0 -right-12 items-end"
-                >
-                  <MdEdit className="w-6 h-6  rounded-full  " />
-                  <span>Change</span>
-                </div>
-              )}
 
-              <input
-                type="file"
-                ref={fileInputRef}
-                style={{ display: "none" }}
-                onChange={handleFileUpload}
-              />
+                <h3 className="text-lg text-center">Profile Picture</h3>
+
+                {isUploading === true ? (
+                  <img
+                    className="ml-2 mt-2 h-8 w-7 absolute top-0 -right-6 "
+                    src={`${
+                      theme.palette.mode === "dark"
+                        ? "/spinner-white.svg"
+                        : "/spinner.svg"
+                    }`}
+                    alt="upload-spinner"
+                  />
+                ) : (
+                  <div
+                    onClick={handleDivClick1}
+                    className="flex text-gray-400 hover:text-white absolute top-0 -right-14 items-end"
+                  >
+                    <MdEdit className="w-6 h-6  rounded-full  " />
+                    <span>Change</span>
+                  </div>
+                )}
+
+                <input
+                  type="file"
+                  ref={fileInputRef1}
+                  name="profilePicture"
+                  style={{ display: "none" }}
+                  onChange={handleFileUpload}
+                />
+              </div>
+
+              {/* // avatar  */}
+              <div className="relative w-fit flex flex-col justify-end">
+                <img
+                  src={avatarPreview}
+                  className="h-24 w-24 rounded-full "
+                  alt="profile-picture"
+                />
+                <h3 className="text-lg text-center">Avatar</h3>
+
+                {isAvatarUploading === true ? (
+                  <img
+                    className="ml-2 mt-2 h-8 w-7 absolute top-10 -right-6 "
+                    src={`${
+                      theme.palette.mode === "dark"
+                        ? "/spinner-white.svg"
+                        : "/spinner.svg"
+                    }`}
+                    alt="upload-spinner"
+                  />
+                ) : (
+                  <div
+                    onClick={handleDivClick2}
+                    className="flex text-gray-400 hover:text-white absolute top-10 -right-12 items-end"
+                  >
+                    <MdEdit className="w-5 h-5  rounded-full  " />
+                    <span className="text-xs">Change</span>
+                  </div>
+                )}
+
+                <input
+                  type="file"
+                  ref={fileInputRef2}
+                  name="avatar"
+                  style={{ display: "none" }}
+                  onChange={handleFileUpload}
+                />
+              </div>
             </div>
 
             <div className="flex flex-col md:flex-row gap-2">
@@ -368,15 +477,26 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
                     <label htmlFor="password" className="text-lg font-medium">
                       Password
                     </label>
-                    
 
-                    {editData && <div
-                    className={`w-full mt-[18px]  rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md flex items-center -center`}
-                    >
-                   {editData.password === "" ? <><TbAlertSquareRoundedFilled className="mr-2"/>    <div>{"Password not set"}</div></> : <><IoCheckboxOutline className="mr-2 text-green-400"/>    <div>{"Password Set"}</div></>}
+                    {editData && (
+                      <div
+                        className={`w-full mt-[18px]  rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md flex items-center -center`}
+                      >
+                        {editData.password === "" ? (
+                          <>
+                            <TbAlertSquareRoundedFilled className="mr-2" />{" "}
+                            <div>{"Password not set"}</div>
+                          </>
+                        ) : (
+                          <>
+                            <IoCheckboxOutline className="mr-2 text-green-400" />{" "}
+                            <div>{"Password Set"}</div>
+                          </>
+                        )}
 
-                   {/*   */}
-                    </div>}
+                        {/*   */}
+                      </div>
+                    )}
 
                     <input
                       type="text"
@@ -384,9 +504,12 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
                       id="password"
                       value={addData.password}
                       onChange={(e) => changeField("password", e.target.value)}
-                      placeholder={editData?.password === "" ? "Set password" : "Set new password"}
+                      placeholder={
+                        editData?.password === ""
+                          ? "Set password"
+                          : "Set new password"
+                      }
                       className={`w-full mt-[18px] text-gray-700 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md flex items-center -center`}
-                      
                     />
                   </div>
                 </div>
@@ -482,11 +605,19 @@ function UserForm({ editData, setModeToDisplay , userToken, userId }) {
                 type="button"
                 onClick={() => handleSubmit(addData)}
                 className={`px-8 py-3 ${
-                  isUploading === true ? "bg-gray-600" : "bg-[#6A64F1]"
+                  isUploading === true || isAvatarUploading === true
+                    ? "bg-gray-600"
+                    : "bg-[#6A64F1]"
                 }  text-white font-medium text-lg rounded-md shadow-md ${
-                  isUploading === true ? "bg-gray-600" : "hover:bg-[#5a52e0]"
+                  isUploading === true || isAvatarUploading === true
+                    ? "bg-gray-600"
+                    : "hover:bg-[#5a52e0]"
                 }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
-                disabled={isUploading === true ? true : false}
+                disabled={
+                  isUploading === true || isAvatarUploading === true
+                    ? true
+                    : false
+                }
               >
                 {editData ? "Update User" : "Add User"}
               </button>

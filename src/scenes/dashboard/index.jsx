@@ -6,6 +6,7 @@ import { PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'; 
 import { client } from "../../config/s3Config"; 
 
+
 import Header from "../../components/Header";
 
 
@@ -41,7 +42,7 @@ const Dashboard = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header title="DASHBOARD" subtitle="Welcome to your dashboard" /> 
       </Box>
-
+      
       <button className="p-3 bg-gray-300 text-black" onClick={getTokenInfo}>
         get token info 
       </button>
@@ -49,7 +50,6 @@ const Dashboard = () => {
       <button className="p-3 mt-5 text-gray-300 bg-red-500" onClick={handleLogout}>
         logout 
       </button>
-
 
     </Box>
   );
