@@ -33,6 +33,10 @@ import { FaClipboardQuestion } from "react-icons/fa6";
 import { MdOutlineAttachEmail } from "react-icons/md";
 import axios from "axios";
 
+import { HiClipboardList } from "react-icons/hi";
+import { GrArticle } from "react-icons/gr";
+import { BsSafe2Fill } from "react-icons/bs";
+
 const Item = ({ title, to, icon, selected, setSelected, badge }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -45,14 +49,16 @@ const Item = ({ title, to, icon, selected, setSelected, badge }) => {
       onClick={() => setSelected(title)}
       icon={icon}
     >
-      <Typography>{title} {badge}</Typography>
-      
+      <Typography>
+        {title} {badge}
+      </Typography>
+
       <Link to={to} />
     </MenuItem>
   );
 };
 
-const Sidebar = ({userId, userToken, refetchNotification}) => {
+const Sidebar = ({ userId, userToken, refetchNotification }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -61,6 +67,7 @@ const Sidebar = ({userId, userToken, refetchNotification}) => {
   const [newUsers, setNewUsers] = useState();
   const [newProperties, setNewProperties] = useState();
   const [newDocuments, setNewDocuments] = useState();
+  const [newListings, setNewListings] = useState();
 
   const FetchNotifications = async () => {
     await axios
@@ -77,6 +84,7 @@ const Sidebar = ({userId, userToken, refetchNotification}) => {
           setNewUsers(response.data.newUsers);
           setNewProperties(response.data.newProperties);
           setNewDocuments(response.data.newDocuments);
+          setNewListings(response.data.newListings);
         }
       })
       .catch((error) => {
@@ -85,7 +93,7 @@ const Sidebar = ({userId, userToken, refetchNotification}) => {
   };
 
   useEffect(() => {
-    FetchNotifications()
+    FetchNotifications();
   }, [refetchNotification]);
 
   return (
@@ -190,26 +198,52 @@ const Sidebar = ({userId, userToken, refetchNotification}) => {
             )}
 
             <div>
-            <Item
-              title="Users"
-              to="/users"
-              badge = {newUsers > 0 ? <span className={`absolute ${!isCollapsed ? "top-5 right-6" : "top-3 right-3"} grid min-h-[24px] min-w-[24px] translate-x-2/4 -translate-y-2/4 place-items-center rounded-full bg-red-600 py-1 px-1 text-xs text-white`}>
-              {newUsers}
-            </span> : null}
-              icon={<FaUsers className="h-5 w-5" />}
-              selected={selected}
-              setSelected={setSelected}
-            />
-            
+              <Item
+                title="Users"
+                to="/users"
+                badge={
+                  newUsers > 0 ? (
+                    <span
+                      className={`absolute ${
+                        !isCollapsed ? "top-5 right-6" : "top-3 right-3"
+                      } grid min-h-[24px] min-w-[24px] translate-x-2/4 -translate-y-2/4 place-items-center rounded-full bg-red-600 py-1 px-1 text-xs text-white`}
+                    >
+                      {newUsers}
+                    </span>
+                  ) : null
+                }
+                icon={<FaUsers className="h-5 w-5" />}
+                selected={selected}
+                setSelected={setSelected}
+              />
             </div>
 
             <Item
               title="Property"
               to="/property"
-              badge = {newProperties > 0 ? <span className={`absolute ${!isCollapsed ? "top-5 right-6" : "top-3 right-3"} grid min-h-[24px] min-w-[24px] translate-x-2/4 -translate-y-2/4 place-items-center rounded-full bg-red-600 py-1 px-1 text-xs text-white`}>
-              {newProperties}
-            </span> : null}
+              badge={
+                newProperties > 0 ? (
+                  <span
+                    className={`absolute ${
+                      !isCollapsed ? "top-5 right-6" : "top-3 right-3"
+                    } grid min-h-[24px] min-w-[24px] translate-x-2/4 -translate-y-2/4 place-items-center rounded-full bg-red-600 py-1 px-1 text-xs text-white`}
+                  >
+                    {newProperties}
+                  </span>
+                ) : null
+              }
               icon={<MdLandscape className="h-5 w-5" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+            <Item
+              title="Listings"
+              to="/listings"
+                badge = {newListings > 0 ? <span className={`absolute ${!isCollapsed ? "top-5 right-6" : "top-3 right-3"} grid min-h-[24px] min-w-[24px] translate-x-2/4 -translate-y-2/4 place-items-center rounded-full bg-red-600 py-1 px-1 text-xs text-white`}>
+                {newListings}
+              </span> : null}
+              icon={<HiClipboardList className="h-5 w-5" />}
               selected={selected}
               setSelected={setSelected}
             />
@@ -217,9 +251,17 @@ const Sidebar = ({userId, userToken, refetchNotification}) => {
             <Item
               title="Documents"
               to="/documents"
-              badge = {newDocuments > 0 ? <span className={`absolute ${!isCollapsed ? "top-5 right-6" : "top-3 right-3"} grid min-h-[24px] min-w-[24px] translate-x-2/4 -translate-y-2/4 place-items-center rounded-full bg-red-600 py-1 px-1 text-xs text-white`}>
-                {newDocuments}
-              </span> : null}
+              badge={
+                newDocuments > 0 ? (
+                  <span
+                    className={`absolute ${
+                      !isCollapsed ? "top-5 right-6" : "top-3 right-3"
+                    } grid min-h-[24px] min-w-[24px] translate-x-2/4 -translate-y-2/4 place-items-center rounded-full bg-red-600 py-1 px-1 text-xs text-white`}
+                  >
+                    {newDocuments}
+                  </span>
+                ) : null
+              }
               icon={<IoDocumentLockSharp className="h-5 w-5" />}
               selected={selected}
               setSelected={setSelected}
@@ -236,6 +278,13 @@ const Sidebar = ({userId, userToken, refetchNotification}) => {
               </Typography>
             )}
 
+            <Item
+              title="Common Safes"
+              to="/commonSafes"
+              icon={<BsSafe2Fill className="h-5 w-5" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
             <Item
               title="Owners From"
               to="/ownerFrom"
@@ -426,6 +475,14 @@ const Sidebar = ({userId, userToken, refetchNotification}) => {
               title="Question Builder"
               to="/questionBuilder"
               icon={<FaClipboardQuestion className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+            <Item
+              title="Articles"
+              to="/articles"
+              icon={<GrArticle className="h-4 w-4" />}
               selected={selected}
               setSelected={setSelected}
             />

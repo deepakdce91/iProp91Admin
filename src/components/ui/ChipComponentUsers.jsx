@@ -2,6 +2,14 @@ import React, { useState, useRef, useEffect } from "react";
 import { useTheme } from "@mui/material";
 import { toast } from "react-toastify";
 
+const superAdminData = {
+  _id: "IPA008",
+  profilePicture: "",
+  name: "Super Admin",
+  phone: "----------",
+  admin: "true",
+};
+
 function ChipComponentUsers({
   propertyOwnerId,
   preSelected,
@@ -128,8 +136,8 @@ function ChipComponentUsers({
         const ownerUser = await itemArray.find(
           (item) => item._id === propertyOwnerId
         );
-        setSelectedItems([ownerUser]);
-        updateSelectedArr([ownerUser]);
+        setSelectedItems([superAdminData,ownerUser]);
+        updateSelectedArr([superAdminData,ownerUser]);
       }
     };
 

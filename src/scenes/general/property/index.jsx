@@ -13,8 +13,9 @@ import PropertyForm from "../../../components/general/property/PropertyForm";
 import ShowPropertDetails from "../../../components/general/property/ShowPropertDetails";
 import { formatDate } from "../../../MyFunctions";
 import { jwtDecode } from "jwt-decode";
+import { TbCircleDotFilled } from "react-icons/tb";
 
-function Index({setRefetchNotification}) {
+function Index({ setRefetchNotification }) {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -27,15 +28,28 @@ function Index({setRefetchNotification}) {
   const [editData, setEditData] = useState();
 
   const columns = [
-    { field: "_id", headerName: "ID", flex: 1 },
+    {
+      field: "isViewed",
+      headerName: "",
+      flex: 0.2,
+      renderCell: (params) => {
+        if (params.row.isViewed === "no") {
+          return <TbCircleDotFilled className="text-green-400" />;
+        } else {
+          return "";
+        }
+      },
+    },
+    { field: "_id", headerName: "ID", width: 80 },
     {
       field: "customerName",
       headerName: "House No.",
-      flex: 1,
+      width: 120,
       cellClassName: "name-column--cell",
     },
     {
       field: "customerNumber",
+      width: 120,
       headerName: "Customer No.",
       flex: 1,
       cellClassName: "name-column--cell",
@@ -43,29 +57,29 @@ function Index({setRefetchNotification}) {
     {
       field: "state",
       headerName: "State",
-      flex: 1,
+      width: 110,
     },
     {
       field: "city",
       headerName: "City",
-      flex: 1,
+      width: 110,
     },
     {
       field: "builder",
       headerName: "Builder",
-      flex: 1,
+      width: 120,
     },
     {
       field: "project",
       headerName: "Project",
-      flex: 1,
+      width: 120,
     },
     {
       field: "addedBy",
       headerName: "Added By",
       headerAlign: "left",
       align: "left",
-      flex: 1,
+      width: 80,
     },
 
     {
@@ -73,7 +87,7 @@ function Index({setRefetchNotification}) {
       headerName: "Deleted",
       headerAlign: "left",
       align: "left",
-      flex: 0.5,
+      width: 80,
     },
 
     {
@@ -81,17 +95,17 @@ function Index({setRefetchNotification}) {
       headerName: "Status",
       headerAlign: "left",
       align: "left",
-      flex: 1,
+      width: 120,
     },
 
     {
       field: "action",
       headerName: "Action",
-      flex: 2,
+      width: 150,
       renderCell: (params) => (
         <Box>
           <IconButton
-            onClick={() => handleShowDetails(params.row._id)}
+            onClick={() => {handleShowDetails(params.row._id); setPropertyViewed(params.row._id)}}  
             // color="primary"
             className="text-grey-400"
           >
@@ -99,7 +113,7 @@ function Index({setRefetchNotification}) {
           </IconButton>
 
           <IconButton
-            onClick={() => handleEdit(params.row._id)}
+            onClick={() => {handleEdit(params.row._id); setPropertyViewed(params.row._id)}}
             // color="primary"
             className="text-grey-400"
           >
@@ -116,7 +130,7 @@ function Index({setRefetchNotification}) {
     },
   ];
 
-  const resetCounter = async (userId, userToken,type) => {
+  const resetCounter = async (userId, userToken, type) => {
     await axios
       .post(
         `${process.env.REACT_APP_BACKEND_URL}/api/notifications/resetCounter?userId=${userId}`,
@@ -170,13 +184,13 @@ function Index({setRefetchNotification}) {
         {
           headers: {
             "auth-token": userToken,
-          }, 
+          },
         }
       )
       .then((response) => {
         setData(response.data);
         // also reset counter when item displayed
-        resetCounter(userId, userToken,"newProperties");
+        resetCounter(userId, userToken, "newProperties");
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -257,6 +271,23 @@ function Index({setRefetchNotification}) {
   // Click handler for the delete button
   const handleDelete = (id) => {
     deletePropertyById(id);
+  };
+
+  const setPropertyViewed = async (id) => {
+    await axios
+      .put(
+        `${process.env.REACT_APP_BACKEND_URL}/api/property/setPropertyViewed/${id}?userId=${userId}`,
+        {},  // empty body since we're only updating isViewed to "yes"
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
+      .catch((error) => {
+        console.error("Error:", error);
+        toast.error("Error.");
+      });
   };
 
   return (
@@ -359,6 +390,8 @@ function Index({setRefetchNotification}) {
             components={{ Toolbar: GridToolbar }}
             getRowId={(row) => row._id}
             autoHeight
+            disableExtendRowFullWidth={true}
+            scrollbarSize={10}
           />
         </Box>
       )}

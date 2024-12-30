@@ -8,7 +8,6 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import axios from "axios";
 import { toast } from "react-toastify";
 
-
 import Header from "../../../components/Header";
 import PropertyForm from "../../../components/general/property/PropertyForm";
 import ShowPropertDetails from "../../../components/general/property/ShowPropertDetails";
@@ -17,8 +16,9 @@ import { jwtDecode } from "jwt-decode";
 import AddSafe from "../../../components/general/documents/AddSafe";
 import EditSafe from "../../../components/general/documents/EditSafe";
 import AccordionCustomIcon from "../../../components/ui/Accordion";
+import { TbCircleDotFilled } from "react-icons/tb";
 
-function Index({setRefetchNotification}) {
+function Index({ setRefetchNotification }) {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -31,10 +31,19 @@ function Index({setRefetchNotification}) {
   const [editData, setEditData] = useState();
 
   const columns = [
-    { field: "_id", 
-      headerName: "ID", 
-      flex: 1,
+    {
+      field: "isViewed",
+      headerName: "",
+      flex: 0.2,
+      renderCell: (params) => {
+        if (params.row.isViewed === "no") {
+          return <TbCircleDotFilled className="text-green-400" />;
+        } else {
+          return "";
+        }
+      },
     },
+    { field: "_id", headerName: "ID", flex: 1 },
     {
       field: "propertyId",
       headerName: "Property Id",
@@ -58,24 +67,22 @@ function Index({setRefetchNotification}) {
     {
       field: "action",
       headerName: "Action",
-      flex: 2,
+      flex: 1,
       renderCell: (params) => (
         <Box>
-
           <IconButton
-            onClick={() => handleEdit(params.row.propertyId)}
+            onClick={() => {handleEdit(params.row.propertyId); setSafeViewed(params.row._id)}}
             // color="primary"
             className="text-grey-400"
           >
             <EditIcon />
-          
           </IconButton>
         </Box>
       ),
     },
   ];
 
-  const resetCounter = async (userId, userToken,type) => {
+  const resetCounter = async (userId, userToken, type) => {
     await axios
       .post(
         `${process.env.REACT_APP_BACKEND_URL}/api/notifications/resetCounter?userId=${userId}`,
@@ -91,7 +98,6 @@ function Index({setRefetchNotification}) {
       )
       .then((response) => {
         if (response) {
-          console.log("Item viewed.");
           setRefetchNotification(); //reset value on sidebar
         }
       })
@@ -119,7 +125,6 @@ function Index({setRefetchNotification}) {
       })
       .catch((error) => {
         console.error("Error:", error);
-       
       });
   };
 
@@ -134,10 +139,9 @@ function Index({setRefetchNotification}) {
         }
       )
       .then((response) => {
-
         setData(response.data.data);
         // also reset counter when item displayed
-        resetCounter(userId, userToken,"newDocuments");
+        resetCounter(userId, userToken, "newDocuments");
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -158,9 +162,7 @@ function Index({setRefetchNotification}) {
     } catch (error) {
       console.log(error);
     }
-
   }, []);
-
 
   const handleCancel = () => {
     setMode("display");
@@ -176,6 +178,22 @@ function Index({setRefetchNotification}) {
     }, 500);
   };
 
+  const setSafeViewed = async (id) => {
+    await axios
+      .put(
+        `${process.env.REACT_APP_BACKEND_URL}/api/safe/setSafeViewed/${id}?userId=${userId}`,
+        {},  // empty body since we're only updating isViewed to "yes"
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
+      .catch((error) => {
+        console.error("Error:", error);
+        toast.error("Error.");
+      });
+  };
 
   return (
     <Box m="20px">
@@ -183,9 +201,8 @@ function Index({setRefetchNotification}) {
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Header
           title="Documents Safe"
-          subtitle={mode === "edit"
-              ? "Edit the Safe "
-              : "Manage document safes here"
+          subtitle={
+            mode === "edit" ? "Edit the Safe " : "Manage document safes here"
           }
         />
 
@@ -202,14 +219,18 @@ function Index({setRefetchNotification}) {
       </Box>
 
       {/* Render form or DataGrid based on mode */}
-      { mode === "edit" ? (
+      {mode === "edit" ? (
         editData && (
           <>
-          <AccordionCustomIcon userId={userId} userToken={userToken} propertyId={editData.propertyId} safeData = {editData}/>
-
+            <AccordionCustomIcon
+              userId={userId}
+              userToken={userToken}
+              propertyId={editData.propertyId}
+              safeData={editData}
+            />
           </>
         )
-      ): (
+      ) : (
         <Box
           m="40px 0 0 0"
           height="75vh"
@@ -248,6 +269,8 @@ function Index({setRefetchNotification}) {
             components={{ Toolbar: GridToolbar }}
             getRowId={(row) => row._id}
             autoHeight
+            disableExtendRowFullWidth={true}
+            scrollbarSize={10}
           />
         </Box>
       )}
