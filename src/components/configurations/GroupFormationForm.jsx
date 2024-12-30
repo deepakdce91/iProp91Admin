@@ -8,7 +8,7 @@ import axios from "axios";
 import {
   getNameList,
   getUniqueItems,
-  removeSpaces, 
+  removeSpaces,
   sortArrayByName,
 } from "../../MyFunctions";
 
@@ -19,19 +19,25 @@ import { client } from "../../config/s3Config";
 
 import heic2any from "heic2any";
 
-import ChipComponentUsers from "../ui/ChipComponentUsers"; 
+import ChipComponentUsers from "../ui/ChipComponentUsers";
 
-// const superAdminData = {
-//   _id: "IPA008",
-//   profilePicture: "",
-//   name: "Super Admin",
-//   phone: "----------",
-//   admin : "true"
-// }
+const superAdminData = {
+  _id: "IPA008",
+  profilePicture: "",
+  name: "Super Admin",
+  phone: "----------",
+  admin: "true",
+};
 
-
-function GroupFormationForm({propertyData, propertyOwnerId, editData, closeModal, setModeToDisplay, userToken, userId }) {
-
+function GroupFormationForm({
+  propertyData,
+  propertyOwnerId,
+  editData,
+  closeModal,
+  setModeToDisplay,
+  userToken,
+  userId,
+}) {
   const [states, setStates] = useState([]);
   const [cities, setCities] = useState([]);
   const [builders, setBuilders] = useState([]);
@@ -51,11 +57,13 @@ function GroupFormationForm({propertyData, propertyOwnerId, editData, closeModal
     city: "",
     builder: "",
     projects: "",
-    customers: [],
+    customers: [superAdminData],
   });
 
   const getPublicUrlFromSupabase = (path) => {
-    const { data, error } = supabase.storage.from(process.env.REACT_APP_THUMBNAIL_PIC_BUCKET).getPublicUrl(path);
+    const { data, error } = supabase.storage
+      .from(process.env.REACT_APP_THUMBNAIL_PIC_BUCKET)
+      .getPublicUrl(path);
     if (error) {
       console.error("Error fetching public URL:", error);
       return null;
@@ -63,45 +71,46 @@ function GroupFormationForm({propertyData, propertyOwnerId, editData, closeModal
     return data.publicUrl;
   };
 
-
   const [projectUsers, setProjectUsers] = useState([]);
 
   const [allUsers, setAllUsers] = useState([]);
-  const [selectedUsers, setSelectedUsers] = useState([])
+  const [selectedUsers, setSelectedUsers] = useState([superAdminData]);
 
-  const handleUsersChange = (arr) =>{
+  const handleUsersChange = (arr) => {
     setSelectedUsers(arr);
     changeField("customers", arr);
-  }
+  };
 
-
-  const fetchProjectUsers = (myBuilder,myProject) => {
-    
-      axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/users/fetchallusersByBuilderAndProject?userId=${userId}&builder=${myBuilder}&project=${myProject}`,  {
-              headers: {
-                "auth-token" : userToken
-              },
-            })
-          .then((response) => {
-            setProjectUsers(response.data);
+  const fetchProjectUsers = (myBuilder, myProject) => {
+    axios
+      .get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/users/fetchallusersByBuilderAndProject?userId=${userId}&builder=${myBuilder}&project=${myProject}`,
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
+      .then((response) => {
+        setProjectUsers(response.data);
       })
       .catch((error) => {
         console.error("Error:", error);
       });
-
-    
   };
 
   const fetchAllUsers = () => {
     axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/users/fetchallusersForGroupFormation?userId=${userId}`,  {
-              headers: {
-                "auth-token" : userToken
-              },
-            })
-          .then((response) => {
-            setAllUsers(response.data);
+      .get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/users/fetchallusersForGroupFormation?userId=${userId}`,
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
+      .then((response) => {
+        setAllUsers(response.data);
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -131,66 +140,62 @@ function GroupFormationForm({propertyData, propertyOwnerId, editData, closeModal
   const handleFileAdding = async (event) => {
     const file = event.target.files[0];
 
-      // checking for .heic files and converting it into jpeg before adding
-      if (file.type === "image/heic") {
-        try {
-          // Convert .heic file to .png
-          const convertedBlob = await heic2any({
-            blob: file,
-            toType: "image/jpeg",
-          });
+    // checking for .heic files and converting it into jpeg before adding
+    if (file.type === "image/heic") {
+      try {
+        // Convert .heic file to .png
+        const convertedBlob = await heic2any({
+          blob: file,
+          toType: "image/jpeg",
+        });
 
-          // Create a new File object from the Blob
-          const convertedFile = new File(
-            [convertedBlob],
-            file.name.replace(/\.heic$/i, ".jpeg"),
-            {
-              type: "image/jpeg",
-            }
-          );
+        // Create a new File object from the Blob
+        const convertedFile = new File(
+          [convertedBlob],
+          file.name.replace(/\.heic$/i, ".jpeg"),
+          {
+            type: "image/jpeg",
+          }
+        );
 
-          setUploadFile(convertedFile);
-          setFileAddedForUpload(true);
-        } catch (error) {
-          console.error("Error converting HEIC file:", error);
-        }
-      } else {
-        // if file is not jpeg..adding directly
-        setUploadFile(file);
+        setUploadFile(convertedFile);
         setFileAddedForUpload(true);
+      } catch (error) {
+        console.error("Error converting HEIC file:", error);
       }
-    
+    } else {
+      // if file is not jpeg..adding directly
+      setUploadFile(file);
+      setFileAddedForUpload(true);
+    }
   };
 
-  const handleFileUpload = async(e) => {
+  const handleFileUpload = async (e) => {
     e.preventDefault();
 
-      try {
-        setIsUploading(true);
-        toast("Uploading file.")
-        
-            let cloudFilePath = await uploadFileToCloud(uploadFile);
-            
- 
-            // when in last iteration
-            if (cloudFilePath) {
-              const publicUrl = getPublicUrlFromSupabase(cloudFilePath);
-                if(publicUrl){
-                  changeField("thumbnail", publicUrl)
-                  console.log(publicUrl);
-                setIsUploading(false);
-                setUploadFile("");
-                setFileAddedForUpload(false);
-                toast.success("File uploaded.")
-                }
-            }
+    try {
+      setIsUploading(true);
+      toast("Uploading file.");
 
-      } catch (error) {
-        setIsUploading(false);
-        toast.error("Some error occured while uploading.");
-        console.log(error.message);
+      let cloudFilePath = await uploadFileToCloud(uploadFile);
+
+      // when in last iteration
+      if (cloudFilePath) {
+        const publicUrl = getPublicUrlFromSupabase(cloudFilePath);
+        if (publicUrl) {
+          changeField("thumbnail", publicUrl);
+          console.log(publicUrl);
+          setIsUploading(false);
+          setUploadFile("");
+          setFileAddedForUpload(false);
+          toast.success("File uploaded.");
+        }
       }
-  
+    } catch (error) {
+      setIsUploading(false);
+      toast.error("Some error occured while uploading.");
+      console.log(error.message);
+    }
   };
 
   const fetchCitiesByState = (currentStateCode) => {
@@ -272,35 +277,34 @@ function GroupFormationForm({propertyData, propertyOwnerId, editData, closeModal
     }
   };
 
-  const createMessageCollection = async (communityId) =>{
+  const createMessageCollection = async (communityId) => {
     await axios
-    .post(
-      `${process.env.REACT_APP_BACKEND_URL}/api/messages/createMessagesCollection?userId=${userId}`,
-      {communityId},
-      {
-        headers: {
-          "auth-token": userToken,
-        },
-      }
-    )
-    .then((response) => {
-      if (response) {
-        toast.success("Message collection created!");
-        setTimeout(() => {
-          if(propertyData){
-            closeModal();
-          }else{
-            setModeToDisplay();
-          }
-          
-        }, 2000);
-      }
-    })
-    .catch((error) => {
-      console.error("Error:", error);
-      toast.error("Some ERROR occurred.");
-    });
-  }
+      .post(
+        `${process.env.REACT_APP_BACKEND_URL}/api/messages/createMessagesCollection?userId=${userId}`,
+        { communityId },
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
+      .then((response) => {
+        if (response) {
+          toast.success("Message collection created!");
+          setTimeout(() => {
+            if (propertyData) {
+              closeModal();
+            } else {
+              setModeToDisplay();
+            }
+          }, 2000);
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        toast.error("Some ERROR occurred.");
+      });
+  };
 
   const handleSubmit = () => {
     if (uploadFile) {
@@ -312,10 +316,8 @@ function GroupFormationForm({propertyData, propertyOwnerId, editData, closeModal
         addData.city !== "" &&
         addData.builder !== "" &&
         addData.customers.length !== 0 &&
-        addData.projects !== "" 
+        addData.projects !== ""
       ) {
-
-
         if (editData) {
           axios
             .put(
@@ -352,13 +354,10 @@ function GroupFormationForm({propertyData, propertyOwnerId, editData, closeModal
             )
             .then((response) => {
               if (response) {
-     
                 toast.success("Community created!");
 
-                // create a message collection 
+                // create a message collection
                 createMessageCollection(response.data.data._id);
-
-                
               }
             })
             .catch((error) => {
@@ -371,7 +370,6 @@ function GroupFormationForm({propertyData, propertyOwnerId, editData, closeModal
       }
     }
   };
-
 
   const fetchAllStates = () => {
     axios
@@ -409,42 +407,37 @@ function GroupFormationForm({propertyData, propertyOwnerId, editData, closeModal
       setSelectedUsers(editData.customers);
     }
 
-
     // autofill data from user's property
-    if(propertyData){
-setAddData({
-  thumbnail: "",
-  name: "",
-  state: propertyData.state,
-  city: propertyData.city,
-  builder: propertyData.builder,
-  projects: propertyData.project,
-  customers: [],
-})
+    if (propertyData) {
+      setAddData({
+        thumbnail: "",
+        name: "",
+        state: propertyData.state,
+        city: propertyData.city,
+        builder: propertyData.builder,
+        projects: propertyData.project,
+        customers: [superAdminData],
+      });
     }
   }, [editData]);
 
   useEffect(() => {
     fetchAllUsers();
-    
-  }, [])
+  }, []);
 
   useEffect(() => {
-    if(propertyData){
-      fetchProjectUsers(propertyData.builder,propertyData.project);
-      }else{
-        if(addData.builder !== "" && addData.projects !== ""){
-          fetchProjectUsers(addData.builder,addData.projects);
-        }
+    if (propertyData) {
+      fetchProjectUsers(propertyData.builder, propertyData.project);
+    } else {
+      if (addData.builder !== "" && addData.projects !== "") {
+        fetchProjectUsers(addData.builder, addData.projects);
       }
-  
-  }, [addData.builder, addData.projects])
-  
-  
+    }
+  }, [addData.builder, addData.projects]);
 
   return (
     <Box
-    sx={{
+      sx={{
         padding: "24px",
         "& .MuiInputBase-root": {
           backgroundColor: colors.primary[400],
@@ -495,28 +488,28 @@ setAddData({
           color: colors.grey[200],
         },
       }}
-      
     >
-      {propertyData && <div className="flex items-center mb-4 justify-between">
-        <h2 className="text-2xl font-bold ">Make new group</h2>
-        <button onClick={closeModal} >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          
-          className="w-3 cursor-pointer shrink-0 fill-gray-400 hover:fill-red-500 float-right"
-          viewBox="0 0 320.591 320.591"
-        >
-          <path
-            d="M30.391 318.583a30.37 30.37 0 0 1-21.56-7.288c-11.774-11.844-11.774-30.973 0-42.817L266.643 10.665c12.246-11.459 31.462-10.822 42.921 1.424 10.362 11.074 10.966 28.095 1.414 39.875L51.647 311.295a30.366 30.366 0 0 1-21.256 7.288z"
-            data-original="#000000"
-          ></path>
-          <path
-            d="M287.9 318.583a30.37 30.37 0 0 1-21.257-8.806L8.83 51.963C-2.078 39.225-.595 20.055 12.143 9.146c11.369-9.736 28.136-9.736 39.504 0l259.331 257.813c12.243 11.462 12.876 30.679 1.414 42.922-.456.487-.927.958-1.414 1.414a30.368 30.368 0 0 1-23.078 7.288z"
-            data-original="#000000"
-          ></path>
-        </svg>
-        </button>
-        </div>}
+      {propertyData && (
+        <div className="flex items-center mb-4 justify-between">
+          <h2 className="text-2xl font-bold ">Make new group</h2>
+          <button onClick={closeModal}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-3 cursor-pointer shrink-0 fill-gray-400 hover:fill-red-500 float-right"
+              viewBox="0 0 320.591 320.591"
+            >
+              <path
+                d="M30.391 318.583a30.37 30.37 0 0 1-21.56-7.288c-11.774-11.844-11.774-30.973 0-42.817L266.643 10.665c12.246-11.459 31.462-10.822 42.921 1.424 10.362 11.074 10.966 28.095 1.414 39.875L51.647 311.295a30.366 30.366 0 0 1-21.256 7.288z"
+                data-original="#000000"
+              ></path>
+              <path
+                d="M287.9 318.583a30.37 30.37 0 0 1-21.257-8.806L8.83 51.963C-2.078 39.225-.595 20.055 12.143 9.146c11.369-9.736 28.136-9.736 39.504 0l259.331 257.813c12.243 11.462 12.876 30.679 1.414 42.922-.456.487-.927.958-1.414 1.414a30.368 30.368 0 0 1-23.078 7.288z"
+                data-original="#000000"
+              ></path>
+            </svg>
+          </button>
+        </div>
+      )}
       <div className="flex items-center justify-center">
         <div className="w-full">
           <form>
@@ -570,8 +563,7 @@ setAddData({
                   }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
                   disabled={fileAddedForUpload === false ? true : false}
                 >
-                    {`Upload`}
-                  
+                  {`Upload`}
                 </button>
               </div>
             </div>
@@ -618,14 +610,11 @@ setAddData({
                     ))}
                 </datalist>
               </div>
-
-              
             </div>
 
             {/* builder and projects */}
             <div className="flex flex-col md:flex-row -mx-3">
-
-            <div className="w-full px-3 md:w-1/2">
+              <div className="w-full px-3 md:w-1/2">
                 <div className="mb-5">
                   <label className="text-lg font-medium">Select Builder</label>
                   <input
@@ -663,7 +652,7 @@ setAddData({
                     value={addData.projects}
                     onChange={(e) => changeField("projects", e.target.value)}
                   />
-                   <datalist id="projects">
+                  <datalist id="projects">
                     {projects.length > 0 &&
                       projects.map((item, index) => (
                         <option key={index} value={item} />
@@ -680,33 +669,36 @@ setAddData({
                     Select Customers
                   </label>
 
-                 {allUsers.length > 0 && <ChipComponentUsers
-                  propertyOwnerId = {propertyOwnerId}
-                      projectUsers = {projectUsers.length > 0 ? projectUsers : []}
+                  {allUsers.length > 0 && (
+                    <ChipComponentUsers
+                      propertyOwnerId={propertyOwnerId}
+                      projectUsers={projectUsers.length > 0 ? projectUsers : []}
                       itemArray={allUsers.length > 0 ? allUsers : []}
                       preSelected={selectedUsers}
                       updateSelectedArr={handleUsersChange}
-                    />  }
+                    />
+                  )}
                 </div>
               </div>
             </div>
 
             <div className="flex justify-center mt-5">
-              {propertyData && <button
-                type="button"
-                onClick={() => {
+              {propertyData && (
+                <button
+                  type="button"
+                  onClick={() => {
                     setModeToDisplay();
-                }}
-                className={`px-8 py-3 bg-red-500 text-gray-200 hover:bg-red-600 hover:text-white rounded-lg mr-3 focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
-
-              >
-                Cancel
-              </button> }
+                  }}
+                  className={`px-8 py-3 bg-red-500 text-gray-200 hover:bg-red-600 hover:text-white rounded-lg mr-3 focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
+                >
+                  Cancel
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {
-                    handleSubmit()
-                    // console.log(addData)
+                  handleSubmit();
+                  // console.log(addData)
                 }}
                 className={`px-8 py-3 text-sm ${
                   isUploading === true ? "bg-gray-600" : "bg-[#6A64F1]"

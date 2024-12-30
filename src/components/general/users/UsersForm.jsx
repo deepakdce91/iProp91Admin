@@ -28,6 +28,8 @@ function UserForm({ editData, setModeToDisplay, userToken, userId }) {
   const [avatarPreview, setAvatarPreview] = useState("/default-avatar-pic.jpg");
   const [isAvatarUploading, setIsAvatarUploading] = useState(false);
 
+  const [currentAvatar, setCurrentAvatar] = useState("ferrari");
+
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -37,7 +39,7 @@ function UserForm({ editData, setModeToDisplay, userToken, userId }) {
     email: "",
     password: "",
     profilePicture: "",
-    avatar: "",
+    avatar: "ferrari",
     lastLogin: new Date(),
     suspended: "false",
     fraud: "false",
@@ -252,7 +254,7 @@ function UserForm({ editData, setModeToDisplay, userToken, userId }) {
           phone: editData.phone,
           email: editData.email,
           profilePicture: editData.profilePicture || "",
-          avatar: editData.avatar || "",
+          avatar: editData.avatar || "ferrari",
           lastLogin: editData.lastLogin || new Date(),
           suspended: editData.suspended || "false",
           fraud: editData.fraud || "false",
@@ -264,6 +266,10 @@ function UserForm({ editData, setModeToDisplay, userToken, userId }) {
           } catch (error) {
             console.error("Error fetching signed URL:", error);
           }
+        }
+
+        if(editData.avatar !== ""){
+          setCurrentAvatar(editData.avatar);
         }
 
         if (editData.avatar && editData.avatar !== "") {
@@ -332,36 +338,38 @@ function UserForm({ editData, setModeToDisplay, userToken, userId }) {
       <div className="flex items-center justify-center">
         <div className="w-full">
           <form>
-            <div className="flex mb-6">
+            <div className="flex flex-col lg:flex-row mb-6">
               {/* // profile picture  */}
-              <div className="flex flex-col justify-end relative mr-20">
-                <img
-                  src={previewUrl}
-                  className="h-32 w-32 rounded-full mb-5"
-                  alt="profile-picture"
-                />
+              <div className="flex flex-col justify-start relative mr-20 w-full lg:w-1/2">
+                <h3 className="text-lg text-left mb-12">Profile Picture</h3>
 
-                <h3 className="text-lg text-center">Profile Picture</h3>
-
-                {isUploading === true ? (
+                <div className="relative w-fit">
                   <img
-                    className="ml-2 mt-2 h-8 w-7 absolute top-0 -right-6 "
-                    src={`${
-                      theme.palette.mode === "dark"
-                        ? "/spinner-white.svg"
-                        : "/spinner.svg"
-                    }`}
-                    alt="upload-spinner"
+                    src={previewUrl}
+                    className=" h-40 w-40 rounded-full mb-5"
+                    alt="profile-picture"
                   />
-                ) : (
-                  <div
-                    onClick={handleDivClick1}
-                    className="flex text-gray-400 hover:text-white absolute top-0 -right-14 items-end"
-                  >
-                    <MdEdit className="w-6 h-6  rounded-full  " />
-                    <span>Change</span>
-                  </div>
-                )}
+
+                  {isUploading === true ? (
+                    <img
+                      className="ml-2 mt-2 h-8 w-7 absolute top-0 -right-6 "
+                      src={`${
+                        theme.palette.mode === "dark"
+                          ? "/spinner-white.svg"
+                          : "/spinner.svg"
+                      }`}
+                      alt="upload-spinner"
+                    />
+                  ) : (
+                    <div
+                      onClick={handleDivClick1}
+                      className="flex text-gray-400 hover:text-white absolute top-0 -right-14 items-end"
+                    >
+                      <MdEdit className="w-6 h-6  rounded-full  " />
+                      <span>Change</span>
+                    </div>
+                  )}
+                </div>
 
                 <input
                   type="file"
@@ -373,7 +381,7 @@ function UserForm({ editData, setModeToDisplay, userToken, userId }) {
               </div>
 
               {/* // avatar  */}
-              <div className="relative w-fit flex flex-col justify-end">
+              {/* <div className="relative w-fit flex flex-col justify-end">
                 <img
                   src={avatarPreview}
                   className="h-24 w-24 rounded-full "
@@ -408,6 +416,86 @@ function UserForm({ editData, setModeToDisplay, userToken, userId }) {
                   style={{ display: "none" }}
                   onChange={handleFileUpload}
                 />
+              </div> */}
+              <div className="flex flex-col w-full lg:w-1/2">
+              <h3 className="text-lg text-left mb-5">Select Avatar</h3>
+              <div className="grid gap-4 h-60 w-72">
+                <div>
+                  <img
+                    className="h-40 object-cover object-center w-40 rounded-full"
+                    src={`/avatar/${currentAvatar}.jpg`}
+                    alt=""
+                  />
+                </div>
+                <div className="grid grid-cols-5 gap-2">
+                  <div
+                  onClick={() => {
+                    setCurrentAvatar("ferrari");
+                    changeField("avatar", "ferrari");
+                  
+                  }}
+                  
+                  >
+                    <img
+                      className="h-14 w-14 object-cover rounded-full"
+                      src="/avatar/ferrari.jpg"
+                      alt=""
+                    />
+                  </div>
+                  <div
+                  onClick={() => {
+                    setCurrentAvatar("golf");
+                    changeField("avatar", "golf");
+                  
+                  }}
+                  >
+                    <img
+                      className="h-14 w-14 object-cover rounded-full"
+                      src="/avatar/golf.jpg"
+                      alt=""
+                    />
+                  </div>
+                  <div
+                  onClick={() => {
+                    setCurrentAvatar("pocker");
+                    changeField("avatar", "pocker");
+                  
+                  }}
+                  >
+                    <img
+                      className="h-14 w-14 object-cover rounded-full"
+                      src="/avatar/pocker.jpg"
+                      alt=""
+                    />
+                  </div>
+                  <div
+                  onClick={() => {
+                    setCurrentAvatar("polo");
+                    changeField("avatar", "polo");
+                  
+                  }}
+                  >
+                    <img
+                      className="h-14 w-14 object-cover rounded-full"
+                      src="/avatar/polo.jpg"
+                      alt=""
+                    />
+                  </div>
+                  <div
+                  onClick={() => {
+                    setCurrentAvatar("yatch");
+                    changeField("avatar", "yatch");
+                  
+                  }}
+                  >
+                    <img
+                      className="h-14 w-14 object-cover rounded-full"
+                      src="/avatar/yatch.jpg"
+                      alt=""
+                    />
+                  </div>
+                </div>
+              </div>
               </div>
             </div>
 

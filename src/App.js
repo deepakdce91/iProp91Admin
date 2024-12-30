@@ -21,10 +21,12 @@ import Users from "./scenes/general/users";
 import Login from "./scenes/auth/login";
 import Signup from "./scenes/auth/signup";
 import Documents from "./scenes/general/documents";
+import Listings from "./scenes/general/listings";
 
 import GroupFormation from "./scenes/configurations/groupFormation";
 import Conversations from "./scenes/configurations/conversations";
 import ReportedMessages from "./scenes/configurations/reportedMessages";
+import CommonSafes from "./scenes/configurations/CommonSafes/Index.jsx";
 
 import EmailTemplates from "./scenes/configurations/emailTemplates/Index.jsx";
 
@@ -49,15 +51,15 @@ import MobileTiles from "./scenes/frontendPreview/MobileTiles/Index";
 import Comparisons from "./scenes/frontendPreview/Comparisons/Index";
 import ContactUs from "./scenes/frontendPreview/ContactUs/Index";
 import QuestionBuilder from "./scenes/frontendPreview/QuestionBuilder/Index.jsx";
-
-
-
+import Articles from "./scenes/frontendPreview/Articles/Index.jsx";
 
 // Constants for routes
 const routes = {
   login: "/login",
   signup: "/signup",
   home: "/",
+
+  commonSafes: "/commonSafes",
   state: "/state",
   city: "/city",
   builders: "/builders",
@@ -73,6 +75,7 @@ const routes = {
 
   property: "/property",
   users: "/users",
+  listings: "/listings",
   documents: "/documents",
 
   faqs: "/faqs",
@@ -87,7 +90,8 @@ const routes = {
   mobileTiles : "/mobileTiles",
   comparisons : "/comparisons",
   contactUs : "/contactUs",
-  questionBuilder : "/questionBuilder"
+  questionBuilder : "/questionBuilder",
+  articles: "/articles",
 
 };
 
@@ -103,6 +107,10 @@ function App() {
   const [userToken, setUserToken] = useState();
 
   const [refetchNotification, setRefetchNotification] = useState(false);
+
+  const handleReffetchNotification = () => {
+    setRefetchNotification(!refetchNotification);
+  };
 
   const changeLoginStatus = () => {
     setLoggedIn(!loggedIn);
@@ -159,6 +167,7 @@ function App() {
               {userId && userToken && (
                 <>
                   <Route path={routes.home} element={<Dashboard />} />
+                  <Route path={routes.commonSafes} element={<CommonSafes />} />
                   <Route path={routes.state} element={<State />} />
                   <Route path={routes.city} element={<City />} />
                   <Route path={routes.builders} element={<Builders />} />
@@ -195,9 +204,10 @@ function App() {
                     element={<EmailTemplates />}
                   /> 
  
-                  <Route path={routes.property} element={<Property setRefetchNotification={setRefetchNotification} />} />
-                  <Route path={routes.users} element={<Users setRefetchNotification={setRefetchNotification} />} />
-                  <Route path={routes.documents} element={<Documents setRefetchNotification={setRefetchNotification} />} />
+                  <Route path={routes.property} element={<Property setRefetchNotification={handleReffetchNotification} />} />
+                  <Route path={routes.users} element={<Users setRefetchNotification={handleReffetchNotification} />} />
+                  <Route path={routes.listings} element={<Listings setRefetchNotification={handleReffetchNotification} />} />
+                  <Route path={routes.documents} element={<Documents setRefetchNotification={handleReffetchNotification} />} />
 
                   <Route path={routes.faqs} element={<Faqs />} />
                   <Route path={routes.laws} element={<Laws />} />
@@ -215,6 +225,7 @@ function App() {
                   <Route path={routes.comparisons} element={<Comparisons />} />
                   <Route path={routes.contactUs} element={<ContactUs />} />
                   <Route path={routes.questionBuilder} element={<QuestionBuilder />} />
+                  <Route path={routes.articles} element={<Articles />} />
                 </>
               )}
             </Routes>

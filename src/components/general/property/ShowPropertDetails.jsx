@@ -144,9 +144,14 @@ const ShowPropertyDetails = ({ data }) => {
             if (value === "approved") {
               axios
                 .post(
-                  `${process.env.REACT_APP_BACKEND_URL}/api/safe/adminAddNewSafe?userId=${userId}`,
+                  `${process.env.REACT_APP_BACKEND_URL}/api/safe/adminAddNewSafeWithCommonSafeDocs?userId=${userId}`,
                   {
                     propertyId: data._id,
+                    state: data.state,
+                    city: data.city,
+                    builder: data.builder,
+                    project: data.project
+
                   },
                   {
                     headers: {
@@ -194,10 +199,10 @@ const ShowPropertyDetails = ({ data }) => {
 
   return (
     <>
-      <div className="w-full mx-auto p-4 pt-2 md:p-6 lg:p-12 bg-gray-200 rounded shadow-md">
-        <h2 className="text-2xl font-bold mb-8 text-black ">
-          Property Details
-        </h2>
+      <div className="w-full mx-auto h-auto p-4 pt-2 md:p-6 lg:p-12 bg-gray-200 rounded shadow-md">
+        <div className="text-2xl font-bold mb-8 text-black ">
+          <h2>Property Details</h2>
+        </div>
 
         <div className="flex flex-wrap -mx-3 mb-6">
           <div className="w-full md:w-1/2 px-3 mb-6 md:mb-0">

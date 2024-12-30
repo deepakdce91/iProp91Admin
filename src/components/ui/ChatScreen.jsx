@@ -95,17 +95,14 @@ function ChatScreen({ userId, userToken }) {
   }, []);
 
   return (
-    <div>
-      {/* <!-- component --> */}
-      <div className="flex  overflow-hidden relative">
+      <div className="flex h-[88vh] overflow-hidden relative">
         {/* <!-- Sidebar --> */}
-        <div
-          className={` bg-transparent border-r border-gray-300 ${
+        <div className={`overflow-y-auto flex-none bg-transparent border-r border-gray-300 ${
             currentGroupData ? "hidden md:block  w-1/4" : "w-full"
           }`}
         >
           {/* <!-- Sidebar Header --> */}
-          <header className="p-4 border-b flex-col border-gray-300 flex justify-between items-center bg-indigo-600 text-white">
+          <header className="p-4  border-b flex-col border-gray-300 flex justify-between items-center bg-indigo-600 text-white">
             <h1 className="text-2xl font-semibold">Conversations</h1>
             <div className="flex px-4 py-3 mt-2 rounded-md border-[1px] border-gray-200 overflow-hidden max-w-md mx-auto font-[sans-serif]">
               <svg
@@ -129,7 +126,7 @@ function ChatScreen({ userId, userToken }) {
           </header>
 
           {/* <!-- Community List --> */}
-          <div className="overflow-y-auto bg-transparent h-fit p-3 mb-9 pb-20">
+          <div className=" bg-transparent h-fit p-3 mb-9 pb-20">
             {filteredGroupNames.map((item, index) => {
               return (
                 <div
@@ -167,7 +164,7 @@ function ChatScreen({ userId, userToken }) {
         </div>
 
         {/* <!-- Main Chat Area --> */}
-        <div className={`flex-1  ${currentGroupData ? "w-3/4" : " hidden"}`}>
+        <div className={` overflow-y-auto flex-none overflow-hidden  ${currentGroupData ? "w-3/4" : " hidden"}`}>
           <div className="flex flex-col h-[88vh]">
             {/* <!-- Chat Header --> */}
             <header
@@ -228,9 +225,7 @@ function ChatScreen({ userId, userToken }) {
         </div>
 
         {/* ------ members list sidebar  */}
-        {currentGroupData && isUsersListOpen === true && (
-          <div
-            className={` animate-slide-in-right  ease-in-out absolute top-0 right-0 h-full w-[300px] p-4   border-l shadow-md sm:p-8  ${
+        {currentGroupData && isUsersListOpen === true && ( <div className={`overflow-y-auto flex-none animate-slide-in-right  ease-in-out absolute top-0 right-0 h-full w-[300px] p-4   border-l shadow-md sm:p-8  ${
               theme.palette.mode === "dark"
                 ? "bg-[#141B2D] text-gray-100"
                 : "bg-gray-100 text-gray-900"
@@ -305,7 +300,7 @@ function ChatScreen({ userId, userToken }) {
           </div>
         )}
       </div>
-    </div>
+
   );
 }
 

@@ -1,8 +1,13 @@
 import React from 'react'
+import PropertyCard from './cards/PropertyCard'
 
-function ViewProperties() {
+function ViewProperties({data}) {
   return (
-    <div>ViewProperties</div>
+    <div className='flex'>
+        {data.length >0 && data.map((property,index) =>{
+            return <PropertyCard key={index} props={property}/>
+        })}
+    </div>
   )
 }
 
