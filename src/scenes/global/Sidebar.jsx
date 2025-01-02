@@ -36,6 +36,8 @@ import axios from "axios";
 import { HiClipboardList } from "react-icons/hi";
 import { GrArticle } from "react-icons/gr";
 import { BsSafe2Fill } from "react-icons/bs";
+import { FaBook } from "react-icons/fa";
+import { FaSuperpowers } from "react-icons/fa";
 
 const Item = ({ title, to, icon, selected, setSelected, badge }) => {
   const theme = useTheme();
@@ -240,9 +242,17 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
             <Item
               title="Listings"
               to="/listings"
-                badge = {newListings > 0 ? <span className={`absolute ${!isCollapsed ? "top-5 right-6" : "top-3 right-3"} grid min-h-[24px] min-w-[24px] translate-x-2/4 -translate-y-2/4 place-items-center rounded-full bg-red-600 py-1 px-1 text-xs text-white`}>
-                {newListings}
-              </span> : null}
+              badge={
+                newListings > 0 ? (
+                  <span
+                    className={`absolute ${
+                      !isCollapsed ? "top-5 right-6" : "top-3 right-3"
+                    } grid min-h-[24px] min-w-[24px] translate-x-2/4 -translate-y-2/4 place-items-center rounded-full bg-red-600 py-1 px-1 text-xs text-white`}
+                  >
+                    {newListings}
+                  </span>
+                ) : null
+              }
               icon={<HiClipboardList className="h-5 w-5" />}
               selected={selected}
               setSelected={setSelected}
@@ -263,6 +273,25 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
                 ) : null
               }
               icon={<IoDocumentLockSharp className="h-5 w-5" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+            <Item
+              title="Projects Data Master"
+              to="/projectsDataMaster"
+              // badge={
+              //   newDocuments > 0 ? (
+              //     <span
+              //       className={`absolute ${
+              //         !isCollapsed ? "top-5 right-6" : "top-3 right-3"
+              //       } grid min-h-[24px] min-w-[24px] translate-x-2/4 -translate-y-2/4 place-items-center rounded-full bg-red-600 py-1 px-1 text-xs text-white`}
+              //     >
+              //       {newDocuments}
+              //     </span>
+              //   ) : null
+              // }
+              icon={<FaSuperpowers className="h-5 w-5" />}
               selected={selected}
               setSelected={setSelected}
             />
@@ -432,17 +461,17 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
             )}
 
             <Item
-              title="Testimonials"
-              to="/testimonials"
-              icon={<MdOutlineRateReview className="h-4 w-4" />}
+              title="Question Builder"
+              to="/questionBuilder"
+              icon={<FaClipboardQuestion className="h-4 w-4" />}
               selected={selected}
               setSelected={setSelected}
             />
 
             <Item
-              title="Advise"
-              to="/advise"
-              icon={<FaRegGem className="h-4 w-4" />}
+              title="Articles"
+              to="/articles"
+              icon={<GrArticle className="h-4 w-4" />}
               selected={selected}
               setSelected={setSelected}
             />
@@ -464,25 +493,33 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
             />
 
             <Item
+              title="Advise"
+              to="/advise"
+              icon={<FaRegGem className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+            <Item
+              title="Testimonials"
+              to="/testimonials"
+              icon={<MdOutlineRateReview className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+            <Item
+              title="Appointments"
+              to="/appointments"
+              icon={<FaBook className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+            <Item
               title="Contact Us"
               to="/contactUs"
               icon={<MdPermContactCalendar className="h-4 w-4" />}
-              selected={selected}
-              setSelected={setSelected}
-            />
-
-            <Item
-              title="Question Builder"
-              to="/questionBuilder"
-              icon={<FaClipboardQuestion className="h-4 w-4" />}
-              selected={selected}
-              setSelected={setSelected}
-            />
-
-            <Item
-              title="Articles"
-              to="/articles"
-              icon={<GrArticle className="h-4 w-4" />}
               selected={selected}
               setSelected={setSelected}
             />

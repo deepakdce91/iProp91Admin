@@ -20,8 +20,10 @@ import Property from "./scenes/general/property";
 import Users from "./scenes/general/users";
 import Login from "./scenes/auth/login";
 import Signup from "./scenes/auth/signup";
+
 import Documents from "./scenes/general/documents";
 import Listings from "./scenes/general/listings";
+import ProjectsDataMaster from "./scenes/general/projectsDataMaster/Index.jsx";
 
 import GroupFormation from "./scenes/configurations/groupFormation";
 import Conversations from "./scenes/configurations/conversations";
@@ -52,6 +54,7 @@ import Comparisons from "./scenes/frontendPreview/Comparisons/Index";
 import ContactUs from "./scenes/frontendPreview/ContactUs/Index";
 import QuestionBuilder from "./scenes/frontendPreview/QuestionBuilder/Index.jsx";
 import Articles from "./scenes/frontendPreview/Articles/Index.jsx";
+import Appointments from "./scenes/frontendPreview/Appointments/Index.jsx";
 
 // Constants for routes
 const routes = {
@@ -77,6 +80,7 @@ const routes = {
   users: "/users",
   listings: "/listings",
   documents: "/documents",
+  projectsDataMaster : "/projectsDataMaster",
 
   faqs: "/faqs",
   laws: "/laws",
@@ -92,6 +96,7 @@ const routes = {
   contactUs : "/contactUs",
   questionBuilder : "/questionBuilder",
   articles: "/articles",
+  appointments : "/appointments",
 
 };
 
@@ -208,6 +213,7 @@ function App() {
                   <Route path={routes.users} element={<Users setRefetchNotification={handleReffetchNotification} />} />
                   <Route path={routes.listings} element={<Listings setRefetchNotification={handleReffetchNotification} />} />
                   <Route path={routes.documents} element={<Documents setRefetchNotification={handleReffetchNotification} />} />
+                  <Route path={routes.projectsDataMaster} element={<ProjectsDataMaster setRefetchNotification={handleReffetchNotification} />} />
 
                   <Route path={routes.faqs} element={<Faqs />} />
                   <Route path={routes.laws} element={<Laws />} />
@@ -226,6 +232,7 @@ function App() {
                   <Route path={routes.contactUs} element={<ContactUs />} />
                   <Route path={routes.questionBuilder} element={<QuestionBuilder />} />
                   <Route path={routes.articles} element={<Articles />} />
+                  <Route path={routes.appointments} element={<Appointments />} />
                 </>
               )}
             </Routes>

@@ -10,7 +10,7 @@ import { supabase } from "../../../config/supabase";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { client } from "../../../config/s3Config";
 
-function RentForm({ editData, setModeToDisplay, userToken, userId }) {
+function ProjectsDataMasterForm({ editData, setModeToDisplay, userToken, userId }) {
   const [isUploading, setIsUploading] = useState(false);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -72,7 +72,7 @@ function RentForm({ editData, setModeToDisplay, userToken, userId }) {
     if (addData.media.length + files.length > 15) {
       toast.error("Maximum 15 files allowed");
       return;
-    } 
+    }
 
     setIsUploading(true);
     toast("Uploading files...");
@@ -488,4 +488,4 @@ function RentForm({ editData, setModeToDisplay, userToken, userId }) {
   );
 }
 
-export default RentForm;
+export default ProjectsDataMasterForm;

@@ -80,9 +80,9 @@ function Index({setRefetchNotification}) {
             onClick={() => {
               setListingViewed(params.row._id);
               if (params.row.sellDetails === null) {
-                handleEdit(params.row._id, "editRent");
+                handleEdit(params.row, "editRent");
               } else {
-                handleEdit(params.row._id, "editSell");
+                handleEdit(params.row, "editSell");
               }
             }}
             // color="primary"
@@ -103,6 +103,7 @@ function Index({setRefetchNotification}) {
 
   const setModeToDisplay = () => {
     setMode("display");
+    setEditData();
     fetchAllListings(userId, userToken);
   };
 
@@ -131,27 +132,28 @@ function Index({setRefetchNotification}) {
       });
   };
 
-  const fetchListing = async (id) => {
-    // Make the DELETE request
-    await axios
-      .get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/listings/fetchlisting/${id}?userId=${userId}`,
-        {
-          headers: {
-            "auth-token": userToken,
-          },
-        }
-      )
-      .then((response) => {
-        if (response) {
-          setEditData(response.data);
-        }
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        toast.error("Some ERROR occured.");
-      });
-  };
+  // const fetchListing = async (id, myCallback) => {
+  //   // Make the GET request
+  //   await axios
+  //     .get(
+  //       `${process.env.REACT_APP_BACKEND_URL}/api/listings/fetchlisting/${id}?userId=${userId}`,
+  //       {
+  //         headers: {
+  //           "auth-token": userToken,
+  //         },
+  //       }
+  //     )
+  //     .then((response) => {
+  //       if (response) {
+  //         setEditData(response.data);
+  //         myCallback(response.data);
+  //       }
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error:", error);
+  //       toast.error("Some ERROR occured.");
+  //     });
+  // };
 
   const fetchAllListings = (userId, userToken) => {
     axios
@@ -225,12 +227,9 @@ function Index({setRefetchNotification}) {
   };
 
   // Click handler for the edit button
-  const handleEdit = (id, mode) => {
-    fetchListing(id);
-
-    setTimeout(() => {
-      setMode(mode);
-    }, 500);
+  const handleEdit = (rowData, mode) => {
+    setEditData(rowData);
+    setMode(mode);
   };
 
   // Click handler for the delete button
