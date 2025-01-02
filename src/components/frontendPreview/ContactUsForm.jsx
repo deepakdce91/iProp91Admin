@@ -73,6 +73,14 @@ function ContactUsForm({ editData, userId, userToken, setModeToDisplay }) {
       addData.email !== "" &&
       addData.message !== "" 
     ) {
+      if (!validatePhone(addData.mobile)) {
+        toast.error("Invalid mobile number");
+        return;
+      }
+      if (!validateEmail(addData.email)) {
+        toast.error("Invalid email");
+        return;
+      }
         axios
           .post(
             `${process.env.REACT_APP_BACKEND_URL}/api/contactUs/addContactUs?userId=${userId}`,

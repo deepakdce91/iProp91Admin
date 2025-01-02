@@ -30,13 +30,13 @@ function SellForm({ editData, setModeToDisplay, userToken, userId }) {
 
   const getPublicUrlFromSupabase = (path) => {
     const { data, error } = supabase.storage
-      .from(process.env.REACT_APP_PROPERTY_BUCKET)
+      .from(process.env.REACT_APP_SITE_BUCKET)
       .getPublicUrl(path);
     if (error) {
       console.error("Error fetching public URL:", error);
       return null;
     }
-    return {
+    return { 
       name: path.split("/")[path.split("/").length - 1],
       url: data.publicUrl,
     };
@@ -47,7 +47,7 @@ function SellForm({ editData, setModeToDisplay, userToken, userId }) {
     const myPath = `SellListings/${myFileName}`;
     try {
       const uploadParams = {
-        Bucket: process.env.REACT_APP_PROPERTY_BUCKET,
+        Bucket: process.env.REACT_APP_SITE_BUCKET,
         Key: myPath,
         Body: myFile,
         ContentType: myFile.type,
@@ -148,7 +148,7 @@ function SellForm({ editData, setModeToDisplay, userToken, userId }) {
               isActive: "true",
               media: addData.media,
             },
-          };
+          }; 
 
       const endpoint = editData
         ? `${process.env.REACT_APP_BACKEND_URL}/api/listings/updatesalelisting/${editData._id}?userId=${userId}`
