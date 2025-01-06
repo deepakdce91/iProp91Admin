@@ -598,7 +598,8 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
                 </datalist>
               </div>
 
-              <div className="w-full px-3 lg:w-1/2">
+            {/* builder */}
+            <div className="w-full px-3 lg:w-1/2">
                 <div className="mb-5">
                   <label className="text-lg font-medium">
                   Select Builder
@@ -622,7 +623,7 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
               </div>
             </div>
 
-            {/* Additional Fields */}
+            {/* project */}
             <div className="flex flex-col md:flex-row -mx-3">
 
               <div className="w-full px-3 md:w-1/2">
@@ -971,3 +972,4 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
 }
 
 export default PropertyForm;
+ 

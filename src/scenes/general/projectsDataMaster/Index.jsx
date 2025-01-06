@@ -9,11 +9,12 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Header from "../../../components/Header";
-import PropertyForm from "../../../components/general/property/PropertyForm";
-import ShowPropertDetails from "../../../components/general/property/ShowPropertDetails";
+import ProjectsDataMasterForm from "../../../components/general/projectsDataMaster/ProjectsDataMasterForm";
 import { formatDate } from "../../../MyFunctions";
 import { jwtDecode } from "jwt-decode";
 import { TbCircleDotFilled } from "react-icons/tb";
+import DeleteModal from "../../../components/ui/DeleteModal";
+import MarkUnreadModal from "../../../components/ui/MarkUnreadModal";
 
 function Index({ setRefetchNotification }) {
   const theme = useTheme();
@@ -27,6 +28,13 @@ function Index({ setRefetchNotification }) {
 
   const [editData, setEditData] = useState();
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteId, setDeleteId] = useState();
+  const [deleteIsViewed, setDeleteIsViewed] = useState();
+
+  const [showUnreadModal, setShowUnreadModal] = useState(false);
+  const [unreadId, setUnreadId] = useState();
+
   const columns = [
     {
       field: "isViewed",
@@ -35,79 +43,80 @@ function Index({ setRefetchNotification }) {
       renderCell: (params) => {
         if (params.row.isViewed === "no") {
           return <TbCircleDotFilled className="text-green-400" />;
+        } else if (params.row.isViewed === "red") {
+          return <TbCircleDotFilled className="text-red-400" />;
         } else {
-          return "";
+          return <TbCircleDotFilled onClick={()=>{
+            handleMarkUnread(params.row._id);
+          }} className="text-gray-400 cursor-pointer" />;
         }
       },
     },
-    { field: "_id", headerName: "ID", width: 80 },
+
+    { field: "_id", headerName: "ID", flex: 1, width: 120 },
     {
-      field: "customerName",
-      headerName: "House No.",
-      width: 120,
+      field: "propertyId",
+      headerName: "Property Id",
+      width: 100,
       cellClassName: "name-column--cell",
-    },
-    {
-      field: "customerNumber",
-      width: 120,
-      headerName: "Customer No.",
-      flex: 1,
-      cellClassName: "name-column--cell",
-    },
-    {
-      field: "state",
-      headerName: "State",
-      width: 110,
-    },
-    {
-      field: "city",
-      headerName: "City",
-      width: 110,
-    },
-    {
-      field: "builder",
-      headerName: "Builder",
-      width: 120,
     },
     {
       field: "project",
       headerName: "Project",
-      width: 120,
+      width: 180,
     },
     {
-      field: "addedBy",
-      headerName: "Added By",
-      headerAlign: "left",
-      align: "left",
-      width: 80,
+      field: "city",
+      headerName: "City",
+      width: 180,
     },
-
     {
-      field: "isDeleted",
-      headerName: "Deleted",
-      headerAlign: "left",
-      align: "left",
-      width: 80,
+      field: "builder",
+      headerName: "Builder",
+      width: 180,
     },
-
     {
-      field: "applicationStatus",
+      field: "state",
+      headerName: "State",
+      width: 180,
+    },
+    {
+      field: "status",
       headerName: "Status",
-      headerAlign: "left",
-      align: "left",
-      width: 120,
+      width: 150,
     },
-
+    {
+      field: "type",
+      headerName: "Type",
+      width: 150,
+    },
+    {
+      field: "minimumPrice",
+      headerName: "Min Price",
+      width: 160,
+    },
+    {
+      field: "createdAt",
+      headerName: "Created",
+      width: 180,
+      valueGetter: (params) => formatDate(params.value),
+    },
     {
       field: "action",
       headerName: "Action",
       width: 150,
       renderCell: (params) => (
         <Box>
-          <IconButton
+          <IconButton 
             onClick={() => {
-              handleShowDetails(params.row._id);
-              setPropertyViewed(params.row._id);
+              handleShowDetails(params.row);
+
+              if (params.row.isViewed !== "yes") {
+                toggleProjectDataMasterViewed(params.row._id, "yes");
+                if(params.row.isViewed === "no"){
+                  decreaseCounter(userId, userToken, "newProjectsDataMasters");
+                }
+              }
             }}
             // color="primary"
             className="text-grey-400"
@@ -117,16 +126,22 @@ function Index({ setRefetchNotification }) {
 
           <IconButton
             onClick={() => {
-              handleEdit(params.row._id);
-              setPropertyViewed(params.row._id);
+              handleEdit(params.row);
+
+              if (params.row.isViewed !== "yes") {
+                toggleProjectDataMasterViewed(params.row._id, "yes");
+                if(params.row.isViewed === "no"){
+                  decreaseCounter(userId, userToken, "newProjectsDataMasters");
+                }}
+
             }}
-            // color="primary"
             className="text-grey-400"
           >
             <EditIcon />
           </IconButton>
+
           <IconButton
-            onClick={() => handleDelete(params.row._id)}
+            onClick={() => handleDelete(params.row._id,params.row.isViewed)}
             color="secondary"
           >
             <DeleteIcon />
@@ -136,10 +151,10 @@ function Index({ setRefetchNotification }) {
     },
   ];
 
-  const resetCounter = async (userId, userToken, type) => {
+  const decreaseCounter = async (userId, userToken, type) => {
     await axios
-      .post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/notifications/resetCounter?userId=${userId}`,
+      .put(
+        `${process.env.REACT_APP_BACKEND_URL}/api/notifications/decreaseCounter?userId=${userId}`,
 
         {
           type,
@@ -161,32 +176,32 @@ function Index({ setRefetchNotification }) {
       });
   };
 
-  const fetchProperty = async (id) => {
-    // Make the DELETE request
-    await axios
-      .get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/property/fetchproperty/${id}?userId=${userId}`,
-        {
-          headers: {
-            "auth-token": userToken,
-          },
-        }
-      )
-      .then((response) => {
-        if (response) {
-          setEditData(response.data);
-        }
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        toast.error("Some ERROR occured.");
-      });
-  };
+  // const fetchProperty = async (id) => {
+  //   // Make the DELETE request
+  //   await axios
+  //     .get(
+  //       `${process.env.REACT_APP_BACKEND_URL}/api/projectsDataMaster/fetchProject/${id}?userId=${userId}`,
+  //       {
+  //         headers: {
+  //           "auth-token": userToken,
+  //         },
+  //       }
+  //     )
+  //     .then((response) => {
+  //       if (response) {
+  //         setEditData(response.data);
+  //       }
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error:", error);
+  //       toast.error("Some ERROR occured.");
+  //     });
+  // };
 
-  const fetchAllProperties = (userId, userToken) => {
+  const fetchAllProjectsDataMaster = (userId, userToken) => {
     axios
       .get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/property/fetchallproperties?userId=${userId}`,
+        `${process.env.REACT_APP_BACKEND_URL}/api/projectsDataMaster/fetchAllProjects?userId=${userId}`,
         {
           headers: {
             "auth-token": userToken,
@@ -195,19 +210,17 @@ function Index({ setRefetchNotification }) {
       )
       .then((response) => {
         setData(response.data);
-        // also reset counter when item displayed
-        resetCounter(userId, userToken, "newProperties");
       })
       .catch((error) => {
         console.error("Error:", error);
       });
   };
 
-  const deletePropertyById = async (id) => {
+  const deleteProjectsMasterById = async (id, myIsViewed) => {
     // Make the DELETE request
     await axios
       .delete(
-        `${process.env.REACT_APP_BACKEND_URL}/api/property/deleteproperty/${id}?userId=${userId}`,
+        `${process.env.REACT_APP_BACKEND_URL}/api/projectsDataMaster/deleteProject/${id}?userId=${userId}`,
         {
           headers: {
             "auth-token": userToken,
@@ -216,8 +229,12 @@ function Index({ setRefetchNotification }) {
       )
       .then((response) => {
         if (response) {
-          toast("Property deleted!");
-          fetchAllProperties(userId, userToken);
+          toast("Project deleted!");
+          if(myIsViewed === "no"){
+            decreaseCounter(userId, userToken, "newProjectsDataMasters");
+          }
+          setDeleteId();
+          fetchAllProjectsDataMaster(userId, userToken);
         }
       })
       .catch((error) => {
@@ -235,7 +252,7 @@ function Index({ setRefetchNotification }) {
         const decoded = jwtDecode(token);
         setUserId(decoded.userId);
         setUserToken(token);
-        fetchAllProperties(decoded.userId, token);
+        fetchAllProjectsDataMaster(decoded.userId, token);
       }
     } catch (error) {
       console.log(error);
@@ -248,41 +265,53 @@ function Index({ setRefetchNotification }) {
 
   const handleCancel = () => {
     setMode("display");
-    fetchAllProperties(userId, userToken);
+    setEditData();
+    fetchAllProjectsDataMaster(userId, userToken);
+    setRefetchNotification();
   };
 
   // Click handler for the edit button
-  const handleEdit = (id) => {
-    fetchProperty(id);
-
-    setTimeout(() => {
-      setMode("edit");
-    }, 500);
+  const handleEdit = (data) => {
+    // fetchProperty(id);
+    setEditData(data);
+    setMode("edit");
   };
 
   // to show the details of property
-  const handleShowDetails = (id) => {
-    fetchProperty(id);
-
-    setTimeout(() => {
-      setMode("showDetails");
-    }, 500);
+  const handleShowDetails = (data) => {
+    setEditData(data);
+    setMode("showDetails");
   };
 
   const setModeToDisplay = () => {
     setMode("display");
-    fetchAllProperties(userId, userToken);
+    setEditData();
+    setRefetchNotification();
+    fetchAllProjectsDataMaster(userId, userToken);
   };
 
   // Click handler for the delete button
-  const handleDelete = (id) => {
-    deletePropertyById(id);
+  const handleDelete = (id,isViewed) => {
+    setShowDeleteModal(true);
+    setDeleteId(id);
+    setDeleteIsViewed(isViewed);
   };
 
-  const setPropertyViewed = async (id) => {
+  const handleMarkUnread = (id) => {
+    setShowUnreadModal(true);
+    setUnreadId(id);
+  };
+
+  const toggleProjectDataMasterViewed = async (id, to) => {
     await axios
       .put(
-        `${process.env.REACT_APP_BACKEND_URL}/api/property/setPropertyViewed/${id}?userId=${userId}`,
+        `${process.env.REACT_APP_BACKEND_URL}/api/projectsDataMaster/${
+          to === "yes"
+            ? "setProjectsMasterViewed"
+            : to === "red"
+            ? "setProjectsMasterViewedRed"
+            : "setProjectsMasterNotViewed"
+        }/${id}?userId=${userId}`,
         {}, // empty body since we're only updating isViewed to "yes"
         {
           headers: {
@@ -290,6 +319,12 @@ function Index({ setRefetchNotification }) {
           },
         }
       )
+      .then((response) => {
+        if (response) {
+          fetchAllProjectsDataMaster(userId, userToken);
+          setRefetchNotification();
+        }
+      })
       .catch((error) => {
         console.error("Error:", error);
         toast.error("Error.");
@@ -333,10 +368,10 @@ function Index({ setRefetchNotification }) {
       </Box>
 
       {/* Render form or DataGrid based on mode */}
-      {1 === 2 && (
+      {1 === 1 && (
         <>
           {mode === "add" ? (
-            <PropertyForm
+            <ProjectsDataMasterForm
               setModeToDisplay={setModeToDisplay}
               userId={userId}
               userToken={userToken}
@@ -344,8 +379,7 @@ function Index({ setRefetchNotification }) {
           ) : mode === "edit" ? (
             editData && (
               <>
-                {/* <ShowPropertDetails data={editData} /> */}
-                <PropertyForm
+                <ProjectsDataMasterForm
                   userId={userId}
                   userToken={userToken}
                   editData={editData}
@@ -356,7 +390,10 @@ function Index({ setRefetchNotification }) {
           ) : mode === "showDetails" ? (
             editData && (
               <>
-                <ShowPropertDetails data={editData} />
+                <ProjectsDataMasterForm
+                  displayMode={true}
+                  editData={editData}
+                />
               </>
             )
           ) : (
@@ -405,7 +442,27 @@ function Index({ setRefetchNotification }) {
           )}
         </>
       )}
-      <div>Work in progress</div>
+      {showDeleteModal === true && deleteId && (
+        <DeleteModal
+          handleDelete={() => {
+            deleteProjectsMasterById(deleteId, deleteIsViewed);
+          }}
+          closeModal={() => {
+            setShowDeleteModal(false);
+          }}
+        />
+      )}
+
+      {showUnreadModal === true && unreadId && (
+        <MarkUnreadModal
+          handleMarkUnread={() => {
+            toggleProjectDataMasterViewed(unreadId, "red");
+          }}
+          closeModal={() => {
+            setShowUnreadModal(false);
+          }}
+        />
+      )}
     </Box>
   );
 }

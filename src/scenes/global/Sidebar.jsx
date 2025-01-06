@@ -70,6 +70,7 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
   const [newProperties, setNewProperties] = useState();
   const [newDocuments, setNewDocuments] = useState();
   const [newListings, setNewListings] = useState();
+  const [newProjectsDataMasters, setNewProjectsDataMasters] = useState();
 
   const FetchNotifications = async () => {
     await axios
@@ -87,6 +88,7 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
           setNewProperties(response.data.newProperties);
           setNewDocuments(response.data.newDocuments);
           setNewListings(response.data.newListings);
+          setNewProjectsDataMasters(response.data.newProjectsDataMasters);
         }
       })
       .catch((error) => {
@@ -280,17 +282,17 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
             <Item
               title="Projects Data Master"
               to="/projectsDataMaster"
-              // badge={
-              //   newDocuments > 0 ? (
-              //     <span
-              //       className={`absolute ${
-              //         !isCollapsed ? "top-5 right-6" : "top-3 right-3"
-              //       } grid min-h-[24px] min-w-[24px] translate-x-2/4 -translate-y-2/4 place-items-center rounded-full bg-red-600 py-1 px-1 text-xs text-white`}
-              //     >
-              //       {newDocuments}
-              //     </span>
-              //   ) : null
-              // }
+              badge={
+                newProjectsDataMasters > 0 ? (
+                  <span
+                    className={`absolute ${
+                      !isCollapsed ? "top-5 right-6" : "top-3 right-3"
+                    } grid min-h-[24px] min-w-[24px] translate-x-2/4 -translate-y-2/4 place-items-center rounded-full bg-red-600 py-1 px-1 text-xs text-white`}
+                  >
+                    {newProjectsDataMasters}
+                  </span>
+                ) : null
+              }
               icon={<FaSuperpowers className="h-5 w-5" />}
               selected={selected}
               setSelected={setSelected}

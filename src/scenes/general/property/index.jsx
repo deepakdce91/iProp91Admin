@@ -14,6 +14,8 @@ import ShowPropertDetails from "../../../components/general/property/ShowPropert
 import { formatDate } from "../../../MyFunctions";
 import { jwtDecode } from "jwt-decode";
 import { TbCircleDotFilled } from "react-icons/tb";
+import MarkUnreadModal from "../../../components/ui/MarkUnreadModal";
+import DeleteModal from "../../../components/ui/DeleteModal";
 
 function Index({ setRefetchNotification }) {
   const theme = useTheme();
@@ -27,6 +29,13 @@ function Index({ setRefetchNotification }) {
 
   const [editData, setEditData] = useState();
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteId, setDeleteId] = useState();
+  const [deleteIsViewed, setDeleteIsViewed] = useState();
+
+  const [showUnreadModal, setShowUnreadModal] = useState(false);
+  const [unreadId, setUnreadId] = useState();
+
   const columns = [
     {
       field: "isViewed",
@@ -35,8 +44,17 @@ function Index({ setRefetchNotification }) {
       renderCell: (params) => {
         if (params.row.isViewed === "no") {
           return <TbCircleDotFilled className="text-green-400" />;
+        } else if (params.row.isViewed === "red") {
+          return <TbCircleDotFilled className="text-red-400" />;
         } else {
-          return "";
+          return (
+            <TbCircleDotFilled
+              onClick={() => {
+                handleMarkUnread(params.row._id);
+              }}
+              className="text-gray-400 cursor-pointer"
+            />
+          );
         }
       },
     },
@@ -105,7 +123,16 @@ function Index({ setRefetchNotification }) {
       renderCell: (params) => (
         <Box>
           <IconButton
-            onClick={() => {handleShowDetails(params.row._id); setPropertyViewed(params.row._id)}}  
+            onClick={() => {
+              handleShowDetails(params.row);
+
+              if (params.row.isViewed !== "yes") {
+                togglePropertyViewed(params.row._id, "yes");
+                if(params.row.isViewed === "no"){
+                  decreaseCounter(userId, userToken, "newProperties");
+                }
+              }
+            }}
             // color="primary"
             className="text-grey-400"
           >
@@ -113,14 +140,23 @@ function Index({ setRefetchNotification }) {
           </IconButton>
 
           <IconButton
-            onClick={() => {handleEdit(params.row._id); setPropertyViewed(params.row._id)}}
-            // color="primary"
+            onClick={() => {
+              handleEdit(params.row);
+
+              if (params.row.isViewed !== "yes") {
+                togglePropertyViewed(params.row._id, "yes");
+                if(params.row.isViewed === "no"){
+                  decreaseCounter(userId, userToken, "newProperties");
+                }}
+              // setPropertyViewed(params.row._id);
+            }}
             className="text-grey-400"
           >
             <EditIcon />
           </IconButton>
+
           <IconButton
-            onClick={() => handleDelete(params.row._id)}
+            onClick={() => handleDelete(params.row._id,params.row.isViewed)}
             color="secondary"
           >
             <DeleteIcon />
@@ -130,10 +166,12 @@ function Index({ setRefetchNotification }) {
     },
   ];
 
-  const resetCounter = async (userId, userToken, type) => {
+
+
+  const decreaseCounter = async (userId, userToken, type) => {
     await axios
-      .post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/notifications/resetCounter?userId=${userId}`,
+      .put(
+        `${process.env.REACT_APP_BACKEND_URL}/api/notifications/decreaseCounter?userId=${userId}`,
 
         {
           type,
@@ -155,27 +193,27 @@ function Index({ setRefetchNotification }) {
       });
   };
 
-  const fetchProperty = async (id) => {
-    // Make the DELETE request
-    await axios
-      .get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/property/fetchproperty/${id}?userId=${userId}`,
-        {
-          headers: {
-            "auth-token": userToken,
-          },
-        }
-      )
-      .then((response) => {
-        if (response) {
-          setEditData(response.data);
-        }
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        toast.error("Some ERROR occured.");
-      });
-  };
+  // const fetchProperty = async (id) => {
+  //   // Make the DELETE request
+  //   await axios
+  //     .get(
+  //       `${process.env.REACT_APP_BACKEND_URL}/api/property/fetchproperty/${id}?userId=${userId}`,
+  //       {
+  //         headers: {
+  //           "auth-token": userToken,
+  //         },
+  //       }
+  //     )
+  //     .then((response) => {
+  //       if (response) {
+  //         setEditData(response.data);
+  //       }
+  //     })
+  //     .catch((error) => {
+  //       console.error("Error:", error);
+  //       toast.error("Some ERROR occured.");
+  //     });
+  // };
 
   const fetchAllProperties = (userId, userToken) => {
     axios
@@ -189,15 +227,13 @@ function Index({ setRefetchNotification }) {
       )
       .then((response) => {
         setData(response.data);
-        // also reset counter when item displayed
-        resetCounter(userId, userToken, "newProperties");
       })
       .catch((error) => {
         console.error("Error:", error);
       });
   };
 
-  const deletePropertyById = async (id) => {
+  const deletePropertyById = async (id, myIsViewed) => {
     // Make the DELETE request
     await axios
       .delete(
@@ -211,6 +247,9 @@ function Index({ setRefetchNotification }) {
       .then((response) => {
         if (response) {
           toast("Property deleted!");
+          if (myIsViewed === "no") {
+            decreaseCounter(userId, userToken, "newProperties");
+          }
           fetchAllProperties(userId, userToken);
         }
       })
@@ -242,48 +281,65 @@ function Index({ setRefetchNotification }) {
 
   const handleCancel = () => {
     setMode("display");
+    setRefetchNotification();
     fetchAllProperties(userId, userToken);
   };
 
   // Click handler for the edit button
-  const handleEdit = (id) => {
-    fetchProperty(id);
-
-    setTimeout(() => {
-      setMode("edit");
-    }, 500);
+  const handleEdit = (data) => {
+    // fetchProperty(id);
+    setEditData(data);
+    setMode("edit");
   };
 
   // to show the details of property
-  const handleShowDetails = (id) => {
-    fetchProperty(id);
-
-    setTimeout(() => {
-      setMode("showDetails");
-    }, 500);
+  const handleShowDetails = (data) => {
+    setEditData(data);
+    setMode("showDetails");
   };
 
   const setModeToDisplay = () => {
     setMode("display");
+    setEditData();
+    setRefetchNotification();
     fetchAllProperties(userId, userToken);
   };
 
   // Click handler for the delete button
-  const handleDelete = (id) => {
-    deletePropertyById(id);
+  const handleDelete = (id,isViewed) => {
+    setShowDeleteModal(true);
+    setDeleteId(id);
+    setDeleteIsViewed(isViewed);
   };
 
-  const setPropertyViewed = async (id) => {
+  const handleMarkUnread = (id) => {
+    setShowUnreadModal(true);
+    setUnreadId(id);
+  };
+
+  const togglePropertyViewed = async (id, to) => {
     await axios
       .put(
-        `${process.env.REACT_APP_BACKEND_URL}/api/property/setPropertyViewed/${id}?userId=${userId}`,
-        {},  // empty body since we're only updating isViewed to "yes"
+        `${process.env.REACT_APP_BACKEND_URL}/api/property/${
+          to === "yes"
+            ? "setPropertyViewed"
+            : to === "red"
+            ? "setPropertyViewedRed"
+            : "setPropertyNotViewed"
+        }/${id}?userId=${userId}`,
+        {}, // empty body since we're only updating isViewed to "yes"
         {
           headers: {
             "auth-token": userToken,
           },
         }
       )
+      .then((response) => {
+        if (response) {
+          fetchAllProperties(userId, userToken);
+          setRefetchNotification();
+        }
+      })
       .catch((error) => {
         console.error("Error:", error);
         toast.error("Error.");
@@ -395,7 +451,27 @@ function Index({ setRefetchNotification }) {
           />
         </Box>
       )}
-      <ToastContainer position="top-right" autoClose={2000} />
+      {showDeleteModal === true && deleteId && (
+        <DeleteModal
+          handleDelete={() => {
+            deletePropertyById(deleteId, deleteIsViewed);
+          }}
+          closeModal={() => {
+            setShowDeleteModal(false);
+          }}
+        />
+      )}
+
+      {showUnreadModal === true && unreadId && (
+        <MarkUnreadModal
+          handleMarkUnread={() => {
+            togglePropertyViewed(unreadId, "red");
+          }}
+          closeModal={() => {
+            setShowUnreadModal(false);
+          }}
+        />
+      )}
     </Box>
   );
 }

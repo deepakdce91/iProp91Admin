@@ -16,6 +16,8 @@ import ViewSafes from "../../../components/ViewPages/ViewSafes";
 import { MdClose } from "react-icons/md";
 import { MdMessage } from "react-icons/md";
 import { TbCircleDotFilled } from "react-icons/tb";
+import DeleteModal from "../../../components/ui/DeleteModal";
+import MarkUnreadModal from "../../../components/ui/MarkUnreadModal";
 
 function Index({ setRefetchNotification }) {
   const theme = useTheme();
@@ -31,6 +33,14 @@ function Index({ setRefetchNotification }) {
 
   const [editData, setEditData] = useState();
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteId, setDeleteId] = useState();
+  const [deleteIsViewed, setDeleteIsViewed] = useState();
+
+  const [showUnreadModal, setShowUnreadModal] = useState(false);
+  const [unreadId, setUnreadId] = useState();
+
+
   const [showGroupModal, setShowGroupModal] = useState(false);
 
   const [currentProperties, setCurrentProperties] = useState([]);
@@ -45,8 +55,12 @@ function Index({ setRefetchNotification }) {
       renderCell: (params) => {
         if (params.row.userData.isViewed === "no") {
           return <TbCircleDotFilled className="text-green-400" />;
+        } else if (params.row.userData.isViewed === "red") {
+          return <TbCircleDotFilled className="text-red-400" />;
         } else {
-          return "";
+          return <TbCircleDotFilled onClick={()=>{
+            handleMarkUnread(params.row.userData._id);
+          }} className="text-gray-400 cursor-pointer" />;
         }
       },
     },
@@ -117,7 +131,7 @@ function Index({ setRefetchNotification }) {
         <button
           onClick={() => {
             if (params.row.properties.length > 0) {
-              setUserViewed(params.row.userData._id);
+              // setUserViewed(params.row.userData._id);
               setCurrentProperties(params.row.properties);
               setMode("showPropDetails");
             }
@@ -144,7 +158,7 @@ function Index({ setRefetchNotification }) {
         <button
           onClick={() => {
             if (params.row.safes.length > 0) {
-              setUserViewed(params.row.userData._id);
+              // setUserViewed(params.row.userData._id);
               setCurrentSafes(params.row.safes);
               setMode("showSafeDetails");
             }
@@ -171,7 +185,7 @@ function Index({ setRefetchNotification }) {
         <button
           onClick={() => {
             if (params.row.communities.length > 0) {
-              setUserViewed(params.row.userData._id);
+              // setUserViewed(params.row.userData._id);
               setCurrentGroups(params.row.communities);
               setMode("showGroupDetails");
               setShowGroupModal(true);
@@ -198,14 +212,21 @@ function Index({ setRefetchNotification }) {
       renderCell: (params) => (
         <Box>
           <IconButton
-            onClick={() => {handleEdit(params.row.userData._id); setUserViewed(params.row.userData._id)}}
+            onClick={() => {
+              handleEdit(params.row.userData);
+              if (params.row.userData.isViewed !== "yes") {
+                toggleUserViewed(params.row.userData._id, "yes");
+                if(params.row.userData.isViewed === "no"){
+                  decreaseCounter(userId, userToken, "newUsers");
+                }}
+              }}
             // color="primary"
             className="text-grey-400"
           >
             <EditIcon />
           </IconButton>
           <IconButton
-            onClick={() => handleDelete(params.row.userData._id)}
+            onClick={() => handleDelete(params.row.userData._id,params.row.userData.isViewed)}
             color="secondary"
           >
             <DeleteIcon />
@@ -214,10 +235,10 @@ function Index({ setRefetchNotification }) {
       ),
     },
   ];
-  const resetCounter = async (userId, userToken, type) => {
+  const decreaseCounter = async (userId, userToken, type) => {
     await axios
-      .post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/notifications/resetCounter?userId=${userId}`,
+      .put(
+        `${process.env.REACT_APP_BACKEND_URL}/api/notifications/decreaseCounter?userId=${userId}`,
 
         {
           type,
@@ -261,7 +282,7 @@ function Index({ setRefetchNotification }) {
       });
   };
 
-  const deleteUserById = async (id) => {
+  const deleteUserById = async (id,myIsViewed) => {
     // Make the DELETE request
     await axios
       .delete(
@@ -275,6 +296,10 @@ function Index({ setRefetchNotification }) {
       .then((response) => {
         if (response) {
           toast("User deleted!");
+          if(myIsViewed === "no"){
+            decreaseCounter(userId, userToken, "newUsers");
+          }
+          setDeleteId();
           getCompleteUserDetails(userId, userToken);
         }
       })
@@ -299,8 +324,6 @@ function Index({ setRefetchNotification }) {
       .then((response) => {
         if (response) {
           setAllData(response.data.data);
-          //reset counter
-          resetCounter(userId, userToken, "newUsers");
         }
       })
       .catch((error) => {
@@ -325,54 +348,76 @@ function Index({ setRefetchNotification }) {
     }
   }, []);
 
+
+  ///----
+
   const handleAddMore = () => {
     setMode("add");
   };
 
   const handleCancel = () => {
     setMode("display");
+    setEditData();
     getCompleteUserDetails(userId, userToken);
+    setRefetchNotification();
   };
 
   // Click handler for the edit button
-  const handleEdit = (id) => {
-    fetchUser(id);
-
-    setTimeout(() => {
-      setMode("edit");
-    }, 500);
+  const handleEdit = (data) => {
+    // fetchProperty(id);
+    setEditData(data);
+    setMode("edit");
   };
 
-  const handleShowPropDetails = (id) => {
-    setMode("showPropDetails");
-  };
 
   const setModeToDisplay = () => {
     setMode("display");
+    setEditData();
+    setRefetchNotification();
     getCompleteUserDetails(userId, userToken);
   };
 
   // Click handler for the delete button
-  const handleDelete = (id) => {
-    deleteUserById(id);
+  const handleDelete = (id,isViewed) => {
+    setShowDeleteModal(true);
+    setDeleteId(id);
+    setDeleteIsViewed(isViewed);
   };
 
-  const setUserViewed = async (id) => {
+  const handleMarkUnread = (id) => {
+    setShowUnreadModal(true);
+    setUnreadId(id);
+  };
+
+  const toggleUserViewed = async (id, to) => {
     await axios
       .put(
-        `${process.env.REACT_APP_BACKEND_URL}/api/users/setUserViewed/${id}?userId=${userId}`,
-        {},  // empty body since we're only updating isViewed to "yes"
+        `${process.env.REACT_APP_BACKEND_URL}/api/users/${
+          to === "yes"
+            ? "setUserViewed"
+            : to === "red"
+            ? "setUserViewedRed"
+            : "setUserNotViewed"
+        }/${id}?userId=${userId}`,
+        {}, // empty body since we're only updating isViewed to "yes"
         {
           headers: {
             "auth-token": userToken,
           },
         }
       )
+      .then((response) => {
+        if (response) {
+          getCompleteUserDetails(userId, userToken);
+          setRefetchNotification();
+        }
+      })
       .catch((error) => {
-        console.error("Error--:", error);
-        toast.error("Some ERROR occured.");
+        console.error("Error:", error);
+        toast.error("Error.");
       });
-  };
+    }
+  // ---- 
 
   return (
     <Box m="20px">
@@ -529,7 +574,27 @@ function Index({ setRefetchNotification }) {
           />
         </Box>
       )}
-      <ToastContainer position="top-right" autoClose={2000} />
+      {showDeleteModal === true && deleteId && (
+        <DeleteModal
+          handleDelete={() => {
+            deleteUserById(deleteId, deleteIsViewed);
+          }}
+          closeModal={() => {
+            setShowDeleteModal(false);
+          }}
+        />
+      )}
+
+      {showUnreadModal === true && unreadId && (
+        <MarkUnreadModal
+          handleMarkUnread={() => {
+            toggleUserViewed(unreadId, "red");
+          }}
+          closeModal={() => {
+            setShowUnreadModal(false);
+          }}
+        />
+      )}
     </Box>
   );
 }
