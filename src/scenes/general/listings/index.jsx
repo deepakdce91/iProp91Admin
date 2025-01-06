@@ -13,6 +13,8 @@ import RentForm from "../../../components/general/listings/RentForm";
 import SellForm from "../../../components/general/listings/SellForm";
 
 import { TbCircleDotFilled } from "react-icons/tb";
+import MarkUnreadModal from "../../../components/ui/MarkUnreadModal";
+import DeleteModal from "../../../components/ui/DeleteModal";
 
 function Index({setRefetchNotification}) {
   const theme = useTheme();
@@ -26,6 +28,15 @@ function Index({setRefetchNotification}) {
 
   const [editData, setEditData] = useState();
 
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteId, setDeleteId] = useState();
+  const [deleteIsViewed, setDeleteIsViewed] = useState();
+
+  const [showUnreadModal, setShowUnreadModal] = useState(false);
+  const [unreadId, setUnreadId] = useState();
+
+
   const columns = [
     {
       field: "isViewed",
@@ -34,8 +45,12 @@ function Index({setRefetchNotification}) {
       renderCell: (params) => {
         if (params.row.isViewed === "no") {
           return <TbCircleDotFilled className="text-green-400" />;
+        } else if (params.row.isViewed === "red") {
+          return <TbCircleDotFilled className="text-red-400" />;
         } else {
-          return "";
+          return <TbCircleDotFilled onClick={()=>{
+            handleMarkUnread(params.row._id);
+          }} className="text-gray-400 cursor-pointer" />;
         }
       },
     },
@@ -70,28 +85,36 @@ function Index({setRefetchNotification}) {
       },
     },
 
-    {
+    { 
       field: "action",
       headerName: "Action",
       flex: 1,
       renderCell: (params) => (
         <Box>
+
           <IconButton
             onClick={() => {
-              setListingViewed(params.row._id);
-              if (params.row.sellDetails === null) {
+               // setListingViewed(params.row._id);
+               if (params.row.sellDetails === null) {
                 handleEdit(params.row, "editRent");
               } else {
                 handleEdit(params.row, "editSell");
               }
+
+              if (params.row.isViewed !== "yes") {
+                toggleListingViewed(params.row._id, "yes");
+                if(params.row.isViewed === "no"){
+                  decreaseCounter(userId, userToken, "newListings");
+                }}
+              // setPropertyViewed(params.row._id);
             }}
-            // color="primary"
             className="text-grey-400"
           >
             <EditIcon />
           </IconButton>
+
           <IconButton
-            onClick={() => handleDelete(params.row._id)}
+            onClick={() => handleDelete(params.row._id,params.row.isViewed)}
             color="secondary"
           >
             <DeleteIcon />
@@ -101,16 +124,11 @@ function Index({setRefetchNotification}) {
     },
   ];
 
-  const setModeToDisplay = () => {
-    setMode("display");
-    setEditData();
-    fetchAllListings(userId, userToken);
-  };
 
-  const resetCounter = async (userId, userToken, type) => {
+  const decreaseCounter = async (userId, userToken, type) => {
     await axios
-      .post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/notifications/resetCounter?userId=${userId}`,
+      .put(
+        `${process.env.REACT_APP_BACKEND_URL}/api/notifications/decreaseCounter?userId=${userId}`,
 
         {
           type,
@@ -167,14 +185,13 @@ function Index({setRefetchNotification}) {
       )
       .then((response) => {
         setData(response.data);
-        resetCounter(userId, userToken, "newListings");
       })
       .catch((error) => {
         console.error("Error:", error);
       });
   };
 
-  const deleteListingById = async (id) => {
+  const deleteListingById = async (id, myIsViewed) => {
     // Make the DELETE request
     await axios
       .delete(
@@ -187,8 +204,12 @@ function Index({setRefetchNotification}) {
       )
       .then((response) => {
         if (response) {
+          toast("Listing deleted!");
+          if(myIsViewed === "no"){
+            decreaseCounter(userId, userToken, "newListings");
+          }
+          setDeleteId();
           fetchAllListings(userId, userToken);
-          toast.success("Listing deleted!");
         }
       })
       .catch((error) => {
@@ -232,9 +253,53 @@ function Index({setRefetchNotification}) {
     setMode(mode);
   };
 
+
+  const handleMarkUnread = (id) => {
+    setShowUnreadModal(true);
+    setUnreadId(id);
+  };
+
+  const setModeToDisplay = () => {
+    setMode("display");
+    setEditData();
+    setRefetchNotification();
+    fetchAllListings(userId, userToken);
+  };
+
   // Click handler for the delete button
-  const handleDelete = (id) => {
-    deleteListingById(id);
+  const handleDelete = (id,isViewed) => {
+    setShowDeleteModal(true);
+    setDeleteId(id);
+    setDeleteIsViewed(isViewed);
+  };
+
+  const toggleListingViewed = async (id, to) => {
+    await axios
+      .put(
+        `${process.env.REACT_APP_BACKEND_URL}/api/listings/${
+          to === "yes"
+            ? "setlistingviewed"
+            : to === "red"
+            ? "setlistingviewedred"
+            : "setlistingnotviewed"
+        }/${id}?userId=${userId}`,
+        {}, // empty body since we're only updating isViewed to "yes"
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
+      .then((response) => {
+        if (response) {
+          fetchAllListings(userId, userToken);
+          setRefetchNotification();
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        toast.error("Error.");
+      });
   };
 
   const setListingViewed = async (id) => {
@@ -437,7 +502,29 @@ function Index({setRefetchNotification}) {
             getRowId={(row) => row._id}
             autoHeight
           />
-        </Box>
+        </Box> 
+      )}
+
+{showDeleteModal === true && deleteId && (
+        <DeleteModal
+          handleDelete={() => {
+            deleteListingById(deleteId, deleteIsViewed);
+          }}
+          closeModal={() => {
+            setShowDeleteModal(false);
+          }}
+        />
+      )}
+
+      {showUnreadModal === true && unreadId && (
+        <MarkUnreadModal
+          handleMarkUnread={() => {
+            toggleListingViewed(unreadId, "red");
+          }}
+          closeModal={() => {
+            setShowUnreadModal(false);
+          }}
+        />
       )}
     </Box>
   );

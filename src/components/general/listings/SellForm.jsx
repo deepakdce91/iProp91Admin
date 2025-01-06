@@ -22,10 +22,13 @@ function SellForm({ editData, setModeToDisplay, userToken, userId }) {
     expectedPrice: "",
     type: "",
     numberOfWashrooms: "",
+    numberOfBedrooms: "",
     numberOfFloors: "",
     numberOfParkings: "",
     isActive: "true",
-    media: [],
+    titleDeed: [],
+    propertyPhotos: [],
+    propertyVideos: [],
   });
 
   const getPublicUrlFromSupabase = (path) => {
@@ -36,15 +39,15 @@ function SellForm({ editData, setModeToDisplay, userToken, userId }) {
       console.error("Error fetching public URL:", error);
       return null;
     }
-    return { 
+    return {
       name: path.split("/")[path.split("/").length - 1],
       url: data.publicUrl,
     };
   };
 
-  const uploadFileToCloud = async (myFile) => {
+  const uploadFileToCloud = async (myFile, folderName) => {
     const myFileName = removeSpaces(myFile.name);
-    const myPath = `SellListings/${myFileName}`;
+    const myPath = `SellListings/${folderName}/${myFileName}`;
     try {
       const uploadParams = {
         Bucket: process.env.REACT_APP_SITE_BUCKET,
@@ -61,11 +64,13 @@ function SellForm({ editData, setModeToDisplay, userToken, userId }) {
     }
   };
 
-  const handleFileUpload = async (e) => {
+  const handleFileUpload = async (e, type) => {
     const files = Array.from(e.target.files);
+    const maxFiles = type === 'propertyPhotos' ? 15 : 5;
+    const currentFiles = addData[type].length;
 
-    if (addData.media.length + files.length > 15) {
-      toast.error("Maximum 15 files allowed");
+    if (currentFiles + files.length > maxFiles) {
+      toast.error(`Maximum ${maxFiles} files allowed for ${type}`);
       return;
     }
 
@@ -74,13 +79,15 @@ function SellForm({ editData, setModeToDisplay, userToken, userId }) {
 
     try {
       for (const file of files) {
-        const cloudFilePath = await uploadFileToCloud(file);
+        const folderName = type === 'titleDeed' ? 'Deeds' : 
+                          type === 'propertyPhotos' ? 'Photos' : 'Videos';
+        const cloudFilePath = await uploadFileToCloud(file, folderName);
         if (cloudFilePath) {
           const publicUrl = getPublicUrlFromSupabase(cloudFilePath);
           if (publicUrl) {
             setAddData((prev) => ({
               ...prev,
-              media: [...prev.media, publicUrl],
+              [type]: [...prev[type], publicUrl],
             }));
           }
         }
@@ -94,10 +101,10 @@ function SellForm({ editData, setModeToDisplay, userToken, userId }) {
     }
   };
 
-  const handleRemoveImage = (index) => {
+  const handleRemoveFile = (index, type) => {
     setAddData((prev) => ({
       ...prev,
-      media: prev.media.filter((_, i) => i !== index),
+      [type]: prev[type].filter((_, i) => i !== index),
     }));
   };
 
@@ -116,6 +123,7 @@ function SellForm({ editData, setModeToDisplay, userToken, userId }) {
       addData.expectedPrice !== "" &&
       addData.type !== "" &&
       addData.numberOfWashrooms !== "" &&
+      addData.numberOfBedrooms !== "" &&
       addData.numberOfFloors !== "" &&
       addData.numberOfParkings !== "" &&
       addData.isActive !== ""
@@ -124,16 +132,19 @@ function SellForm({ editData, setModeToDisplay, userToken, userId }) {
         ? {
             ...editData,
             sellDetails: {
-                unitNumber: addData.unitNumber,
-                size: addData.size,
-                expectedPrice: addData.expectedPrice,
-                type: addData.type,
-                numberOfWashrooms: addData.numberOfWashrooms,
-                numberOfFloors: addData.numberOfFloors,
-                numberOfParkings: addData.numberOfParkings,
-                isActive: addData.isActive,
-                media: addData.media,
-              },
+              unitNumber: addData.unitNumber,
+              size: addData.size,
+              expectedPrice: addData.expectedPrice,
+              type: addData.type,
+              numberOfWashrooms: addData.numberOfWashrooms,
+              numberOfBedrooms: addData.numberOfBedrooms,
+              numberOfFloors: addData.numberOfFloors,
+              numberOfParkings: addData.numberOfParkings,
+              isActive: addData.isActive,
+              titleDeed: addData.titleDeed,
+              propertyPhotos: addData.propertyPhotos,
+              propertyVideos: addData.propertyVideos,
+            },
           }
         : {
             propertyId: addData.propertyId,
@@ -143,12 +154,15 @@ function SellForm({ editData, setModeToDisplay, userToken, userId }) {
               expectedPrice: addData.expectedPrice,
               type: addData.type,
               numberOfWashrooms: addData.numberOfWashrooms,
+              numberOfBedrooms: addData.numberOfBedrooms,
               numberOfFloors: addData.numberOfFloors,
               numberOfParkings: addData.numberOfParkings,
               isActive: "true",
-              media: addData.media,
+              titleDeed: addData.titleDeed,
+              propertyPhotos: addData.propertyPhotos,
+              propertyVideos: addData.propertyVideos,
             },
-          }; 
+          };
 
       const endpoint = editData
         ? `${process.env.REACT_APP_BACKEND_URL}/api/listings/updatesalelisting/${editData._id}?userId=${userId}`
@@ -189,10 +203,13 @@ function SellForm({ editData, setModeToDisplay, userToken, userId }) {
         expectedPrice: editData.sellDetails.expectedPrice,
         type: editData.sellDetails.type,
         numberOfWashrooms: editData.sellDetails.numberOfWashrooms,
+        numberOfBedrooms: editData.sellDetails.numberOfBedrooms,
         numberOfFloors: editData.sellDetails.numberOfFloors,
         numberOfParkings: editData.sellDetails.numberOfParkings,
         isActive: editData.sellDetails.isActive,
-        media: editData.sellDetails.media,
+        titleDeed: editData.sellDetails.titleDeed,
+        propertyPhotos: editData.sellDetails.propertyPhotos,
+        propertyVideos: editData.sellDetails.propertyVideos,
       });
     }
   }, [editData]);
@@ -225,10 +242,7 @@ function SellForm({ editData, setModeToDisplay, userToken, userId }) {
           <form>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="mb-5">
-                <label
-                  htmlFor="propertyId"
-                  className="mb-3 block text-base font-medium"
-                >
+                <label htmlFor="propertyId" className="mb-3 block text-base font-medium">
                   PropertyId
                 </label>
                 <input
@@ -241,10 +255,7 @@ function SellForm({ editData, setModeToDisplay, userToken, userId }) {
                 />
               </div>
               <div className="mb-5">
-                <label
-                  htmlFor="unitNumber"
-                  className="mb-3 block text-base font-medium"
-                >
+                <label htmlFor="unitNumber" className="mb-3 block text-base font-medium">
                   Unit Number
                 </label>
                 <input
@@ -258,14 +269,11 @@ function SellForm({ editData, setModeToDisplay, userToken, userId }) {
               </div>
 
               <div className="mb-5">
-                <label
-                  htmlFor="size"
-                  className="mb-3 block text-base font-medium"
-                >
+                <label htmlFor="size" className="mb-3 block text-base font-medium">
                   Size (sq ft)
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   name="size"
                   id="size"
                   value={addData.size}
@@ -275,14 +283,11 @@ function SellForm({ editData, setModeToDisplay, userToken, userId }) {
               </div>
 
               <div className="mb-5">
-                <label
-                  htmlFor="expectedPrice"
-                  className="mb-3 block text-base font-medium"
-                >
+                <label htmlFor="expectedPrice" className="mb-3 block text-base font-medium">
                   Expected Price
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   name="expectedPrice"
                   id="expectedPrice"
                   value={addData.expectedPrice}
@@ -292,10 +297,7 @@ function SellForm({ editData, setModeToDisplay, userToken, userId }) {
               </div>
 
               <div className="mb-5">
-                <label
-                  htmlFor="type"
-                  className="mb-3 block text-base font-medium"
-                >
+                <label htmlFor="type" className="mb-3 block text-base font-medium">
                   Property Type
                 </label>
                 <select
@@ -313,58 +315,57 @@ function SellForm({ editData, setModeToDisplay, userToken, userId }) {
               </div>
 
               <div className="mb-5">
-                <label
-                  htmlFor="numberOfWashrooms"
-                  className="mb-3 block text-base font-medium"
-                >
+                <label htmlFor="numberOfBedrooms" className="mb-3 block text-base font-medium">
+                  Number of Bedrooms
+                </label>
+                <input
+                  type="text"
+                  name="numberOfBedrooms"
+                  id="numberOfBedrooms"
+                  value={addData.numberOfBedrooms}
+                  onChange={(e) => changeField("numberOfBedrooms", e.target.value)}
+                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                />
+              </div>
+
+              <div className="mb-5">
+                <label htmlFor="numberOfWashrooms" className="mb-3 block text-base font-medium">
                   Number of Washrooms
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   name="numberOfWashrooms"
                   id="numberOfWashrooms"
                   value={addData.numberOfWashrooms}
-                  onChange={(e) =>
-                    changeField("numberOfWashrooms", e.target.value)
-                  }
+                  onChange={(e) => changeField("numberOfWashrooms", e.target.value)}
                   className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                 />
               </div>
 
               <div className="mb-5">
-                <label
-                  htmlFor="numberOfFloors"
-                  className="mb-3 block text-base font-medium"
-                >
+                <label htmlFor="numberOfFloors" className="mb-3 block text-base font-medium">
                   Number of Floors
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   name="numberOfFloors"
                   id="numberOfFloors"
                   value={addData.numberOfFloors}
-                  onChange={(e) =>
-                    changeField("numberOfFloors", e.target.value)
-                  }
+                  onChange={(e) => changeField("numberOfFloors", e.target.value)}
                   className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                 />
               </div>
 
               <div className="mb-5">
-                <label
-                  htmlFor="numberOfParkings"
-                  className="mb-3 block text-base font-medium"
-                >
+                <label htmlFor="numberOfParkings" className="mb-3 block text-base font-medium">
                   Number of Parkings
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   name="numberOfParkings"
                   id="numberOfParkings"
                   value={addData.numberOfParkings}
-                  onChange={(e) =>
-                    changeField("numberOfParkings", e.target.value)
-                  }
+                  onChange={(e) => changeField("numberOfParkings", e.target.value)}
                   className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                 />
               </div>
@@ -400,48 +401,121 @@ function SellForm({ editData, setModeToDisplay, userToken, userId }) {
               </div>
             </div>
 
+            {/* Title Deed Upload Section */}
             <div className="mb-5">
               <label className="mb-3 block text-base font-medium">
-                Property Images (Max 15)
+                Title Deed Documents (Max 5)
+              </label>
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                onChange={(e) => handleFileUpload(e, 'titleDeed')}
+                className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                disabled={isUploading || addData.titleDeed.length >= 5}
+              />
+              <div className="text-sm text-gray-500 mt-1">
+                {5 - addData.titleDeed.length} slots remaining
+              </div>
+              {addData.titleDeed.length > 0 && (
+                <div className="mt-3">
+                  <div className="flex flex-row flex-wrap gap-4">
+                    {addData.titleDeed.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-center border-1 border"
+                      >
+                        <p className="my-1 py-1 px-2">{file.name}</p>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile(index, 'titleDeed')}
+                          className="m-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Property Photos Upload Section */}
+            <div className="mb-5">
+              <label className="mb-3 block text-base font-medium">
+                Property Photos (Max 15)
               </label>
               <input
                 type="file"
                 multiple
                 accept="image/*"
-                onChange={handleFileUpload}
+                onChange={(e) => handleFileUpload(e, 'propertyPhotos')}
                 className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                disabled={isUploading || addData.media.length >= 15}
+                disabled={isUploading || addData.propertyPhotos.length >= 15}
               />
               <div className="text-sm text-gray-500 mt-1">
-                {15 - addData.media.length} slots remaining
+                {15 - addData.propertyPhotos.length} slots remaining
               </div>
+              {addData.propertyPhotos.length > 0 && (
+                <div className="mt-3">
+                  <div className="flex flex-row flex-wrap gap-4">
+                    {addData.propertyPhotos.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-center border-1 border"
+                      >
+                        <p className="my-1 py-1 px-2">{file.name}</p>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile(index, 'propertyPhotos')}
+                          className="m-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {addData.media.length > 0 && (
-              <div className="mb-5">
-                <label className="mb-3 block text-base font-medium">
-                  Uploaded Images
-                </label>
-                <div className="flex flex-row flex-wrap gap-4">
-                  {addData.media.map((file, index) => (
-                    <div
-                      key={index}
-                      className=" flex items-center justify-center border-1 border"
-                    >
-                      <p className="my-1 py-1 px-2 ">{file.name}</p>
-
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(index)}
-                        className=" top-2 m-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
+            {/* Property Videos Upload Section */}
+            <div className="mb-5">
+              <label className="mb-3 block text-base font-medium">
+                Property Videos (Max 5)
+              </label>
+              <input
+                type="file"
+                multiple
+                accept="video/*"
+                onChange={(e) => handleFileUpload(e, 'propertyVideos')}
+                className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                disabled={isUploading || addData.propertyVideos.length >= 5}
+              />
+              <div className="text-sm text-gray-500 mt-1">
+                {5 - addData.propertyVideos.length} slots remaining
               </div>
-            )}
+              {addData.propertyVideos.length > 0 && (
+                <div className="mt-3">
+                  <div className="flex flex-row flex-wrap gap-4">
+                    {addData.propertyVideos.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-center border-1 border"
+                      >
+                        <p className="my-1 py-1 px-2">{file.name}</p>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile(index, 'propertyVideos')}
+                          className="m-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="flex justify-center mt-8">
               <button
