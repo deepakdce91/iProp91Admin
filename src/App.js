@@ -31,6 +31,7 @@ import ReportedMessages from "./scenes/configurations/reportedMessages";
 import CommonSafes from "./scenes/configurations/CommonSafes/Index.jsx";
 
 import EmailTemplates from "./scenes/configurations/emailTemplates/Index.jsx";
+import FilesToUrl from "./scenes/configurations/filesToUrl/Index.jsx";
 
 import Faqs from "./scenes/knowledgeCenter/faqs";
 import Laws from "./scenes/knowledgeCenter/laws";
@@ -71,6 +72,7 @@ const routes = {
   rejectedReasons: "/rejectedReasons",
   moreInfoReasons: "/moreInfoReasons",
   emailTemplates : "/emailTemplates",
+  filesToUrl : "filesToUrl",
 
   groupFormation: "/groupFormation",
   conversations: "/conversations",
@@ -207,6 +209,10 @@ function App() {
                   <Route
                     path={routes.emailTemplates}
                     element={<EmailTemplates />}
+                  /> 
+                  <Route
+                    path={routes.filesToUrl}
+                    element={<FilesToUrl />}
                   /> 
  
                   <Route path={routes.property} element={<Property setRefetchNotification={handleReffetchNotification} />} />

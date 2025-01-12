@@ -475,8 +475,8 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
                   className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                 >
                   <option value="">Select Status</option>
-                  <option value="Ready to Move">Ready to Move</option>
-                  <option value="Under Construction">Under Construction</option>
+                  <option value="completed">Completed</option>
+                  <option value="under-construction">Under Construction</option>
                 </select>
               </div>
 

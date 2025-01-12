@@ -4,6 +4,8 @@ import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "../../../theme";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import PublishIcon from "@mui/icons-material/Publish";
+import UnpublishIcon from "@mui/icons-material/UnpublishedOutlined";
 import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -11,10 +13,40 @@ import Header from "../../../components/Header";
 import { jwtDecode } from "jwt-decode";
 import RentForm from "../../../components/general/listings/RentForm";
 import SellForm from "../../../components/general/listings/SellForm";
-
 import { TbCircleDotFilled } from "react-icons/tb";
 import MarkUnreadModal from "../../../components/ui/MarkUnreadModal";
 import DeleteModal from "../../../components/ui/DeleteModal";
+
+// ConfirmationModal.js
+const ConfirmationModal = ({ title, message, handleConfirm, closeModal }) => {
+
+  const theme = useTheme();
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
+      <div className=" bg-opacity-50 absolute inset-0"></div>
+      <div className={`${theme.palette.mode === "dark" ? "bg-gray-800" :"bg-gray-100"} border border-1 border-gray-200 rounded-lg p-6 relative z-10`}>
+        <h2 className="text-xl font-bold mb-4">{title}</h2>
+        <p className="mb-6">{message}</p>
+        <div className="flex justify-end gap-4">
+          <button
+            onClick={closeModal}
+            className="px-4 py-2 border rounded"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirm}
+            className="px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 function Index({setRefetchNotification}) {
   const theme = useTheme();
@@ -35,6 +67,61 @@ function Index({setRefetchNotification}) {
 
   const [showUnreadModal, setShowUnreadModal] = useState(false);
   const [unreadId, setUnreadId] = useState();
+
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showUnpublishModal, setShowUnpublishModal] = useState(false);
+  const [publishId, setPublishId] = useState();
+
+   // Add new handlers for publish/unpublish
+   const handlePublish = async (id) => {
+    try {
+      const response = await axios.put(
+        `${process.env.REACT_APP_BACKEND_URL}/api/listings/setlistingpublished/${id}?userId=${userId}`,
+        {},
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      );
+      
+      if (response) {
+        toast.success("Listing published successfully!");
+        setRefetchNotification();
+        fetchAllListings(userId, userToken);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Failed to publish listing");
+    }
+    setShowPublishModal(false);
+    setPublishId(null);
+  };
+
+  const handleUnpublish = async (id) => {
+    try {
+      const response = await axios.put(
+        `${process.env.REACT_APP_BACKEND_URL}/api/listings/setlistingunpublished/${id}?userId=${userId}`,
+        {},
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      );
+      
+      if (response) {
+        toast.success("Listing unpublished successfully!");
+        fetchAllListings(userId, userToken);
+        setRefetchNotification();
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Failed to unpublish listing");
+    }
+    setShowUnpublishModal(false);
+    setPublishId(null);
+  };
 
 
   const columns = [
@@ -85,17 +172,16 @@ function Index({setRefetchNotification}) {
       },
     },
 
+    
     { 
       field: "action",
       headerName: "Action",
-      flex: 1,
+      flex: 1.5,
       renderCell: (params) => (
         <Box>
-
           <IconButton
             onClick={() => {
-               // setListingViewed(params.row._id);
-               if (params.row.sellDetails === null) {
+              if (params.row.sellDetails === null) {
                 handleEdit(params.row, "editRent");
               } else {
                 handleEdit(params.row, "editSell");
@@ -105,8 +191,8 @@ function Index({setRefetchNotification}) {
                 toggleListingViewed(params.row._id, "yes");
                 if(params.row.isViewed === "no"){
                   decreaseCounter(userId, userToken, "newListings");
-                }}
-              // setPropertyViewed(params.row._id);
+                }
+              }
             }}
             className="text-grey-400"
           >
@@ -114,11 +200,35 @@ function Index({setRefetchNotification}) {
           </IconButton>
 
           <IconButton
-            onClick={() => handleDelete(params.row._id,params.row.isViewed)}
+            onClick={() => handleDelete(params.row._id, params.row.isViewed)}
             color="secondary"
           >
             <DeleteIcon />
           </IconButton>
+
+          {params.row.isPublished === "no" ? (
+            <IconButton
+              onClick={() => {
+                setPublishId(params.row._id);
+                setShowPublishModal(true);
+              }}
+              color="primary"
+              title="Publish"
+            >
+              <PublishIcon  className={`${theme.palette.mode === "dark" ? "text-white" : "text-black"}`}/>
+            </IconButton>
+          ) : (
+            <IconButton
+              onClick={() => {
+                setPublishId(params.row._id);
+                setShowUnpublishModal(true);
+              }}
+              color="warning"
+              title="Unpublish"
+            >
+              <UnpublishIcon className={`${theme.palette.mode === "dark" ? "text-white" : "text-black"}`}/>
+            </IconButton>
+          )}
         </Box>
       ),
     },
@@ -526,6 +636,31 @@ function Index({setRefetchNotification}) {
           }}
         />
       )}
+
+{showPublishModal && publishId && (
+  <ConfirmationModal
+    title="Confirm Publish"
+    message="Are you sure you want to publish this listing?"
+    handleConfirm={() => handlePublish(publishId)}
+    closeModal={() => {
+      setShowPublishModal(false);
+      setPublishId(null);
+    }}
+  />
+)}
+
+{showUnpublishModal && publishId && (
+  <ConfirmationModal
+    title="Confirm Unpublish"
+    message="Are you sure you want to unpublish this listing?"
+    handleConfirm={() => handleUnpublish(publishId)}
+    closeModal={() => {
+      setShowUnpublishModal(false);
+      setPublishId(null);
+    }}
+  />
+)}
+
     </Box>
   );
 }
