@@ -96,6 +96,19 @@ function Index({ setRefetchNotification }) {
       width: 160,
     },
     {
+      field: "listingId",
+      headerName: "From Listings",
+      valueGetter: (params) => {
+        if(params.value !== "none"){
+          return `Yes (${params.value})`;
+        }else{
+          return "No"
+        }
+
+      },
+      width: 180,
+    },
+    {
       field: "createdAt",
       headerName: "Created",
       width: 180,

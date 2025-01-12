@@ -39,6 +39,8 @@ import { BsSafe2Fill } from "react-icons/bs";
 import { FaBook } from "react-icons/fa";
 import { FaSuperpowers } from "react-icons/fa";
 
+import { FaLink } from "react-icons/fa";
+
 const Item = ({ title, to, icon, selected, setSelected, badge }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -406,6 +408,14 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
               title="Email Templates"
               to="/emailTemplates"
               icon={<MdOutlineAttachEmail className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+<Item
+              title="Files to URL"
+              to="/filesToUrl"
+              icon={<FaLink className="h-4 w-4" />}
               selected={selected}
               setSelected={setSelected}
             />
