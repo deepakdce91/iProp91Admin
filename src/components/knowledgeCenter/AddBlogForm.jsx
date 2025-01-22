@@ -9,11 +9,12 @@ import { MdEdit } from "react-icons/md";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { client } from "../../config/s3Config";
 import { supabase } from "../../config/supabase";
+import {
+  removeSpaces,
+  sortArrayByName,
+} from "../../MyFunctions";
 
-import { CKEditor } from "@ckeditor/ckeditor5-react";
-import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
-import CKUploadAdapter from "../../config/CKUploadAdapter";
-
+import { Editor } from '@tinymce/tinymce-react';
 import { Chips } from "primereact/chips";
 
 function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
@@ -21,6 +22,8 @@ function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
   const youtubeRegex = /^https:\/\/youtu/;
 
   const fileInputRef = useRef(null);
+
+  const editorRef = useRef(null);
 
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(
@@ -40,17 +43,34 @@ function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
     enable: "true",
   });
 
-  const editorConfiguration = {
-    extraPlugins: [
-      function (editor) {
-        editor.plugins.get("FileRepository").createUploadAdapter = function (
-          loader
-        ) {
-          return new CKUploadAdapter(loader, supabase);
+   // File upload handler for TinyMCE
+    const handleEditorUpload = async (blobInfo) => {
+      try {
+        const file = blobInfo.blob();
+        const fileName = removeSpaces(blobInfo.filename());
+        const myPath = `editorFiles/${fileName}`;
+  
+        const uploadParams = {
+          Bucket: process.env.REACT_APP_LIBRARY_BUCKET,
+          Key: myPath,
+          Body: file,
+          ContentType: file.type,
         };
-      },
-    ],
-  };
+  
+        const command = new PutObjectCommand(uploadParams);
+        await client.send(command);
+  
+        const { data } = supabase.storage
+          .from(process.env.REACT_APP_LIBRARY_BUCKET)
+          .getPublicUrl(myPath);
+  
+        return data.publicUrl;
+      } catch (error) {
+        console.error('Upload failed:', error);
+        throw new Error('Upload failed');
+      }
+    };
+  
 
   const getPublicUrlFromSupabase = (path) => {
     const { data, error } = supabase.storage
@@ -379,21 +399,47 @@ function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
 
             <h2 className="text-lg font-medium mt-2 mb-3">Content</h2>
 
-            <div className=" w-full  text-black pr-0 md:pr-5 ">
-              <CKEditor
-                editor={ClassicEditor}
-                config={editorConfiguration}
-                // config={{
-                // extraPlugins: [],
-                // toolbar: ['heading', '|', 'bold', 'italic', '|', 'imageUpload', '|', 'undo', 'redo'],
-                // }}
-                data={addData.content}
-                onChange={(event, editor) => {
-                  const data = editor.getData();
-                  changeField("content", data);
-                }}
-              />
-            </div>
+           <div className="w-full text-black pr-0 md:pr-5">
+                         <Editor
+                           apiKey={process.env.REACT_APP_TINY_MCE_API_KEY} 
+                           onInit={(evt, editor) => editorRef.current = editor}
+                           value={addData.content}
+                           init={{
+                             height: 500,
+                             menubar: true,
+                             plugins: [
+                               'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                               'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                               'insertdatetime', 'media', 'table', 'help', 'wordcount'
+                             ],
+                             toolbar: 'undo redo | blocks | ' +
+                               'bold italic | alignleft aligncenter ' +
+                               'alignright alignjustify | bullist numlist outdent indent | ' +
+                               'removeformat | table | link image | help',
+                             content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+                             table_responsive_width: true,
+                             table_default_styles: {
+                               width: '100%',
+                               borderCollapse: 'collapse'
+                             },
+                             table_cell_class_list: [
+                               {title: 'None', value: ''},
+                               {title: 'Wider Cell', value: 'wider-cell'}
+                             ],
+                             table_row_class_list: [
+                               {title: 'None', value: ''},
+                               {title: 'Larger Row', value: 'larger-row'}
+                             ],
+                             images_upload_handler: handleEditorUpload,
+                             file_picker_types: 'image',
+                             promotion: false
+                           }}
+                           
+                           onEditorChange={(content) => {
+                             changeField("content", content);
+                           }}
+                         />
+                       </div>
 
             {/* youtube urls  */}
 

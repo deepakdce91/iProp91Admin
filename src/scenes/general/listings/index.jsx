@@ -128,15 +128,15 @@ function Index({setRefetchNotification}) {
     {
       field: "isViewed",
       headerName: "",
-      flex: 0.2,
+      width: 10,
       renderCell: (params) => {
-        if (params.row.isViewed === "no") {
+        if (params.row.listing.isViewed === "no") {
           return <TbCircleDotFilled className="text-green-400" />;
-        } else if (params.row.isViewed === "red") {
+        } else if (params.row.listing.isViewed === "red") {
           return <TbCircleDotFilled className="text-red-400" />;
         } else {
           return <TbCircleDotFilled onClick={()=>{
-            handleMarkUnread(params.row._id);
+            handleMarkUnread(params.row.listing._id);
           }} className="text-gray-400 cursor-pointer" />;
         }
       },
@@ -151,20 +151,97 @@ function Index({setRefetchNotification}) {
     {
       field: "_id",
       headerName: "Listing Id",
-      flex: 1,
+      valueGetter: (params) => params.row.listing._id, 
+     width : 80
     },
     {
       field: "propertyId",
       headerName: "For Property",
-      flex: 1,
+      valueGetter: (params) => params.row.listing.propertyId, 
+      width : 80
+    },
+    {
+      field: "city",
+      headerName: "City",
+      valueGetter: (params) => {
+        if(params.row.property !== null){
+          return params.row.property.city;
+        }else{
+          return "N/A";
+        }
+      }, 
+      width : 120
+    },
+    {
+      field: "builder",
+      headerName: "Builder",
+      valueGetter: (params) => {
+        if(params.row.property !== null){
+          return params.row.property.builder;
+        }else{
+          return "N/A";
+        }
+      }, 
+      width : 120
+    },
+    {
+      field: "project",
+      headerName: "Project",
+      valueGetter: (params) => {
+        if(params.row.property !== null){
+          return params.row.property.project;
+        }else{
+          return "N/A";
+        }
+      }, 
+      width : 120
+    },
+
+    {
+      field: "customerName",
+      headerName: "Customer Name",
+      valueGetter: (params) => {
+        if(params.row.user !== null){
+          return params.row.user.name;
+        }else{
+          return "N/A";
+        }
+      }, 
+      width : 120
+    },
+
+    {
+      field: "customerPhoneNo",
+      headerName: "Phone No.",
+      valueGetter: (params) => {
+        if(params.row.user !== null){
+          return params.row.user.phone;
+        }else{
+          return "N/A";
+        }
+      }, 
+      width : 120
+    },
+
+    {
+      field: "customerEmail",
+      headerName: "Email",
+      valueGetter: (params) => {
+        if(params.row.user !== null){
+          return params.row.user.email;
+        }else{
+          return "N/A";
+        }
+      }, 
+      width : 150
     },
 
     {
       field: "type",
       headerName: "Type",
-      flex: 1,
+      width : 50,
       valueGetter: (params) => {
-        if (params.row.sellDetails === null) {
+        if (params.row.listing.sellDetails === null) {
           return "Rent";
         } else {
           return "Sell";
@@ -176,20 +253,20 @@ function Index({setRefetchNotification}) {
     { 
       field: "action",
       headerName: "Action",
-      flex: 1.5,
+      width : 150,
       renderCell: (params) => (
         <Box>
           <IconButton
             onClick={() => {
-              if (params.row.sellDetails === null) {
-                handleEdit(params.row, "editRent");
+              if (params.row.listing.sellDetails === null) {
+                handleEdit(params.row.listing, "editRent");
               } else {
-                handleEdit(params.row, "editSell");
+                handleEdit(params.row.listing, "editSell");
               }
 
-              if (params.row.isViewed !== "yes") {
-                toggleListingViewed(params.row._id, "yes");
-                if(params.row.isViewed === "no"){
+              if (params.row.listing.isViewed !== "yes") {
+                toggleListingViewed(params.row.listing._id, "yes");
+                if(params.row.listing.isViewed === "no"){
                   decreaseCounter(userId, userToken, "newListings");
                 }
               }
@@ -200,16 +277,16 @@ function Index({setRefetchNotification}) {
           </IconButton>
 
           <IconButton
-            onClick={() => handleDelete(params.row._id, params.row.isViewed)}
+            onClick={() => handleDelete(params.row.listing._id, params.row.listing.isViewed)}
             color="secondary"
           >
             <DeleteIcon />
           </IconButton>
 
-          {params.row.isPublished === "no" ? (
+          {params.row.listing.isPublished === "no" ? (
             <IconButton
               onClick={() => {
-                setPublishId(params.row._id);
+                setPublishId(params.row.listing._id);
                 setShowPublishModal(true);
               }}
               color="primary"
@@ -220,7 +297,7 @@ function Index({setRefetchNotification}) {
           ) : (
             <IconButton
               onClick={() => {
-                setPublishId(params.row._id);
+                setPublishId(params.row.listing._id);
                 setShowUnpublishModal(true);
               }}
               color="warning"
@@ -286,7 +363,7 @@ function Index({setRefetchNotification}) {
   const fetchAllListings = (userId, userToken) => {
     axios
       .get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/listings/fetchalllistings?userId=${userId}`,
+        `${process.env.REACT_APP_BACKEND_URL}/api/listings/fetchalllistingsmapped?userId=${userId}`,
         {
           headers: {
             "auth-token": userToken,
@@ -294,7 +371,7 @@ function Index({setRefetchNotification}) {
         }
       )
       .then((response) => {
-        setData(response.data);
+        setData(response.data.data);
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -609,7 +686,7 @@ function Index({setRefetchNotification}) {
             rows={data}
             columns={columns}
             components={{ Toolbar: GridToolbar }}
-            getRowId={(row) => row._id}
+            getRowId={(row) => row.listing._id}
             autoHeight
           />
         </Box> 

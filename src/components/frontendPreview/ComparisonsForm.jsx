@@ -1,7 +1,7 @@
 import { Box } from "@mui/material";
 import { useTheme } from "@mui/material";
 import { tokens } from "../../theme";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
@@ -10,17 +10,18 @@ import { removeSpaces } from "../../MyFunctions";
 import { supabase } from "../../config/supabase";
 
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { client } from "../../config/s3Config";
+import { client } from "../../config/s3Config"; 
 
 import heic2any from "heic2any";
 
-import { CKEditor } from "@ckeditor/ckeditor5-react";
-import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
-import CKUploadAdapter from "../../config/CKUploadAdapter";
+
+import { Editor } from '@tinymce/tinymce-react';
 
 import { RiDeleteBinFill } from "react-icons/ri";
 
 function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
+
+  const editorRef = useRef(null);
   const [uploadFile1, setUploadFile1] = useState();
   const [fileAddedForUpload1, setFileAddedForUpload1] = useState(false);
 
@@ -42,16 +43,32 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
     enable: "false",
   });
 
-  const editorConfiguration = {
-    extraPlugins: [
-      function (editor) {
-        editor.plugins.get("FileRepository").createUploadAdapter = function (
-          loader
-        ) {
-          return new CKUploadAdapter(loader, supabase);
-        };
-      },
-    ],
+  // File upload handler for TinyMCE
+  const handleEditorUpload = async (blobInfo) => {
+    try {
+      const file = blobInfo.blob();
+      const fileName = removeSpaces(blobInfo.filename());
+      const myPath = `editorFiles/${fileName}`;
+
+      const uploadParams = {
+        Bucket: process.env.REACT_APP_LIBRARY_BUCKET,
+        Key: myPath,
+        Body: file,
+        ContentType: file.type,
+      };
+
+      const command = new PutObjectCommand(uploadParams);
+      await client.send(command);
+
+      const { data } = supabase.storage
+        .from(process.env.REACT_APP_LIBRARY_BUCKET)
+        .getPublicUrl(myPath);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Upload failed:', error);
+      throw new Error('Upload failed');
+    }
   };
 
   const getPublicUrlFromSupabase = (path) => {
@@ -478,17 +495,47 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                     Top Text
                   </label>
 
-                  <div className=" w-full  text-black pr-0 md:pr-5 ">
-                    <CKEditor
-                      editor={ClassicEditor}
-                      config={editorConfiguration}
-                      data={addData.topText}
-                      onChange={(event, editor) => {
-                        const data = editor.getData();
-                        changeField("topText", data);
-                      }}
-                    />
-                  </div>
+                  <div className="w-full text-black pr-0 md:pr-5">
+              <Editor
+                apiKey={process.env.REACT_APP_TINY_MCE_API_KEY} 
+                onInit={(evt, editor) => editorRef.current = editor}
+                value={addData.topText}
+                init={{
+                  height: 500,
+                  menubar: true,
+                  plugins: [
+                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                    'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                    'insertdatetime', 'media', 'table', 'help', 'wordcount'
+                  ],
+                  toolbar: 'undo redo | blocks | ' +
+                    'bold italic | alignleft aligncenter ' +
+                    'alignright alignjustify | bullist numlist outdent indent | ' +
+                    'removeformat | table | link image | help',
+                  content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+                  table_responsive_width: true,
+                  table_default_styles: {
+                    width: '100%',
+                    borderCollapse: 'collapse'
+                  },
+                  table_cell_class_list: [
+                    {title: 'None', value: ''},
+                    {title: 'Wider Cell', value: 'wider-cell'}
+                  ],
+                  table_row_class_list: [
+                    {title: 'None', value: ''},
+                    {title: 'Larger Row', value: 'larger-row'}
+                  ],
+                  images_upload_handler: handleEditorUpload,
+                  file_picker_types: 'image',
+                  promotion: false
+                }}
+                
+                onEditorChange={(content) => {
+                  changeField("topText", content);
+                }}
+              />
+            </div>
                 </div>
               </div>
             </div>
@@ -504,17 +551,47 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                     Bottom Text
                   </label>
 
-                  <div className=" w-full  text-black pr-0 md:pr-5 ">
-                    <CKEditor
-                      editor={ClassicEditor}
-                      config={editorConfiguration}
-                      data={addData.bottomText}
-                      onChange={(event, editor) => {
-                        const data = editor.getData();
-                        changeField("bottomText", data);
-                      }}
-                    />
-                  </div>
+                  <div className="w-full text-black pr-0 md:pr-5">
+              <Editor
+                apiKey={process.env.REACT_APP_TINY_MCE_API_KEY} 
+                onInit={(evt, editor) => editorRef.current = editor}
+                value={addData.bottomText}
+                init={{
+                  height: 500,
+                  menubar: true,
+                  plugins: [
+                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                    'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                    'insertdatetime', 'media', 'table', 'help', 'wordcount'
+                  ],
+                  toolbar: 'undo redo | blocks | ' +
+                    'bold italic | alignleft aligncenter ' +
+                    'alignright alignjustify | bullist numlist outdent indent | ' +
+                    'removeformat | table | link image | help',
+                  content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+                  table_responsive_width: true,
+                  table_default_styles: {
+                    width: '100%',
+                    borderCollapse: 'collapse'
+                  },
+                  table_cell_class_list: [
+                    {title: 'None', value: ''},
+                    {title: 'Wider Cell', value: 'wider-cell'}
+                  ],
+                  table_row_class_list: [
+                    {title: 'None', value: ''},
+                    {title: 'Larger Row', value: 'larger-row'}
+                  ],
+                  images_upload_handler: handleEditorUpload,
+                  file_picker_types: 'image',
+                  promotion: false
+                }}
+                
+                onEditorChange={(content) => {
+                  changeField("bottomText", content);
+                }}
+              />
+            </div>
                 </div>
               </div>
             </div>

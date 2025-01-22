@@ -9,9 +9,19 @@ import { supabase } from "../../../config/supabase";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { client } from "../../../config/s3Config";
 
-import { getNameList, getUniqueItems, removeSpaces, sortArrayByName } from "../../../MyFunctions";
+import {
+  removeSpaces,
+  sortArrayByName,
+} from "../../../MyFunctions";
+import CustomDropdown from "../../ui/CustomDropdown";
 
-function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMode }) {
+function ProjectsForm({
+  editData,
+  setModeToDisplay,
+  userToken,
+  userId,
+  displayMode,
+}) {
   const [isUploading, setIsUploading] = useState(false);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -21,16 +31,17 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
   const [builders, setBuilders] = useState([]);
   const [projects, setProjects] = useState([]);
 
-  const [dropdownOpen, setDropdownOpen] = useState();
-
   const [addData, setAddData] = useState({
-    propertyId: "",
+    thumbnail: "",
+    propertyId: "none",
+    listingId: "none",
     state: "",
     city: "",
     builder: "",
     project: "",
     overview: "",
     address: "",
+    sector : "",
     pincode: "",
     status: "",
     type: "",
@@ -39,6 +50,20 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
     minimumPrice: "",
     maximumPrice: "",
     bhk: "",
+
+    houseNumber: "",
+    floorNumber: "",
+    tower: "",
+    unit: "",
+    size: "",
+
+    numberOfFloors: "",
+    numberOfBedrooms: "",
+    numberOfBathrooms: "",
+    numberOfWashrooms: "",
+    numberOfParkings: "",
+    isTitleDeedVerified: "",
+
     appartmentType: [],
     appartmentSubType: [],
     features: [],
@@ -50,9 +75,10 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
     transportationHubs: [],
     educationalInstitutions: [],
     images: [],
+    videos : [],
     floorPlan: [],
     enable: "true",
-    isViewed: "no"
+    isViewed: "no",
   });
 
   const getPublicUrlFromSupabase = (path) => {
@@ -71,6 +97,7 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
 
   const uploadFileToCloud = async (myFile, type) => {
     const myFileName = removeSpaces(myFile.name);
+    // Add videos to the possible paths
     const myPath = `Projects/${type}/${myFileName}`;
     try {
       const uploadParams = {
@@ -88,68 +115,141 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
     }
   };
 
-  const handleFileUpload = async (e, type) => {
-    const files = Array.from(e.target.files);
-    const maxFiles = type === 'images' ? 15 : 5;
-    const currentFiles = type === 'images' ? addData.images : addData.floorPlan;
-    
-    if (currentFiles.length + files.length > maxFiles) {
-      toast.error(`Maximum ${maxFiles} files allowed for ${type}`);
-      return;
-    }
+  // Single file upload for thumbnail
+  const handleThumbnailUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
     setIsUploading(true);
-    toast("Uploading files...");
+    toast("Uploading thumbnail...");
 
     try {
-      for (const file of files) {
-        const cloudFilePath = await uploadFileToCloud(file, type);
-        if (cloudFilePath) {
-          const publicUrl = getPublicUrlFromSupabase(cloudFilePath);
-          if (publicUrl) {
-            setAddData(prev => ({
-              ...prev,
-              [type]: [...prev[type], publicUrl]
-            }));
-          }
+      const cloudFilePath = await uploadFileToCloud(file, "thumbnails");
+      if (cloudFilePath) {
+        const publicUrl = getPublicUrlFromSupabase(cloudFilePath);
+        if (publicUrl) {
+          setAddData((prev) => ({
+            ...prev,
+            thumbnail: {
+              name: publicUrl.name,
+              path: publicUrl.url,
+            },
+          }));
         }
       }
       setIsUploading(false);
-      toast.success("Files uploaded successfully");
+      toast.success("Thumbnail uploaded successfully");
     } catch (error) {
       setIsUploading(false);
-      toast.error("Error uploading files");
+      toast.error("Error uploading thumbnail");
       console.error(error);
     }
   };
 
+  // Multiple file upload function with path handling
+  const handleFileUpload = async (e, type) => {
+
+    const files = Array.from(e.target.files);
+    const maxFiles = {
+      images: 15,
+      floorPlan: 5,
+      videos: 5
+    }[type];
+  
+    const maxSizeInMB = type === 'videos' ? 100 : 5; // 100MB for videos, 5MB for images
+    const currentFiles = addData[type];
+  
+    if (currentFiles.length + files.length > maxFiles) {
+      toast.error(`Maximum ${maxFiles} files allowed for ${type}`);
+      return;
+    }
+  
+    // Check file sizes
+    const oversizedFiles = files.filter(file => file.size > maxSizeInMB * 1024 * 1024);
+    if (oversizedFiles.length > 0) {
+      toast.error(`Some files exceed the ${maxSizeInMB}MB size limit`);
+      return;
+    }
+  
+    setIsUploading(true);
+    toast(`Uploading ${type}...`);
+  
+    try {
+      const uploadPromises = files.map(async (file) => {
+        const cloudFilePath = await uploadFileToCloud(file, type);
+        if (cloudFilePath) {
+          const publicUrl = getPublicUrlFromSupabase(cloudFilePath);
+          return {
+            name: publicUrl.name,
+            path: publicUrl.url,
+          };
+        }
+        return null;
+      });
+  
+      const uploadedFiles = await Promise.all(uploadPromises);
+      const validFiles = uploadedFiles.filter((file) => file !== null);
+  
+      setAddData((prev) => ({
+        ...prev,
+        [type]: [...prev[type], ...validFiles],
+      }));
+  
+      setIsUploading(false);
+      toast.success(`${type} uploaded successfully`);
+    } catch (error) {
+      setIsUploading(false);
+      toast.error(`Error uploading ${type}`);
+      console.error(error);
+    }
+  };
+
+  // Function to handle thumbnail removal
+  const handleRemoveThumbnail = () => {
+    setAddData((prev) => ({
+      ...prev,
+      thumbnail: "",
+    }));
+  };
+
+  // Function to handle file removal with path
+  const handleRemoveFile = (index, type) => {
+    setAddData((prev) => ({
+      ...prev,
+      [type]: prev[type].filter((_, i) => i !== index),
+    }));
+  };
 
   const fetchCitiesByState = (currentStateCode) => {
     axios
-    .get(`https://api.countrystatecity.in/v1/countries/IN/states/${currentStateCode}/cities`,{
-      headers: {
-        'X-CSCAPI-KEY': process.env.REACT_APP_CSC_API,
-      }
-    })
-    .then((response) => {
-
-      setCities(sortArrayByName(response.data));
-      
-    })
-    .catch((error) => {
-      console.error("Error:", error);
-    });
+      .get(
+        `https://api.countrystatecity.in/v1/countries/IN/states/${currentStateCode}/cities`,
+        {
+          headers: {
+            "X-CSCAPI-KEY": process.env.REACT_APP_CSC_API,
+          },
+        }
+      )
+      .then((response) => {
+        setCities(sortArrayByName(response.data));
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
   };
 
   const fetchBuildersByCity = (city) => {
     axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/builders/fetchbuildersbycity/${city}?userId=${userId}`,  {
-              headers: {
-                "auth-token" : userToken
-              },
-            })
-          .then((response) => {
-        setBuilders(getUniqueItems(getNameList(response.data)));
+      .get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/builders/fetchbuildersbycity/${city}?userId=${userId}`,
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
+      .then((response) => {
+        setBuilders(response.data);
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -159,45 +259,65 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
   const fetchProjectByBuilder = (builder) => {
     axios
       .get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/projects/fetchprojectbybuilder/${builder}?userId=${userId}`,  {
-              headers: {
-                "auth-token" : userToken
-              },
-            })
-          .then((response) => {
-        setProjects(getUniqueItems(getNameList(response.data)));
+        `${process.env.REACT_APP_BACKEND_URL}/api/projects/fetchprojectbybuilder/${builder}?userId=${userId}`,
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
+      .then((response) => {
+        setProjects(response.data);
       })
       .catch((error) => {
         console.error("Error:", error);
       });
   };
 
-
-  const handleRemoveFile = (index, type) => {
-    setAddData(prev => ({
-      ...prev,
-      [type]: prev[type].filter((_, i) => i !== index)
-    }));
-  };
-
   const handleChipInput = (e, field) => {
-    if (e.key === 'Enter' && e.target.value) {
+    if (e.key === "Enter" && e.target.value) {
       const value = e.target.value.trim();
       if (!addData[field].includes(value)) {
-        setAddData(prev => ({
+        setAddData((prev) => ({
           ...prev,
-          [field]: [...prev[field], value]
+          [field]: [...prev[field], value],
         }));
       }
-      e.target.value = '';
+      e.target.value = "";
     }
   };
 
   const handleRemoveChip = (index, field) => {
-    setAddData(prev => ({
+    setAddData((prev) => ({
       ...prev,
-      [field]: prev[field].filter((_, i) => i !== index)
+      [field]: prev[field].filter((_, i) => i !== index),
     }));
+  };
+
+  const changeFieldForDropdown = (e) => {
+    setAddData((prevData) => ({
+      ...prevData,
+      [e.target.name]: e.target.value,
+    }));
+
+    const value = e.target.value;
+
+    if (e.target.name === "state" && value) {
+      if (value && value.length > 0) {
+        const selectedValue = value;
+        const item = states.find((state) => state.name === selectedValue);
+        if (item) {
+          fetchCitiesByState(item.iso2);
+        }
+      }
+    }
+    if (e.target.name === "city" && value) {
+      fetchBuildersByCity(value);
+    }
+
+    if (e.target.name === "builder" && value) {
+      fetchProjectByBuilder(value);
+    }
   };
 
   const changeField = (field, value) => {
@@ -207,15 +327,13 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
     }));
 
     if (field === "state" && value) {
-
-    if (value && value.length > 0) {
-      const selectedValue = value;
-      const item = states.find(state => state.name === selectedValue);
-      if (item) {
-        fetchCitiesByState(item.iso2);
+      if (value && value.length > 0) {
+        const selectedValue = value;
+        const item = states.find((state) => state.name === selectedValue);
+        if (item) {
+          fetchCitiesByState(item.iso2);
+        }
       }
-      
-    }
     }
 
     if (field === "city" && value) {
@@ -228,17 +346,22 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
   };
 
   const handleSubmit = () => {
-    if (!addData.propertyId ||!addData.state || !addData.city || !addData.builder || !addData.project) {
+    if (
+      !addData.state ||
+      !addData.city ||
+      !addData.builder ||
+      !addData.project
+    ) {
       toast.error("Required fields: State, City, Builder, and Project");
       return;
     }
 
-    const endpoint = editData 
+    const endpoint = editData
       ? `${process.env.REACT_APP_BACKEND_URL}/api/projectsDataMaster/updateProject/${editData._id}?userId=${userId}`
       : `${process.env.REACT_APP_BACKEND_URL}/api/projectsDataMaster/addProject?userId=${userId}`;
-    
-    const method = editData ? 'put' : 'post';
-    
+
+    const method = editData ? "put" : "post";
+
     axios[method](endpoint, addData, {
       headers: {
         "auth-token": userToken,
@@ -258,7 +381,6 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
       });
   };
 
-
   const fetchAllStates = () => {
     axios
       .get(`https://api.countrystatecity.in/v1/countries/IN/states`, {
@@ -275,7 +397,7 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
   };
 
   useEffect(() => {
-    fetchAllStates(); 
+    fetchAllStates();
 
     if (editData) {
       setAddData(editData);
@@ -283,37 +405,75 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
   }, [editData]);
 
   return (
-    <Box sx={{
-      padding: "24px",
-      "& .MuiInputBase-root": {
-        backgroundColor: colors.primary[400],
-        color: colors.grey[100],
-        borderRadius: "4px",
-        "&:hover": {
-          borderColor: colors.blueAccent[700],
+    <Box
+      sx={{
+        padding: "24px",
+        "& .MuiInputBase-root": {
+          backgroundColor: colors.primary[400],
+          color: colors.grey[100],
+          borderRadius: "4px",
+          "&:hover": {
+            borderColor: colors.blueAccent[700],
+          },
+          "& input": {
+            color: "#000000",
+          },
         },
-        "& input": {
-          color: "#000000",
+        "& .MuiInputLabel-root": {
+          color: colors.grey[300],
+          "&.Mui-focused": {
+            color: colors.blueAccent[700],
+          },
         },
-      },
-      "& .MuiInputLabel-root": {
-        color: colors.grey[300],
-        "&.Mui-focused": {
-          color: colors.blueAccent[700],
-        },
-      },
-    }}>
+      }}
+    >
       <div className="flex items-center justify-center">
         <div className="w-full">
           <form>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-wrap gap-4">
               {/* Basic Information */}
-              <div className="mb-5">
-                <label htmlFor="propertyId" className="mb-3 block text-base font-medium">
-                  Property ID *
+
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="thumbnail"
+                  className="mb-3 block text-base font-medium"
+                >
+                  Thumbnail Image
                 </label>
-                <input 
-                readOnly={displayMode ? true : false}
+                {!displayMode && (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleThumbnailUpload}
+                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                    disabled={isUploading}
+                  />
+                )}
+                {addData.thumbnail && (
+                  <div className="flex items-center border p-2 rounded mt-2">
+                    <span className="truncate max-w-xs">
+                      {addData.thumbnail.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleRemoveThumbnail}
+                      className="ml-2 text-red-500 hover:text-red-700"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="propertyId"
+                  className="mb-3 block text-base font-medium"
+                >
+                  Property ID
+                </label>
+                <input
+                  readOnly={displayMode ? true : false}
                   type="text"
                   name="propertyId"
                   id="propertyId"
@@ -323,106 +483,178 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
                 />
               </div>
 
-              <div className="mb-5">
-                <label htmlFor="state" className="mb-3 block text-base font-medium">
-                  State *
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="listingId"
+                  className="mb-3 block text-base font-medium"
+                >
+                  Listing ID
                 </label>
-                <input readOnly={displayMode ? true : false}
+                <input
+                  readOnly={displayMode ? true : false}
                   type="text"
-                  name="state"
-                  id="state"
-                  list="states"
-                  required
+                  name="listingId"
+                  id="listingId"
+                  value={addData.listingId}
+                  onChange={(e) => changeField("listingId", e.target.value)}
+                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                />
+              </div>
+              <div className="mb-5 w-full lg:w-[45%]">
+                <CustomDropdown
+                  label="Select State *"
+                  options={states.filter(
+                    (item, index, self) =>
+                      index === self.findIndex((obj) => obj.name === item.name)
+                  )}
                   value={addData.state}
-                  onChange={(e) => changeField("state", e.target.value)}
-                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  onChange={changeFieldForDropdown}
+                  placeholder="Select or type a state..."
+                  name="state"
                 />
-                  <datalist id="states">
-                  {states.length > 0 &&
-                    states.map((item, index) => (
-                      <option
-                        key={index}
-                        value={item.name}
-                      />
-                    ))}
-                </datalist>
               </div>
-
-              <div className="mb-5">
-                <label htmlFor="city" className="mb-3 block text-base font-medium">
-                  City *
-                </label>
-                <input readOnly={displayMode ? true : false}
-                  type="text"
-                  name="city"
-                  id="city"
-                  list="cities"
-                  required 
+              <div className="mb-5 w-full lg:w-[45%]">
+                <CustomDropdown
+                  label="Select City *"
+                  options={cities.filter(
+                    (item, index, self) =>
+                      index === self.findIndex((obj) => obj.name === item.name)
+                  )}
                   value={addData.city}
-                  onChange={(e) => changeField("city", e.target.value)}
-                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  onChange={changeFieldForDropdown}
+                  placeholder="Select or type a city..."
+                  name="city"
                 />
-                 <datalist id="cities">
-                  {cities.length > 0 &&
-                    cities.map((item, index) => (
-                      <option
-                        key={index}
-                        value={item.name}
-                      />
-                    ))}
-                </datalist>
               </div>
-
-              <div className="mb-5">
-                <label htmlFor="builder" className="mb-3 block text-base font-medium">
-                  Builder *
-                </label>
-                <input readOnly={displayMode ? true : false}
-                  type="text"
-                  name="builder"
-                  id="builder"
-                  list="builders"
-                  required
+              <div className="mb-5 w-full lg:w-[45%]">
+                <CustomDropdown
+                  label="Select Builder *"
+                  options={builders?.filter(
+                    (item, index, self) =>
+                      index === self.findIndex((obj) => obj.name === item.name)
+                  )}
                   value={addData.builder}
-                  onChange={(e) => changeField("builder", e.target.value)}
-                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  onChange={changeFieldForDropdown}
+                  placeholder="Select or type a builder..."
+                  name="builder"
                 />
-                 <datalist id="builders">
-                    {builders.length > 0 &&
-                      builders.map((item, index) => (
-                        <option key={index} value={item} />
-                      ))}
-                  </datalist>
               </div>
-
-              <div className="mb-5">
-                <label htmlFor="project" className="mb-3 block text-base font-medium">
-                  Project Name *
-                </label>
-                <input readOnly={displayMode ? true : false}
-                  type="text"
-                  name="project"
-                  id="project"
-                  list="projects"
-                  required
+              <div className="mb-5 w-full lg:w-[45%]">
+                {/* Project Dropdown */}
+                <CustomDropdown
+                  label="Select Project *"
+                  options={projects?.filter(
+                    (item, index, self) =>
+                      index === self.findIndex((obj) => obj.name === item.name)
+                  )}
                   value={addData.project}
-                  onChange={(e) => changeField("project", e.target.value)}
-                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  onChange={changeFieldForDropdown}
+                  placeholder="Select or type a project..."
+                  name="project"
                 />
-                 <datalist id="projects">
-                    {projects.length > 0 &&
-                      projects.map((item, index) => (
-                        <option key={index} value={item} />
-                      ))}
-                  </datalist>
               </div>
 
-              <div className="mb-5 col-span-2">
-                <label htmlFor="overview" className="mb-3 block text-base font-medium">
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="houseNumber"
+                  className="mb-3 block text-base font-medium"
+                >
+                  House Number
+                </label>
+                <input
+                  readOnly={displayMode ? true : false}
+                  type="text"
+                  name="houseNumber"
+                  id="houseNumber"
+                  value={addData.houseNumber}
+                  onChange={(e) => changeField("houseNumber", e.target.value)}
+                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                />
+              </div>
+
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="floorNumber"
+                  className="mb-3 block text-base font-medium"
+                >
+                  Floor Number
+                </label>
+                <input
+                  readOnly={displayMode ? true : false}
+                  type="text"
+                  name="floorNumber"
+                  id="floorNumber"
+                  value={addData.floorNumber}
+                  onChange={(e) => changeField("floorNumber", e.target.value)}
+                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                />
+              </div>
+
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="tower"
+                  className="mb-3 block text-base font-medium"
+                >
+                  Tower
+                </label>
+                <input
+                  readOnly={displayMode ? true : false}
+                  type="text"
+                  name="tower"
+                  id="tower"
+                  value={addData.tower}
+                  onChange={(e) => changeField("tower", e.target.value)}
+                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                />
+              </div>
+
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="unit"
+                  className="mb-3 block text-base font-medium"
+                >
+                  Unit
+                </label>
+                <input
+                  readOnly={displayMode ? true : false}
+                  type="text"
+                  name="unit"
+                  id="unit"
+                  value={addData.unit}
+                  onChange={(e) => changeField("unit", e.target.value)}
+                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                />
+              </div>
+
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="size"
+                  className="mb-3 block text-base font-medium"
+                >
+                  Size
+                </label>
+                <input
+                  readOnly={displayMode ? true : false}
+                  type="text"
+                  name="size"
+                  id="size"
+                  value={addData.size}
+                  onChange={(e) => changeField("size", e.target.value)}
+                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                />
+              </div>
+
+              
+
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="overview"
+                  className="mb-3 block text-base font-medium"
+                >
                   Overview
                 </label>
                 <textarea
-                readOnly={displayMode ? true : false}
+                  readOnly={displayMode ? true : false}
                   name="overview"
                   id="overview"
                   value={addData.overview}
@@ -432,12 +664,15 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
                 />
               </div>
 
-              <div className="mb-5 col-span-2">
-                <label htmlFor="address" className="mb-3 block text-base font-medium">
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="address"
+                  className="mb-3 block text-base font-medium"
+                >
                   Address
                 </label>
                 <textarea
-                readOnly={displayMode ? true : false}
+                  readOnly={displayMode ? true : false}
                   name="address"
                   id="address"
                   value={addData.address}
@@ -448,11 +683,33 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
               </div>
 
               {/* Property Details */}
-              <div className="mb-5">
-                <label htmlFor="pincode" className="mb-3 block text-base font-medium">
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="sector"
+                  className="mb-3 block text-base font-medium"
+                >
+                  Sector
+                </label>
+                <input
+                  readOnly={displayMode ? true : false}
+                  type="text"
+                  name="sector"
+                  id="sector"
+                  value={addData.sector}
+                  onChange={(e) => changeField("sector", e.target.value)}
+                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                />
+              </div>
+
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="pincode"
+                  className="mb-3 block text-base font-medium"
+                >
                   Pincode
                 </label>
-                <input readOnly={displayMode ? true : false}
+                <input
+                  readOnly={displayMode ? true : false}
                   type="text"
                   name="pincode"
                   id="pincode"
@@ -462,12 +719,15 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
                 />
               </div>
 
-              <div className="mb-5">
-                <label htmlFor="status" className="mb-3 block text-base font-medium">
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="status"
+                  className="mb-3 block text-base font-medium"
+                >
                   Status
                 </label>
                 <select
-                readOnly={displayMode ? true : false}
+                  readOnly={displayMode ? true : false}
                   name="status"
                   id="status"
                   value={addData.status}
@@ -480,12 +740,15 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
                 </select>
               </div>
 
-              <div className="mb-5">
-                <label htmlFor="type" className="mb-3 block text-base font-medium">
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="type"
+                  className="mb-3 block text-base font-medium"
+                >
                   Type
                 </label>
                 <select
-                readOnly={displayMode ? true : false}
+                  readOnly={displayMode ? true : false}
                   name="type"
                   id="type"
                   value={addData.type}
@@ -498,12 +761,15 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
                 </select>
               </div>
 
-              <div className="mb-5">
-                <label htmlFor="availableFor" className="mb-3 block text-base font-medium">
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="availableFor"
+                  className="mb-3 block text-base font-medium"
+                >
                   Available For
                 </label>
                 <select
-                readOnly={displayMode ? true : false}
+                  readOnly={displayMode ? true : false}
                   name="availableFor"
                   id="availableFor"
                   value={addData.availableFor}
@@ -517,12 +783,40 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
                 </select>
               </div>
 
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="category"
+                  className="mb-3 block text-base font-medium"
+                >
+                  Category
+                </label>
+                <select
+                  readOnly={displayMode ? true : false}
+                  name="category"
+                  id="category"
+                  value={addData.category}
+                  onChange={(e) => changeField("category", e.target.value)}
+                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                >
+                  <option value="">Select category</option>
+                  <option value="pre_launch">Pre Launch</option>
+                  <option value="verified_owner">Verified Owner</option>
+                  <option value="property_resale">Property Resale</option>
+                  <option value="new_projects">New Projects</option>
+                  <option value="upcoming_projects">Upcoming Projects</option>
+                </select>
+              </div>
+
               {/* Price Details */}
-              <div className="mb-5">
-                <label htmlFor="minimumPrice" className="mb-3 block text-base font-medium">
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="minimumPrice"
+                  className="mb-3 block text-base font-medium"
+                >
                   Minimum Price
                 </label>
-                <input readOnly={displayMode ? true : false}
+                <input
+                  readOnly={displayMode ? true : false}
                   type="text"
                   name="minimumPrice"
                   id="minimumPrice"
@@ -532,11 +826,15 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
                 />
               </div>
 
-              <div className="mb-5">
-                <label htmlFor="maximumPrice" className="mb-3 block text-base font-medium">
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="maximumPrice"
+                  className="mb-3 block text-base font-medium"
+                >
                   Maximum Price
                 </label>
-                <input readOnly={displayMode ? true : false}
+                <input
+                  readOnly={displayMode ? true : false}
                   type="text"
                   name="maximumPrice"
                   id="maximumPrice"
@@ -546,38 +844,161 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
                 />
               </div>
 
-              <div className="mb-5">
-                <label htmlFor="bhk" className="mb-3 block text-base font-medium">
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="bhk"
+                  className="mb-3 block text-base font-medium"
+                >
                   BHK
                 </label>
-                <input readOnly={displayMode ? true : false}
-                  type="text"
+                <select
+                  readOnly={displayMode ? true : false}
                   name="bhk"
                   id="bhk"
                   value={addData.bhk}
                   onChange={(e) => changeField("bhk", e.target.value)}
+                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                >
+                  <option value="">--Select--</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="5+">5+</option>
+                  <option value="studio_appartment">Studio Appartment</option>
+                  <option value="plot">Plot</option>    
+                </select>
+               
+              </div>
+
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="numberOfFloors"
+                  className="mb-3 block text-base font-medium"
+                >
+                  Number Of Floors
+                </label>
+                <input
+                  readOnly={displayMode ? true : false}
+                  type="number"
+                  min={0}
+                  name="numberOfFloors"
+                  id="numberOfFloors"
+                  value={addData.numberOfFloors}
+                  onChange={(e) =>
+                    changeField("numberOfFloors", e.target.value)
+                  }
+                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                />
+              </div>
+
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="numberOfBedrooms"
+                  className="mb-3 block text-base font-medium"
+                >
+                  Number Of Bedrooms
+                </label>
+                <input
+                  readOnly={displayMode ? true : false}
+                  type="number"
+                  min={0}
+                  name="numberOfBedrooms"
+                  id="numberOfBedrooms"
+                  value={addData.numberOfBedrooms}
+                  onChange={(e) =>
+                    changeField("numberOfBedrooms", e.target.value)
+                  }
+                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                />
+              </div>
+
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="numberOfBathrooms"
+                  className="mb-3 block text-base font-medium"
+                >
+                  Number Of Bathrooms
+                </label>
+                <input
+                  readOnly={displayMode ? true : false}
+                  type="number"
+                  min={0}
+                  name="numberOfBathrooms"
+                  id="numberOfBathrooms"
+                  value={addData.numberOfBathrooms}
+                  onChange={(e) =>
+                    changeField("numberOfBathrooms", e.target.value)
+                  }
+                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                />
+              </div>
+
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="numberOfWashrooms"
+                  className="mb-3 block text-base font-medium"
+                >
+                  Number Of Washrooms
+                </label>
+                <input
+                  readOnly={displayMode ? true : false}
+                  type="number"
+                  min={0}
+                  name="numberOfWashrooms"
+                  id="numberOfWashrooms"
+                  value={addData.numberOfWashrooms}
+                  onChange={(e) =>
+                    changeField("numberOfWashrooms", e.target.value)
+                  }
+                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                />
+              </div>
+
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="numberOfParkings"
+                  className="mb-3 block text-base font-medium"
+                >
+                  Number Of Parkings
+                </label>
+                <input
+                  readOnly={displayMode ? true : false}
+                  type="number"
+                  min={0}
+                  name="numberOfParkings"
+                  id="numberOfParkings"
+                  value={addData.numberOfParkings}
+                  onChange={(e) =>
+                    changeField("numberOfParkings", e.target.value)
+                  }
                   className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                 />
               </div>
 
               {/* Multiple Value Inputs with Chips */}
               {[
-                { field: 'appartmentType', label: 'Apartment Type' },
-                { field: 'appartmentSubType', label: 'Apartment Sub Type' },
-                { field: 'features', label: 'Features' },
-                { field: 'amenities', label: 'Amenities' },
-                { field: 'commercialHubs', label: 'Commercial Hubs' },
-                { field: 'hospitals', label: 'Hospitals' },
-                { field: 'hotels', label: 'Hotels' },
-                { field: 'shoppingCentres', label: 'Shopping Centres' },
-                { field: 'transportationHubs', label: 'Transportation Hubs' },
-                { field: 'educationalInstitutions', label: 'Educational Institutions' }
+                { field: "appartmentType", label: "Apartment Type" },
+                { field: "appartmentSubType", label: "Apartment Sub Type" },
+                { field: "features", label: "Features" },
+                { field: "amenities", label: "Amenities" },
+                { field: "commercialHubs", label: "Commercial Hubs" },
+                { field: "hospitals", label: "Hospitals" },
+                { field: "hotels", label: "Hotels" },
+                { field: "shoppingCentres", label: "Shopping Centres" },
+                { field: "transportationHubs", label: "Transportation Hubs" },
+                {
+                  field: "educationalInstitutions",
+                  label: "Educational Institutions",
+                },
               ].map(({ field, label }) => (
-                <div key={field} className="mb-5 col-span-2">
+                <div key={field} className="mb-5 w-full lg:w-[45%]">
                   <label className="mb-3 block text-base font-medium">
                     {label}
                   </label>
-                  <input readOnly={displayMode ? true : false}
+                  <input
+                    readOnly={displayMode ? true : false}
                     type="text"
                     placeholder={`Press Enter to add ${label}`}
                     onKeyPress={(e) => handleChipInput(e, field)}
@@ -604,29 +1025,35 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
               ))}
 
               {/* File Uploads */}
-              <div className="mb-5 col-span-2">
+              <div className="mb-5 w-[95%]">
                 <label className="mb-3 block text-base font-medium">
                   Property Images (Max 15)
                 </label>
-                {!displayMode && <input readOnly={displayMode ? true : false}
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={(e) => handleFileUpload(e, 'images')}
-                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                  disabled={isUploading || addData.images.length >= 15}
-                />}
+                {!displayMode && (
+                  <input
+                    readOnly={displayMode ? true : false}
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => handleFileUpload(e, "images")}
+                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                    disabled={isUploading || addData.images.length >= 15}
+                  />
+                )}
                 <div className="text-sm text-gray-500 mt-1">
                   {15 - addData.images.length} slots remaining
                 </div>
                 {addData.images.length > 0 && (
                   <div className="flex flex-wrap gap-4 mt-4">
                     {addData.images.map((file, index) => (
-                      <div key={index} className="flex items-center border p-2 rounded">
+                      <div
+                        key={index}
+                        className="flex items-center border p-2 rounded"
+                      >
                         <span className="truncate max-w-xs">{file.name}</span>
                         <button
                           type="button"
-                          onClick={() => handleRemoveFile(index, 'images')}
+                          onClick={() => handleRemoveFile(index, "images")}
                           className="ml-2 text-red-500 hover:text-red-700"
                         >
                           ×
@@ -637,29 +1064,75 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
                 )}
               </div>
 
-              <div className="mb-5 col-span-2">
+              {/* Video Uploads */}
+<div className="mb-5 w-[95%]">
+  <label className="mb-3 block text-base font-medium">
+    Property Videos (Max 5)
+  </label>
+  {!displayMode && (
+    <input
+      readOnly={displayMode ? true : false}
+      type="file"
+      multiple
+      accept="video/*"
+      onChange={(e) => handleFileUpload(e, "videos")}
+      className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+      disabled={isUploading || addData.videos.length >= 5}
+    />
+  )}
+  <div className="text-sm text-gray-500 mt-1">
+    {5 - addData.videos.length} slots remaining
+  </div>
+  {addData.videos.length > 0 && (
+    <div className="flex flex-wrap gap-4 mt-4">
+      {addData.videos.map((file, index) => (
+        <div
+          key={index}
+          className="flex items-center border p-2 rounded"
+        >
+          <span className="truncate max-w-xs">{file.name}</span>
+          <button
+            type="button"
+            onClick={() => handleRemoveFile(index, "videos")}
+            className="ml-2 text-red-500 hover:text-red-700"
+          >
+            ×
+          </button>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
+              <div className="mb-5  w-[95%]">
                 <label className="mb-3 block text-base font-medium">
                   Floor Plans (Max 5)
                 </label>
-                {!displayMode && <input readOnly={displayMode ? true : false}
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={(e) => handleFileUpload(e, 'floorPlan')}
-                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                  disabled={isUploading || addData.floorPlan.length >= 5}
-                />}
+                {!displayMode && (
+                  <input
+                    readOnly={displayMode ? true : false}
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => handleFileUpload(e, "floorPlan")}
+                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                    disabled={isUploading || addData.floorPlan.length >= 5}
+                  />
+                )}
                 <div className="text-sm text-gray-500 mt-1">
                   {5 - addData.floorPlan.length} slots remaining
                 </div>
                 {addData.floorPlan.length > 0 && (
                   <div className="flex flex-wrap gap-4 mt-4">
                     {addData.floorPlan.map((file, index) => (
-                      <div key={index} className="flex items-center border p-2 rounded">
+                      <div
+                        key={index}
+                        className="flex items-center border p-2 rounded"
+                      >
                         <span className="truncate max-w-xs">{file.name}</span>
                         <button
                           type="button"
-                          onClick={() => handleRemoveFile(index, 'floorPlan')}
+                          onClick={() => handleRemoveFile(index, "floorPlan")}
                           className="ml-2 text-red-500 hover:text-red-700"
                         >
                           ×
@@ -670,53 +1143,88 @@ function ProjectsForm({ editData, setModeToDisplay, userToken, userId, displayMo
                 )}
               </div>
 
-              {/* Enable/Disable Toggle */}
-              {!displayMode && <div className="mb-5 col-span-2">
-                <label className="mb-3 block text-base font-medium">
-                  Project Status
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="isTitleDeedVerified"
+                  className="mb-3 block text-base font-medium"
+                >
+                  Is Title Deed Verified ?
                 </label>
-                <div className="flex items-center space-x-6">
-                  <div className="flex items-center">
-                    <input 
-                      type="radio"
-                      name="enable"
-                      value="true"
-                      className="h-5 w-5"
-                      checked={addData.enable === "true"}
-                      onChange={(e) => changeField("enable", e.target.value)}
-                    />
-                    <label className="pl-3 text-base font-medium">Enable</label>
-                  </div>
-                  <div className="flex items-center">
-                    <input 
-                      type="radio"
-                      name="enable"
-                      value="false"
-                      className="h-5 w-5"
-                      checked={addData.enable === "false"}
-                      onChange={(e) => changeField("enable", e.target.value)}
-                    />
-                    <label className="pl-3 text-base font-medium">Disable</label>
+                <select
+                  readOnly={displayMode ? true : false}
+                  name="isTitleDeedVerified"
+                  id="isTitleDeedVerified"
+                  value={addData.isTitleDeedVerified}
+                  onChange={(e) =>
+                    changeField("isTitleDeedVerified", e.target.value)
+                  }
+                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                >
+                  <option value="">Select </option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                </select>
+              </div>
+
+              {/* Enable/Disable Toggle */}
+              {!displayMode && (
+                <div className="mb-5 w-full lg:w-[45%]">
+                  <label className="mb-3 block text-base font-medium">
+                    Project Status
+                  </label>
+                  <div className="flex items-center space-x-6">
+                    <div className="flex items-center">
+                      <input
+                        type="radio"
+                        name="enable"
+                        value="true"
+                        className="h-5 w-5"
+                        checked={addData.enable === "true"}
+                        onChange={(e) => changeField("enable", e.target.value)}
+                      />
+                      <label className="pl-3 text-base font-medium">
+                        Enable
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="radio"
+                        name="enable"
+                        value="false"
+                        className="h-5 w-5"
+                        checked={addData.enable === "false"}
+                        onChange={(e) => changeField("enable", e.target.value)}
+                      />
+                      <label className="pl-3 text-base font-medium">
+                        Disable
+                      </label>
+                    </div>
                   </div>
                 </div>
-              </div>}
+              )}
             </div>
 
             {/* Submit Button */}
-            {!displayMode && <div className="flex justify-center mt-8">
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={isUploading}
-                className={`px-8 py-3 ${
-                  isUploading ? "bg-gray-600" : "bg-[#6A64F1]"
-                } text-white font-medium text-lg rounded-md shadow-md ${
-                  isUploading ? "" : "hover:bg-[#5a52e0]"
-                } focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
-              >
-                {isUploading ? "Uploading..." : (editData ? "Update Project" : "Add Project")}
-              </button>
-            </div>}
+            {!displayMode && (
+              <div className="flex justify-center mt-8">
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isUploading}
+                  className={`px-8 py-3 ${
+                    isUploading ? "bg-gray-600" : "bg-[#6A64F1]"
+                  } text-white font-medium text-lg rounded-md shadow-md ${
+                    isUploading ? "" : "hover:bg-[#5a52e0]"
+                  } focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
+                >
+                  {isUploading
+                    ? "Uploading..."
+                    : editData
+                    ? "Update Project"
+                    : "Add Project"}
+                </button>
+              </div>
+            )}
           </form>
           <ToastContainer position="top-center" autoClose={2000} />
         </div>
