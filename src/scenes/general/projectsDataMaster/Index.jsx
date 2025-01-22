@@ -5,6 +5,7 @@ import { tokens } from "../../../theme";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -15,6 +16,8 @@ import { jwtDecode } from "jwt-decode";
 import { TbCircleDotFilled } from "react-icons/tb";
 import DeleteModal from "../../../components/ui/DeleteModal";
 import MarkUnreadModal from "../../../components/ui/MarkUnreadModal";
+import * as XLSX from 'xlsx';
+
 
 function Index({ setRefetchNotification }) {
   const theme = useTheme();
@@ -35,6 +38,165 @@ function Index({ setRefetchNotification }) {
   const [showUnreadModal, setShowUnreadModal] = useState(false);
   const [unreadId, setUnreadId] = useState();
 
+  const [uploadError, setUploadError] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Function to extract filename from URL
+  const getFilenameFromUrl = (url) => {
+    try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+      const filename = pathname.split('/').pop() || 'file';
+      return filename;
+    } catch (e) {
+      return 'file';
+    }
+  };
+
+  // Function to convert URL to document schema
+  const convertUrlToDocument = (url) => {
+    return {
+      name: getFilenameFromUrl(url),
+      path: url,
+      addedBy: "admin"
+    };
+  };
+
+  // Function to process media fields
+  const processMediaField = (value) => {
+    if (!value) return [];
+    
+    try {
+      // If it's already a JSON string, parse it
+      if (typeof value === 'string' && (value.startsWith('[') || value.startsWith('{'))) {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          return parsed.map(url => typeof url === 'string' ? convertUrlToDocument(url) : url);
+        } else if (typeof parsed === 'object') {
+          return [parsed];
+        }
+      }
+      
+      // If it's a comma-separated string of URLs
+      if (typeof value === 'string' && value.includes(',')) {
+        return value.split(',')
+          .map(url => url.trim())
+          .filter(url => url)
+          .map(url => convertUrlToDocument(url));
+      }
+      
+      // If it's a single URL string
+      if (typeof value === 'string' && value.trim()) {
+        return [convertUrlToDocument(value.trim())];
+      }
+      
+      return [];
+    } catch (e) {
+      console.error('Error processing media field:', e);
+      return [];
+    }
+  };
+
+  // Function to map Excel columns to schema fields
+  const mapRowToSchema = (row, headers) => {
+    const mappedData = {};
+    headers.forEach((header, index) => {
+      const normalizedHeader = header.toLowerCase();
+      if (row[index] !== undefined) {
+        // Handle media fields
+        if (['images', 'videos', 'floorplan'].includes(normalizedHeader)) {
+          mappedData[normalizedHeader] = processMediaField(row[index]);
+        } else {
+          mappedData[normalizedHeader] = row[index].toString();
+        }
+      }
+    });
+    return mappedData;
+  };
+
+  // Function to validate required fields
+  const validateRow = (row, headers) => {
+    const requiredFields = ['state', 'city', 'builder', 'project'];
+    const mappedHeaders = headers.map(h => h.toLowerCase());
+    
+    for (let field of requiredFields) {
+      const index = mappedHeaders.indexOf(field);
+      if (index === -1 || !row[index]) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Function to handle file upload
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    setIsUploading(true);
+    setUploadError("");
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+        if (jsonData.length < 2) {
+          setUploadError("Excel file must contain headers and at least one data row");
+          setIsUploading(false);
+          return;
+        }
+
+        const headers = jsonData[0].map(header => header.toString().trim());
+        const rows = jsonData.slice(1);
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (let row of rows) {
+          if (!validateRow(row, headers)) {
+            errorCount++;
+            continue;
+          }
+
+          const mappedData = mapRowToSchema(row, headers);
+          
+          try {
+            await axios.post(
+              `${process.env.REACT_APP_BACKEND_URL}/api/projectsDataMaster/addProject?userId=${userId}`,
+              mappedData,
+              {
+                headers: {
+                  "auth-token": userToken,
+                }
+              }
+            );
+            successCount++;
+          } catch (error) {
+            errorCount++;
+            console.error("Error adding row:", error);
+          }
+        }
+
+        toast.success(`Successfully added ${successCount} projects`);
+        setRefetchNotification();
+        if (errorCount > 0) {
+          toast.warning(`${errorCount} projects failed validation or upload`);
+        }
+        
+        fetchAllProjectsDataMaster(userId, userToken);
+      };
+
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error("Error processing file:", error);
+      setUploadError("Error processing file");
+    } finally {
+      setIsUploading(false);
+      event.target.value = null; // Reset file input
+    }
+  };
+
   const columns = [
     {
       field: "isViewed",
@@ -53,7 +215,7 @@ function Index({ setRefetchNotification }) {
       },
     },
 
-    { field: "_id", headerName: "ID", flex: 1, width: 120 },
+    { field: "_id", headerName: "ID",  width: 100 },
     {
       field: "propertyId",
       headerName: "Property Id",
@@ -361,7 +523,27 @@ function Index({ setRefetchNotification }) {
           }
         />
 
-        <Box>
+<Box display="flex" gap={2}>
+          {mode === "display" && (
+            <div className="flex items-center">
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileUpload}
+                className="hidden"
+                id="excel-upload"
+                disabled={isUploading}
+              />
+              <label 
+                htmlFor="excel-upload" 
+                className={`border-2 border-green-600 rounded-lg px-3 py-2 text-green-400 cursor-pointer hover:bg-green-600 hover:text-green-200 flex items-center gap-2 ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <UploadFileIcon />
+                {isUploading ? 'Uploading...' : 'Upload Excel'}
+              </label>
+            </div>
+          )}
+          
           {mode === "display" ? (
             <div
               className="border-2 mr-12 border-blue-600 rounded-lg px-3 py-2 text-blue-400 cursor-pointer hover:bg-blue-600 hover:text-blue-200"
@@ -379,6 +561,12 @@ function Index({ setRefetchNotification }) {
           )}
         </Box>
       </Box>
+
+      
+
+      {uploadError && (
+        <div className="text-red-500 mt-2">{uploadError}</div>
+      )}
 
       {/* Render form or DataGrid based on mode */}
       {1 === 1 && (

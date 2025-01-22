@@ -147,7 +147,7 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
     if (uploadFile) {
       toast.error("Upload file before submitting form.");
     }else{
-      if (myData.title !== "" && myData.testimonial !== ""  && userName !== "" && userProfilePic !== "") {
+      if (myData.testimonial !== ""  && userName !== "" && userProfilePic !== "") {
         const addData = {
             ...myData,
             userInfo : {
@@ -218,8 +218,9 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
       });
 
       setMyUserId(editData.userInfo.id);
-      setUserName(editData.userInfo.profilePicture);
-      setUserProfilePic(editData.userInfo.name);
+      setUserName(editData.userInfo.name);
+      setUserProfilePic(editData.userInfo.profilePicture.url);
+
     }
   }, [editData]);
 
@@ -375,7 +376,7 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
                     <a
                       target="_blank"
                       className="underline"
-                      href={editData.userInfo.profilePicture}
+                      href={editData.userInfo.profilePicture.url}
                     >
                       {"View Image"}
                     </a>
