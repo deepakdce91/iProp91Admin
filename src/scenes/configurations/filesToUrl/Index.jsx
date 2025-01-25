@@ -537,7 +537,7 @@ const Index = () => {
                   wordBreak: "break-all",
                 }}
               >
-                {urls.length === 1 ? urls[0] : JSON.stringify(urls, null, 2)}
+                {urls.length === 1 ? `["${urls[0]}"]` : JSON.stringify(urls, null, 2)}
               </pre>
               <IconButton
                 onClick={copyToClipboard}

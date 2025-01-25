@@ -223,8 +223,8 @@ function Index({ setRefetchNotification }) {
       cellClassName: "name-column--cell",
     },
     {
-      field: "project",
-      headerName: "Project",
+      field: "state",
+      headerName: "State",
       width: 180,
     },
     {
@@ -233,13 +233,34 @@ function Index({ setRefetchNotification }) {
       width: 180,
     },
     {
+      field: "pincode",
+      headerName: "Pincode",
+      width: 180,
+    },
+    
+    {
       field: "builder",
       headerName: "Builder",
       width: 180,
     },
     {
-      field: "state",
-      headerName: "State",
+      field: "project",
+      headerName: "Project",
+      width: 180,
+    },
+    {
+      field: "type",
+      headerName: "Type",
+      width: 180,
+    },
+    {
+      field: "category",
+      headerName: "Category",
+      width: 180,
+    },
+    {
+      field: "bhk",
+      headerName: "Bhk",
       width: 180,
     },
     {

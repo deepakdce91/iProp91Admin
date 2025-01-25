@@ -25,7 +25,7 @@ function AppointmentsForm({ editData, userId, userToken, setModeToDisplay }) {
     mobile: "",
     email: "",
     enquiryFor: "",
-    date: "no",
+    date: "",
     timeSlot: "no"
   });
 

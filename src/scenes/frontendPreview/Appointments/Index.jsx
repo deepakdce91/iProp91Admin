@@ -2,7 +2,12 @@ import { Box, IconButton, useTheme } from "@mui/material";
 import { useState, useEffect } from "react";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "../../../theme";
+
+import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import { TbCircleDotFilled } from "react-icons/tb";
+
 import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -11,8 +16,10 @@ import AppointmentsForm from "../../../components/frontendPreview/AppointmentsFo
 import { formatDate } from "../../../MyFunctions";
 import { FaEye } from "react-icons/fa";
 import { jwtDecode } from "jwt-decode";
+import MarkUnreadModal from "../../../components/ui/MarkUnreadModal";
+import DeleteModal from "../../../components/ui/DeleteModal";
 
-function Index() {
+function Index({ setRefetchNotification }) {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -22,7 +29,35 @@ function Index() {
   const [data, setData] = useState([]);
   const [editData, setEditData] = useState();
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteId, setDeleteId] = useState();
+  const [deleteIsViewed, setDeleteIsViewed] = useState();
+
+  const [showUnreadModal, setShowUnreadModal] = useState(false);
+  const [unreadId, setUnreadId] = useState();
+
   const columns = [
+    {
+      field: "isViewed",
+      headerName: "",
+      flex: 0.2,
+      renderCell: (params) => {
+        if (params.row.isViewed === "no") {
+          return <TbCircleDotFilled className="text-green-400" />;
+        } else if (params.row.isViewed === "red") {
+          return <TbCircleDotFilled className="text-red-400" />;
+        } else {
+          return (
+            <TbCircleDotFilled
+              onClick={() => {
+                handleMarkUnread(params.row._id);
+              }}
+              className="text-gray-400 cursor-pointer"
+            />
+          );
+        }
+      },
+    },
     {
       field: "serial",
       headerName: "No.",
@@ -71,17 +106,44 @@ function Index() {
     {
       field: "action",
       headerName: "Action",
-      width: 100,
+      width: 150,
       renderCell: (params) => (
         <Box>
-          <IconButton
-            onClick={() => handleEdit(params.row._id)}
+          {/* <IconButton
+            onClick={() => {
+              handleShowDetails(params.row);
+
+              if (params.row.isViewed !== "yes") {
+                toggleAppointmentViewed(params.row._id, "yes");
+                if(params.row.isViewed === "no"){
+                  decreaseCounter(userId, userToken, "newAppointments");
+                }
+              }
+            }}
+            // color="primary"
             className="text-grey-400"
           >
-            <FaEye />
-          </IconButton>
+            <VisibilityIcon />
+          </IconButton> */}
+
           <IconButton
-            onClick={() => handleDelete(params.row._id)}
+            onClick={() => {
+              handleEdit(params.row);
+
+              if (params.row.isViewed !== "yes") {
+                toggleAppointmentViewed(params.row._id, "yes");
+                if (params.row.isViewed === "no") {
+                  decreaseCounter(userId, userToken, "newAppointments");
+                }
+              }
+            }}
+            className="text-grey-400"
+          >
+            <EditIcon />
+          </IconButton>
+
+          <IconButton
+            onClick={() => handleDelete(params.row._id, params.row.isViewed)}
             color="secondary"
           >
             <DeleteIcon />
@@ -91,13 +153,67 @@ function Index() {
     },
   ];
 
+  const toggleAppointmentViewed = async (id, to) => {
+    await axios
+      .put(
+        `${process.env.REACT_APP_BACKEND_URL}/api/appointments/${
+          to === "yes"
+            ? "setAppointmentViewed"
+            : to === "red"
+            ? "setAppointmentViewedRed"
+            : "setAppointmentNotViewed"
+        }/${id}?userId=${userId}`,
+        {}, // empty body since we're only updating isViewed to "yes"
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
+      .then((response) => {
+        if (response) {
+          fetchAllAppointments(userId, userToken);
+          setRefetchNotification();
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        toast.error("Error.");
+      });
+  };
+
+  const decreaseCounter = async (userId, userToken, type) => {
+    await axios
+      .put(
+        `${process.env.REACT_APP_BACKEND_URL}/api/notifications/decreaseCounter?userId=${userId}`,
+
+        {
+          type,
+        },
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
+      .then((response) => {
+        if (response) {
+          setRefetchNotification(); //reset value on sidebar
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        toast.error("Some ERROR occured.");
+      });
+  };
+
   const fetchAppointment = async (id) => {
     await axios
       .get(
         `${process.env.REACT_APP_BACKEND_URL}/api/appointments/fetchAppointment/${id}?userId=${userId}`,
         {
           headers: {
-            "auth-token": userToken
+            "auth-token": userToken,
           },
         }
       )
@@ -118,7 +234,7 @@ function Index() {
         `${process.env.REACT_APP_BACKEND_URL}/api/appointments/fetchAllAppointments?userId=${userId}`,
         {
           headers: {
-            "auth-token": userToken
+            "auth-token": userToken,
           },
         }
       )
@@ -131,25 +247,29 @@ function Index() {
       });
   };
 
-  const deleteAppointmentById = async (id) => {
+  const deleteAppointmentById = async (id, myIsViewed) => {
+    // Make the DELETE request
     await axios
       .delete(
         `${process.env.REACT_APP_BACKEND_URL}/api/appointments/deleteAppointment/${id}?userId=${userId}`,
         {
           headers: {
-            "auth-token": userToken
+            "auth-token": userToken,
           },
         }
       )
       .then((response) => {
         if (response) {
-          toast.success("Appointment deleted successfully!");
+          toast("Appointment deleted!");
+          if (myIsViewed === "no") {
+            decreaseCounter(userId, userToken, "newAppointments");
+          }
           fetchAllAppointments(userId, userToken);
         }
       })
       .catch((error) => {
         console.error("Error:", error);
-        toast.error("Error deleting appointment.");
+        toast.error("Some ERROR occured.");
       });
   };
 
@@ -175,19 +295,30 @@ function Index() {
   const handleCancel = () => {
     fetchAllAppointments(userId, userToken);
     setMode("display");
+    setRefetchNotification();
   };
 
-  const handleEdit = (id) => {
-    fetchAppointment(id);
-    setTimeout(() => {
-      setMode("edit");
-    }, 500);
+  // Click handler for the edit button
+  const handleEdit = (data) => {
+    setEditData(data);
+    setMode("edit");
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this appointment?")) {
-      deleteAppointmentById(id);
-    }
+  // Click handler for the delete button
+  const handleDelete = (id, isViewed) => {
+    setShowDeleteModal(true);
+    setDeleteId(id);
+    setDeleteIsViewed(isViewed);
+  };
+
+  const handleShowDetails = (data) => {
+    setEditData(data);
+    setMode("showDetails");
+  };
+
+  const handleMarkUnread = (id) => {
+    setShowUnreadModal(true);
+    setUnreadId(id);
   };
 
   return (
@@ -224,7 +355,11 @@ function Index() {
       </Box>
 
       {mode === "add" ? (
-        <AppointmentsForm setModeToDisplay={handleCancel} userId={userId} userToken={userToken} />
+        <AppointmentsForm
+          setModeToDisplay={handleCancel}
+          userId={userId}
+          userToken={userToken}
+        />
       ) : mode === "edit" ? (
         editData && (
           <Box
@@ -259,11 +394,11 @@ function Index() {
               },
             }}
           >
-            <AppointmentsForm 
-              setModeToDisplay={handleCancel} 
-              userId={userId} 
-              userToken={userToken} 
-              editData={editData} 
+            <AppointmentsForm
+              setModeToDisplay={handleCancel}
+              userId={userId}
+              userToken={userToken}
+              editData={editData}
             />
           </Box>
         )
@@ -308,6 +443,28 @@ function Index() {
             autoHeight
           />
         </Box>
+      )}
+
+      {showDeleteModal === true && deleteId && (
+        <DeleteModal
+          handleDelete={() => {
+            deleteAppointmentById(deleteId, deleteIsViewed);
+          }}
+          closeModal={() => {
+            setShowDeleteModal(false);
+          }}
+        />
+      )}
+
+      {showUnreadModal === true && unreadId && (
+        <MarkUnreadModal
+          handleMarkUnread={() => {
+            toggleAppointmentViewed(unreadId, "red");
+          }}
+          closeModal={() => {
+            setShowUnreadModal(false);
+          }}
+        />
       )}
     </Box>
   );

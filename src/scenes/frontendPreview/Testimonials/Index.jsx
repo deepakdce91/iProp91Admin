@@ -4,6 +4,8 @@ import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "../../../theme";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import { TbCircleDotFilled } from "react-icons/tb";
 import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -12,8 +14,10 @@ import TestimonialForm from "../../../components/frontendPreview/TestimonialForm
 import { formatDate } from "../../../MyFunctions";
 
 import { jwtDecode } from "jwt-decode";
+import MarkUnreadModal from "../../../components/ui/MarkUnreadModal";
+import DeleteModal from "../../../components/ui/DeleteModal";
 
-function Index() {
+function Index({ setRefetchNotification }) {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -25,16 +29,44 @@ function Index() {
 
   const [editData, setEditData] = useState();
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteId, setDeleteId] = useState();
+  const [deleteIsViewed, setDeleteIsViewed] = useState();
+
+  const [showUnreadModal, setShowUnreadModal] = useState(false);
+  const [unreadId, setUnreadId] = useState();
+
   const columns = [
     {
-        field: "serial",
-        headerName: "No.",
-        width: 70,
-        valueGetter: (params) => params.api.getRowIndex(params.id) + 1, // Start numbering from 1
+      field: "isViewed",
+      headerName: "",
+      flex: 0.2,
+      renderCell: (params) => {
+        if (params.row.isViewed === "no") {
+          return <TbCircleDotFilled className="text-green-400" />;
+        } else if (params.row.isViewed === "red") {
+          return <TbCircleDotFilled className="text-red-400" />;
+        } else {
+          return (
+            <TbCircleDotFilled
+              onClick={() => {
+                handleMarkUnread(params.row._id);
+              }}
+              className="text-gray-400 cursor-pointer"
+            />
+          );
+        }
       },
+    },
     {
-      field: "title",
-      headerName: "Title",
+      field: "serial",
+      headerName: "No.",
+      width: 70,
+      valueGetter: (params) => params.api.getRowIndex(params.id) + 1, // Start numbering from 1
+    },
+    {
+      field: "testimonial",
+      headerName: "Testimonial",
       flex: 1,
       cellClassName: "name-column--cell",
     },
@@ -69,18 +101,44 @@ function Index() {
     {
       field: "action",
       headerName: "Action",
-      flex: 1,
+      width: 150,
       renderCell: (params) => (
         <Box>
-          <IconButton
-            onClick={() => handleEdit(params.row._id)}
+          {/* <IconButton
+            onClick={() => {
+              handleShowDetails(params.row);
+
+              if (params.row.isViewed !== "yes") {
+                toggleTestimonialViewed(params.row._id, "yes");
+                if(params.row.isViewed === "no"){
+                  decreaseCounter(userId, userToken, "newTestimonials");
+                }
+              }
+            }}
             // color="primary"
+            className="text-grey-400"
+          >
+            <VisibilityIcon />
+          </IconButton> */}
+
+          <IconButton
+            onClick={() => {
+              handleEdit(params.row);
+
+              if (params.row.isViewed !== "yes") {
+                toggleTestimonialViewed(params.row._id, "yes");
+                if (params.row.isViewed === "no") {
+                  decreaseCounter(userId, userToken, "newTestimonials");
+                }
+              }
+            }}
             className="text-grey-400"
           >
             <EditIcon />
           </IconButton>
+
           <IconButton
-            onClick={() => handleDelete(params.row._id)}
+            onClick={() => handleDelete(params.row._id, params.row.isViewed)}
             color="secondary"
           >
             <DeleteIcon />
@@ -88,15 +146,72 @@ function Index() {
         </Box>
       ),
     },
-  ]; 
+  ];
+
+
+  const toggleTestimonialViewed = async (id, to) => {
+    await axios
+      .put(
+        `${process.env.REACT_APP_BACKEND_URL}/api/testimonials/${
+          to === "yes"
+            ? "setTestimonialViewed"
+            : to === "red"
+            ? "setTestimonialViewedRed"
+            : "setTestimonialNotViewed"
+        }/${id}?userId=${userId}`,
+        {}, // empty body since we're only updating isViewed to "yes"
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
+      .then((response) => {
+        if (response) {
+          fetchAllTestimonials(userId, userToken);
+          setRefetchNotification();
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        toast.error("Error.");
+      });
+  };
+
+  const decreaseCounter = async (userId, userToken, type) => {
+    await axios
+      .put(
+        `${process.env.REACT_APP_BACKEND_URL}/api/notifications/decreaseCounter?userId=${userId}`,
+
+        {
+          type,
+        },
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
+      .then((response) => {
+        if (response) {
+          setRefetchNotification(); //reset value on sidebar
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        toast.error("Some ERROR occured.");
+      });
+  };
+
 
   const fetchTestimonial = async (id) => {
     // Make the DELETE request
     await axios
-      .get(`${process.env.REACT_APP_BACKEND_URL}/api/testimonials/fetchTestimonial/${id}?userId=${userId}`,
+      .get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/testimonials/fetchTestimonial/${id}?userId=${userId}`,
         {
           headers: {
-            "auth-token" : userToken
+            "auth-token": userToken,
           },
         }
       )
@@ -112,12 +227,12 @@ function Index() {
   };
 
   const fetchAllTestimonials = (userId, userToken) => {
-    axios 
+    axios
       .get(
         `${process.env.REACT_APP_BACKEND_URL}/api/testimonials/fetchAllTestimonials?userId=${userId}`,
         {
           headers: {
-            "auth-token" : userToken
+            "auth-token": userToken,
           },
         }
       )
@@ -129,21 +244,24 @@ function Index() {
       });
   };
 
-  const deleteTestimonialById = async (id) => {
+  const deleteTestimonialById = async (id, myIsViewed) => {
     // Make the DELETE request
     await axios
       .delete(
-        `${process.env.REACT_APP_BACKEND_URL}/api/testimonials/deleteTestimonial/${id}?userId=${userId}`, 
+        `${process.env.REACT_APP_BACKEND_URL}/api/testimonials/deleteTestimonial/${id}?userId=${userId}`,
         {
           headers: {
-            "auth-token" : userToken
+            "auth-token": userToken,
           },
         }
       )
       .then((response) => {
         if (response) {
-          toast.error("Testimonial deleted!");
-          fetchAllTestimonials(userId,userToken);
+          toast("Testimonial deleted!");
+          if (myIsViewed === "no") {
+            decreaseCounter(userId, userToken, "newTestimonials");
+          }
+          fetchAllTestimonials(userId, userToken);
         }
       })
       .catch((error) => {
@@ -154,8 +272,6 @@ function Index() {
 
   // useeffecttt
   useEffect(() => {
-    
-
     try {
       // getting userId and userToken
       let token = localStorage.getItem("iProp-token");
@@ -175,22 +291,32 @@ function Index() {
   };
 
   const handleCancel = () => {
-    fetchAllTestimonials(userId,userToken);
+    fetchAllTestimonials(userId, userToken);
     setMode("display");
+    setRefetchNotification();
   };
 
   // Click handler for the edit button
-  const handleEdit = (id) => {
-    fetchTestimonial(id);
-
-    setTimeout(() => {
-      setMode("edit");
-    }, 500);
+  const handleEdit = (data) => {
+    setEditData(data);
+    setMode("edit");
   };
 
   // Click handler for the delete button
-  const handleDelete = (id) => {
-    deleteTestimonialById(id);
+  const handleDelete = (id, isViewed) => {
+    setShowDeleteModal(true);
+    setDeleteId(id);
+    setDeleteIsViewed(isViewed);
+  };
+
+  const handleShowDetails = (data) => {
+    setEditData(data);
+    setMode("showDetails");
+  };
+
+  const handleMarkUnread = (id) => {
+    setShowUnreadModal(true);
+    setUnreadId(id);
   };
 
   return (
@@ -222,14 +348,18 @@ function Index() {
               onClick={handleCancel}
             >
               Back
-            </div> 
+            </div>
           )}
         </Box>
       </Box>
 
       {/* Render form or DataGrid based on mode */}
       {mode === "add" ? (
-        <TestimonialForm setModeToDisplay={handleCancel} userId={userId} userToken = {userToken} />
+        <TestimonialForm
+          setModeToDisplay={handleCancel}
+          userId={userId}
+          userToken={userToken}
+        />
       ) : mode === "edit" ? (
         editData && (
           <Box
@@ -264,7 +394,12 @@ function Index() {
               },
             }}
           >
-            <TestimonialForm setModeToDisplay={handleCancel} userId={userId} userToken = {userToken} editData={editData} />{" "}
+            <TestimonialForm
+              setModeToDisplay={handleCancel}
+              userId={userId}
+              userToken={userToken}
+              editData={editData}
+            />{" "}
           </Box>
         )
       ) : (
@@ -308,6 +443,28 @@ function Index() {
             autoHeight
           />
         </Box>
+      )}
+
+{showDeleteModal === true && deleteId && (
+        <DeleteModal
+          handleDelete={() => {
+            deleteTestimonialById(deleteId, deleteIsViewed);
+          }}
+          closeModal={() => {
+            setShowDeleteModal(false);
+          }}
+        />
+      )}
+
+      {showUnreadModal === true && unreadId && (
+        <MarkUnreadModal
+          handleMarkUnread={() => {
+            toggleTestimonialViewed(unreadId, "red");
+          }}
+          closeModal={() => {
+            setShowUnreadModal(false);
+          }}
+        />
       )}
     </Box>
   );

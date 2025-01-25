@@ -70,9 +70,13 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
 
   const [newUsers, setNewUsers] = useState();
   const [newProperties, setNewProperties] = useState();
-  const [newDocuments, setNewDocuments] = useState();
+  // const [newDocuments, setNewDocuments] = useState();
   const [newListings, setNewListings] = useState();
   const [newProjectsDataMasters, setNewProjectsDataMasters] = useState();
+
+  const [newTestimonials, setNewTestimonials] = useState();
+  const [newAppointments, setNewAppointments] = useState();
+  const [newContactUs, setNewContactUs] = useState();
 
   const FetchNotifications = async () => {
     await axios
@@ -88,9 +92,13 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
         if (response) {
           setNewUsers(response.data.newUsers);
           setNewProperties(response.data.newProperties);
-          setNewDocuments(response.data.newDocuments);
+          // setNewDocuments(response.data.newDocuments);
           setNewListings(response.data.newListings);
           setNewProjectsDataMasters(response.data.newProjectsDataMasters);
+
+          setNewAppointments(response.data.newAppointments);
+          setNewContactUs(response.data.newContactUs);
+          setNewTestimonials(response.data.newTestimonials);
         }
       })
       .catch((error) => {
@@ -265,17 +273,6 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
             <Item
               title="Documents"
               to="/documents"
-              badge={
-                newDocuments > 0 ? (
-                  <span
-                    className={`absolute ${
-                      !isCollapsed ? "top-5 right-6" : "top-3 right-3"
-                    } grid min-h-[24px] min-w-[24px] translate-x-2/4 -translate-y-2/4 place-items-center rounded-full bg-red-600 py-1 px-1 text-xs text-white`}
-                  >
-                    {newDocuments}
-                  </span>
-                ) : null
-              }
               icon={<IoDocumentLockSharp className="h-5 w-5" />}
               selected={selected}
               setSelected={setSelected}
@@ -515,6 +512,17 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
             <Item
               title="Testimonials"
               to="/testimonials"
+              badge={
+                newTestimonials > 0 ? (
+                  <span
+                    className={`absolute ${
+                      !isCollapsed ? "top-5 right-6" : "top-3 right-3"
+                    } grid min-h-[24px] min-w-[24px] translate-x-2/4 -translate-y-2/4 place-items-center rounded-full bg-red-600 py-1 px-1 text-xs text-white`}
+                  >
+                    {newTestimonials}
+                  </span>
+                ) : null
+              }
               icon={<MdOutlineRateReview className="h-4 w-4" />}
               selected={selected}
               setSelected={setSelected}
@@ -523,14 +531,36 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
             <Item
               title="Appointments"
               to="/appointments"
+              badge={
+                newAppointments > 0 ? (
+                  <span
+                    className={`absolute ${
+                      !isCollapsed ? "top-5 right-6" : "top-3 right-3"
+                    } grid min-h-[24px] min-w-[24px] translate-x-2/4 -translate-y-2/4 place-items-center rounded-full bg-red-600 py-1 px-1 text-xs text-white`}
+                  >
+                    {newAppointments}
+                  </span>
+                ) : null
+              }
               icon={<FaBook className="h-4 w-4" />}
               selected={selected}
               setSelected={setSelected}
             />
 
             <Item
-              title="Contact Us"
+              title="Contact Us" 
               to="/contactUs"
+              badge={
+                newContactUs > 0 ? (
+                  <span
+                    className={`absolute ${
+                      !isCollapsed ? "top-5 right-6" : "top-3 right-3"
+                    } grid min-h-[24px] min-w-[24px] translate-x-2/4 -translate-y-2/4 place-items-center rounded-full bg-red-600 py-1 px-1 text-xs text-white`}
+                  >
+                    {newContactUs}
+                  </span>
+                ) : null
+              }
               icon={<MdPermContactCalendar className="h-4 w-4" />}
               selected={selected}
               setSelected={setSelected}

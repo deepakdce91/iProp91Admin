@@ -154,7 +154,7 @@ function Index({ setRefetchNotification }) {
           >
             <EditIcon />
           </IconButton>
-
+ 
           <IconButton
             onClick={() => handleDelete(params.row._id,params.row.isViewed)}
             color="secondary"
@@ -166,7 +166,7 @@ function Index({ setRefetchNotification }) {
     },
   ];
 
-
+ 
 
   const decreaseCounter = async (userId, userToken, type) => {
     await axios
@@ -287,7 +287,6 @@ function Index({ setRefetchNotification }) {
 
   // Click handler for the edit button
   const handleEdit = (data) => {
-    // fetchProperty(id);
     setEditData(data);
     setMode("edit");
   };
@@ -318,7 +317,7 @@ function Index({ setRefetchNotification }) {
   };
 
   const togglePropertyViewed = async (id, to) => {
-    await axios
+    await axios 
       .put(
         `${process.env.REACT_APP_BACKEND_URL}/api/property/${
           to === "yes"
