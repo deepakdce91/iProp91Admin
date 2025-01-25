@@ -230,15 +230,15 @@ function App() {
 
                   <Route
                     path={routes.testimonials}
-                    element={<Testimonials />}
+                    element={<Testimonials setRefetchNotification={handleReffetchNotification}/>}
                   />
                   <Route path={routes.advise} element={<Advise />} />
                   <Route path={routes.mobileTiles} element={<MobileTiles />} />
                   <Route path={routes.comparisons} element={<Comparisons />} />
-                  <Route path={routes.contactUs} element={<ContactUs />} />
+                  <Route path={routes.contactUs} element={<ContactUs setRefetchNotification={handleReffetchNotification}/>} />
                   <Route path={routes.questionBuilder} element={<QuestionBuilder />} />
                   <Route path={routes.articles} element={<Articles />} />
-                  <Route path={routes.appointments} element={<Appointments />} />
+                  <Route path={routes.appointments} element={<Appointments setRefetchNotification={handleReffetchNotification}/>} />
                 </>
               )}
             </Routes>

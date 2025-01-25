@@ -2,7 +2,6 @@ import { Box, IconButton, useTheme } from "@mui/material";
 import { useState, useEffect } from "react";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "../../../theme";
-import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -11,10 +10,18 @@ import ContactUsForm from "../../../components/frontendPreview/ContactUsForm";
 import { formatDate } from "../../../MyFunctions";
 import { FaEye } from "react-icons/fa";
 
-import { jwtDecode } from "jwt-decode";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import { TbCircleDotFilled } from "react-icons/tb";
 
-function Index() {
-  const theme = useTheme();
+
+import { jwtDecode } from "jwt-decode";
+import MarkUnreadModal from "../../../components/ui/MarkUnreadModal";
+import DeleteModal from "../../../components/ui/DeleteModal";
+
+function Index({ setRefetchNotification }) {
+  const theme = useTheme(); 
   const colors = tokens(theme.palette.mode);
 
   const [userId, setUserId] = useState("");
@@ -25,7 +32,37 @@ function Index() {
 
   const [editData, setEditData] = useState();
 
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteId, setDeleteId] = useState();
+  const [deleteIsViewed, setDeleteIsViewed] = useState();
+
+  const [showUnreadModal, setShowUnreadModal] = useState(false);
+  const [unreadId, setUnreadId] = useState();
+
+
   const columns = [
+    {
+      field: "isViewed",
+      headerName: "",
+      flex: 0.2,
+      renderCell: (params) => {
+        if (params.row.isViewed === "no") {
+          return <TbCircleDotFilled className="text-green-400" />;
+        } else if (params.row.isViewed === "red") {
+          return <TbCircleDotFilled className="text-red-400" />;
+        } else {
+          return (
+            <TbCircleDotFilled
+              onClick={() => {
+                handleMarkUnread(params.row._id);
+              }}
+              className="text-gray-400 cursor-pointer"
+            />
+          );
+        }
+      },
+    },
     {
         field: "serial",
         headerName: "No.",
@@ -65,18 +102,44 @@ function Index() {
     {
       field: "action",
       headerName: "Action",
-      flex: 1,
+      width: 150,
       renderCell: (params) => (
         <Box>
           <IconButton
-            onClick={() => handleEdit(params.row._id)}
+            onClick={() => {
+              handleShowDetails(params.row);
+
+              if (params.row.isViewed !== "yes") {
+                toggleContactUsViewed(params.row._id, "yes");
+                if(params.row.isViewed === "no"){
+                  decreaseCounter(userId, userToken, "newContactUs");
+                }
+              }
+            }}
             // color="primary"
             className="text-grey-400"
           >
-            <FaEye />
+            <VisibilityIcon />
           </IconButton>
+
+          {/* <IconButton
+            onClick={() => {
+              handleEdit(params.row);
+
+              if (params.row.isViewed !== "yes") {
+                toggleContactUsViewed(params.row._id, "yes");
+                if (params.row.isViewed === "no") {
+                  decreaseCounter(userId, userToken, "newContactUs");
+                }
+              }
+            }}
+            className="text-grey-400"
+          >
+            <EditIcon />
+          </IconButton> */}
+
           <IconButton
-            onClick={() => handleDelete(params.row._id)}
+            onClick={() => handleDelete(params.row._id, params.row.isViewed)}
             color="secondary"
           >
             <DeleteIcon />
@@ -85,6 +148,87 @@ function Index() {
       ),
     },
   ]; 
+
+
+  const toggleContactUsViewed = async (id, to) => {
+    await axios
+      .put(
+        `${process.env.REACT_APP_BACKEND_URL}/api/contactUs/${
+          to === "yes"
+            ? "setContactUsViewed"
+            : to === "red"
+            ? "setContactUsViewedRed"
+            : "setContactUsNotViewed"
+        }/${id}?userId=${userId}`,
+        {}, // empty body since we're only updating isViewed to "yes"
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
+      .then((response) => {
+        if (response) {
+          fetchAllContactUs(userId, userToken);
+          setRefetchNotification();
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        toast.error("Error.");
+      });
+  };
+
+  const decreaseCounter = async (userId, userToken, type) => {
+    await axios
+      .put(
+        `${process.env.REACT_APP_BACKEND_URL}/api/notifications/decreaseCounter?userId=${userId}`,
+
+        {
+          type,
+        },
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
+      .then((response) => {
+        if (response) {
+          setRefetchNotification(); //reset value on sidebar
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        toast.error("Some ERROR occured.");
+      });
+  };
+
+  const deleteContactUsById = async (id, myIsViewed) => {
+    // Make the DELETE request
+    await axios
+      .delete(
+        `${process.env.REACT_APP_BACKEND_URL}/api/contactUs/deleteContactUs/${id}?userId=${userId}`,
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      )
+      .then((response) => {
+        if (response) {
+          toast("Contact Us Query deleted!");
+          if (myIsViewed === "no") {
+            decreaseCounter(userId, userToken, "newContactUs");
+          }
+          fetchAllContactUs(userId, userToken);
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        toast.error("Some ERROR occured.");
+      });
+  };
 
   const fetchContactUs = async (id) => {
     // Make the DELETE request
@@ -125,32 +269,9 @@ function Index() {
       });
   };
 
-  const deleteContactUsById = async (id) => {
-    // Make the DELETE request
-    await axios
-      .delete(
-        `${process.env.REACT_APP_BACKEND_URL}/api/contactUs/deleteContactUs/${id}?userId=${userId}`, 
-        {
-          headers: {
-            "auth-token" : userToken
-          },
-        }
-      )
-      .then((response) => {
-        if (response) {
-          toast.error("Contact Us query deleted!");
-          fetchAllContactUs(userId,userToken);
-        }
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        toast.error("Some ERROR occured.");
-      });
-  };
 
   // useeffecttt
   useEffect(() => {
-    
 
     try {
       // getting userId and userToken
@@ -171,22 +292,32 @@ function Index() {
   };
 
   const handleCancel = () => {
-    fetchAllContactUs(userId,userToken);
+    fetchAllContactUs(userId, userToken);
     setMode("display");
+    setRefetchNotification();
   };
 
   // Click handler for the edit button
-  const handleEdit = (id) => {
-    fetchContactUs(id);
-
-    setTimeout(() => {
-      setMode("edit");
-    }, 500);
+  const handleEdit = (data) => {
+    setEditData(data);
+    setMode("edit");
   };
 
   // Click handler for the delete button
-  const handleDelete = (id) => {
-    deleteContactUsById(id);
+  const handleDelete = (id, isViewed) => {
+    setShowDeleteModal(true);
+    setDeleteId(id);
+    setDeleteIsViewed(isViewed);
+  };
+
+  const handleShowDetails = (data) => {
+    setEditData(data);
+    setMode("edit");
+  };
+
+  const handleMarkUnread = (id) => {
+    setShowUnreadModal(true);
+    setUnreadId(id);
   };
 
   return (
@@ -304,6 +435,28 @@ function Index() {
             autoHeight
           />
         </Box>
+      )}
+
+{showDeleteModal === true && deleteId && (
+        <DeleteModal
+          handleDelete={() => {
+            deleteContactUsById(deleteId, deleteIsViewed);
+          }}
+          closeModal={() => {
+            setShowDeleteModal(false);
+          }}
+        />
+      )}
+
+      {showUnreadModal === true && unreadId && (
+        <MarkUnreadModal
+          handleMarkUnread={() => {
+            toggleContactUsViewed(unreadId, "red");
+          }}
+          closeModal={() => {
+            setShowUnreadModal(false);
+          }}
+        />
       )}
     </Box>
   );
