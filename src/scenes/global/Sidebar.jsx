@@ -39,6 +39,8 @@ import { BsSafe2Fill } from "react-icons/bs";
 import { FaBook } from "react-icons/fa";
 import { FaSuperpowers } from "react-icons/fa";
 
+import { BsFillPatchQuestionFill } from "react-icons/bs";
+
 import { FaLink } from "react-icons/fa";
 
 const Item = ({ title, to, icon, selected, setSelected, badge }) => {
@@ -562,6 +564,15 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
                 ) : null
               }
               icon={<MdPermContactCalendar className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+<Item
+              title="Buy Queries" 
+              to="/buyQueries"
+             
+              icon={<BsFillPatchQuestionFill className="h-4 w-4" />}
               selected={selected}
               setSelected={setSelected}
             />
