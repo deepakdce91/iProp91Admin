@@ -262,7 +262,7 @@ function Index({ setRefetchNotification }) {
       field: "bhk",
       headerName: "Bhk",
       width: 180,
-    },
+    }, 
     {
       field: "status",
       headerName: "Status",

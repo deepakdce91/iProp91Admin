@@ -56,6 +56,7 @@ import ContactUs from "./scenes/frontendPreview/ContactUs/Index";
 import QuestionBuilder from "./scenes/frontendPreview/QuestionBuilder/Index.jsx";
 import Articles from "./scenes/frontendPreview/Articles/Index.jsx";
 import Appointments from "./scenes/frontendPreview/Appointments/Index.jsx";
+import BuyQueries from "./scenes/otherData/buyQuery/Index";
 
 // Constants for routes
 const routes = {
@@ -99,6 +100,7 @@ const routes = {
   questionBuilder : "/questionBuilder",
   articles: "/articles",
   appointments : "/appointments",
+  buyQueries : "/buyQueries",
 
 };
 
@@ -239,6 +241,7 @@ function App() {
                   <Route path={routes.questionBuilder} element={<QuestionBuilder />} />
                   <Route path={routes.articles} element={<Articles />} />
                   <Route path={routes.appointments} element={<Appointments setRefetchNotification={handleReffetchNotification}/>} />
+                  <Route path={routes.buyQueries} element={<BuyQueries/>} />
                 </>
               )}
             </Routes>
