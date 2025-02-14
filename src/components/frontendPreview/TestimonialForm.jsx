@@ -15,7 +15,6 @@ import { client } from "../../config/s3Config";
 
 import heic2any from "heic2any";
 
-
 function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -32,7 +31,6 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
   const [uploadFile, setUploadFile] = useState();
   const [isUploading, setIsUploading] = useState(false);
   const [fileAddedForUpload, setFileAddedForUpload] = useState(false);
-
 
   const getPublicUrlFromSupabase = (path) => {
     const { data, error } = supabase.storage
@@ -146,66 +144,69 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
   const handleSubmit = (myData) => {
     if (uploadFile) {
       toast.error("Upload file before submitting form.");
-    }else{
-      if (myData.testimonial !== ""  && userName !== "" && userProfilePic !== "") {
-        const addData = {
-            ...myData,
-            userInfo : {
-                id : myUserId,
-                profilePicture : userProfilePic,
-                name : userName
-            }
-        } 
-      if (editData) {
-        axios
-          .put(
-            `${process.env.REACT_APP_BACKEND_URL}/api/testimonials/updateTestimonial/${editData._id}?userId=${userId}`,
-            addData,
-            {
-              headers: {
-                "auth-token": userToken,
-              },
-            }
-          )
-          .then((response) => {
-            if (response) {
-              toast("Testimonial updated!");
-              setTimeout(() => {
-                setModeToDisplay();
-              }, 1000);
-            }
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-            toast.error("Some ERROR occurred.");
-          });
-      } else {
-        axios
-          .post(
-            `${process.env.REACT_APP_BACKEND_URL}/api/testimonials/addTestimonial?userId=${userId}`,
-            addData,
-            {
-              headers: {
-                "auth-token": userToken,
-              },
-            }
-          )
-          .then((response) => {
-            if (response) {
-              toast("Testimonial added!");
-              setTimeout(() => {
-                setModeToDisplay();
-              }, 1000);
-            }
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-            toast.error("Some ERROR occurred.");
-          });
-      }
     } else {
-      toast.error("Fill all fields.");
-    }
+      const myUserInfo = {
+        id: myUserId,
+        name: userName,
+      };
+      if (userProfilePic !== "") {
+        myUserInfo["profilePicture"] = userProfilePic;
+      }
+      if (myData.testimonial !== "" && userName !== "") {
+        const addData = {
+          ...myData,
+          userInfo: myUserInfo,
+        };
+        if (editData) {
+          axios
+            .put(
+              `${process.env.REACT_APP_BACKEND_URL}/api/testimonials/updateTestimonial/${editData._id}?userId=${userId}`,
+              addData,
+              {
+                headers: {
+                  "auth-token": userToken,
+                },
+              }
+            )
+            .then((response) => {
+              if (response) {
+                toast("Testimonial updated!");
+                setTimeout(() => {
+                  setModeToDisplay();
+                }, 1000);
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              toast.error("Some ERROR occurred.");
+            });
+        } else {
+          axios
+            .post(
+              `${process.env.REACT_APP_BACKEND_URL}/api/testimonials/addTestimonial?userId=${userId}`,
+              addData,
+              {
+                headers: {
+                  "auth-token": userToken,
+                },
+              }
+            )
+            .then((response) => {
+              if (response) {
+                toast("Testimonial added!");
+                setTimeout(() => {
+                  setModeToDisplay();
+                }, 1000);
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              toast.error("Some ERROR occurred.");
+            });
+        }
+      } else {
+        toast.error("Fill all fields.");
+      }
     }
   };
 
@@ -220,7 +221,6 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
       setMyUserId(editData.userInfo.id);
       setUserName(editData.userInfo.name);
       setUserProfilePic(editData.userInfo.profilePicture.url);
-
     }
   }, [editData]);
 
@@ -277,8 +277,6 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
       <div className="flex items-center justify-center pl-6 px-12">
         <div className="w-full">
           <form>
-            
-
             <div className="-mx-3 flex flex-wrap">
               <div className="w-full px-3 ">
                 <div className="mb-5">
@@ -308,7 +306,6 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
             </div>
 
             <div className="-mx-3 flex flex-wrap">
-             
               <div className="w-full px-3 sm:w-1/2">
                 <div className="mb-5">
                   <label
@@ -325,7 +322,7 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
                     list="mystates"
                     value={userName}
                     onChange={(e) => {
-                        setUserName(e.target.value);
+                      setUserName(e.target.value);
                     }}
                     placeholder="Username"
                     className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
@@ -334,58 +331,60 @@ function TestimonialForm({ editData, userId, userToken, setModeToDisplay }) {
               </div>
 
               <div className="flex flex-col  -mx-3 ">
-              
-              <div className="w-full items-center flex px-3 ">
-                <div className="mb-5">
-                  <label
-                    htmlFor="file"
-                    className="mb-3 block text-base font-medium"
-                  >
-                    Image
-                  </label>
-                  <input
-                    type="file"
-                    name="image"
-                    id="image"
-                    onChange={handleFileAdding}
-                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleFileUpload}
-                  className={`px-8 py-3 h-fit mx-3 mt-3 ${
-                    fileAddedForUpload === false ? "bg-gray-600" : (isUploading === true ? "bg-gray-600" : "bg-blue-500")
-                  }  text-white font-medium text-lg rounded-md shadow-md ${
-                    fileAddedForUpload === false
-                      ? "bg-gray-600"
-                      : "hover:bg-blue-600"
-                  }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
-                  disabled={fileAddedForUpload === false ? true : isUploading}
-                >
-                  {`Upload`}
-                </button>
-              </div>
-
-              {editData && (
-                <div className="ml-3 flex lg:items-center flex-col lg:flex-row">
-                  <div className="text-lg mb-2 lg:mb-0">
-                    Already Uploaded Image :{" "}
-                  </div>
-                  <div className="lg:ml-2">
-                    <a
-                      target="_blank"
-                      className="underline"
-                      href={editData.userInfo.profilePicture.url}
+                <div className="w-full items-center flex px-3 ">
+                  <div className="mb-5">
+                    <label
+                      htmlFor="file"
+                      className="mb-3 block text-base font-medium"
                     >
-                      {"View Image"}
-                    </a>
+                      Image
+                    </label>
+                    <input
+                      type="file"
+                      name="image"
+                      id="image"
+                      onChange={handleFileAdding}
+                      className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                    />
                   </div>
+                  <button
+                    type="button"
+                    onClick={handleFileUpload}
+                    className={`px-8 py-3 h-fit mx-3 mt-3 ${
+                      fileAddedForUpload === false
+                        ? "bg-gray-600"
+                        : isUploading === true
+                        ? "bg-gray-600"
+                        : "bg-blue-500"
+                    }  text-white font-medium text-lg rounded-md shadow-md ${
+                      fileAddedForUpload === false
+                        ? "bg-gray-600"
+                        : "hover:bg-blue-600"
+                    }  focus:outline-none focus:ring-2 focus:ring-[#6A64F1] focus:ring-opacity-50`}
+                    disabled={fileAddedForUpload === false ? true : isUploading}
+                  >
+                    {`Upload`}
+                  </button>
                 </div>
-              )}
-            </div>
-            </div>
 
+                {editData && (
+                  <div className="ml-3 flex lg:items-center flex-col lg:flex-row">
+                    <div className="text-lg mb-2 lg:mb-0">
+                      Already Uploaded Image :{" "}
+                    </div>
+                    <div className="lg:ml-2">
+                      <a
+                        target="_blank"
+                        className="underline"
+                        href={editData.userInfo.profilePicture.url}
+                      >
+                        {"View Image"}
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
 
             <div className="mb-5">
               <label className="mb-3 block text-base font-medium">

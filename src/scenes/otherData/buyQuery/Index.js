@@ -33,6 +33,11 @@ function Index({ setRefetchNotification }) {
       valueGetter: (params) => params.api.getRowIndex(params.id) + 1, // Start numbering from 1
     },
     {
+      field: "queryType",
+      headerName: "Query Type",
+      width: 120,
+    },
+    {
       field: "city",
       headerName: "City",
       width: 120,
@@ -66,7 +71,7 @@ function Index({ setRefetchNotification }) {
       field: "constructionStatus",
       headerName: "Construction Status",
       width: 120,
-    },
+    }, 
     {
       field: "createdAt",
       headerName: "Received at",
@@ -100,7 +105,7 @@ function Index({ setRefetchNotification }) {
   const fetchAllBuyQueries = async (userId, userToken) => {
     try {
       const response = await axios.get(
-        `${process.env.REACT_APP_BACKEND_URL}/api/buyQueries/fetchAllBuyQueries?userId=${userId}`,
+        `${process.env.REACT_APP_BACKEND_URL}/api/queries/fetchAllBuyQueries?userId=${userId}`,
         {
           headers: {
             "auth-token": userToken,
@@ -118,14 +123,14 @@ function Index({ setRefetchNotification }) {
   const deleteBuyQueryById = async (id) => {
     try {
       await axios.delete(
-        `${process.env.REACT_APP_BACKEND_URL}/api/buyQueries/deleteBuyQuery/${id}?userId=${userId}`,
+        `${process.env.REACT_APP_BACKEND_URL}/api/queries/deleteBuyQuery/${id}?userId=${userId}`,
         {
           headers: {
             "auth-token": userToken,
           },
         }
       );
-      toast.success("Buy Query deleted successfully!");
+      toast.success("Query deleted successfully!");
       fetchAllBuyQueries(userId, userToken); // Refresh the data
     } catch (error) {
       console.error("Error deleting buy query:", error);
@@ -176,7 +181,7 @@ function Index({ setRefetchNotification }) {
     <Box m="20px">
       {/* HEADER */}
       <Box display="flex" justifyContent="space-between" alignItems="center">
-        <Header title="Buy Queries" subtitle="Manage Buy Queries here" />
+        <Header title="Buy/Rent Queries" subtitle="Manage Buy/Rent Queries here" />
       </Box>
 
       {/* DATA GRID */}

@@ -25,6 +25,7 @@
     "@nivo/geo": "^0.80.0",
     "@nivo/line": "^0.80.0",
     "@nivo/pie": "^0.80.0",
+    "@radix-ui/react-dialog": "^1.1.6",
     "@reduxjs/toolkit": "^1.8.5",
     "@supabase/supabase-js": "^2.45.4",
     "@svgr/webpack": "^8.1.0",
