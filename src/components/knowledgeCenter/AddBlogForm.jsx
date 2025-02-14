@@ -19,8 +19,6 @@ import { Chips } from "primereact/chips";
 
 function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
   const urlRegex = /^(https?:\/\/)/;
-  const youtubeRegex = /^https:\/\/youtu/;
-
   const fileInputRef = useRef(null);
 
   const editorRef = useRef(null);
@@ -461,7 +459,7 @@ function AddBlogForm({ editData, setModeToDisplay, userToken, userId }) {
                         ) {
                           // ("item added");
                           const recentItem = e.value[e.value.length - 1];
-                          const isRecentUrl = youtubeRegex.test(recentItem);
+                          const isRecentUrl = urlRegex.test(recentItem);
                           if (isRecentUrl === true) {
                             changeField("youtubeVideos", e.value);
                           } else {

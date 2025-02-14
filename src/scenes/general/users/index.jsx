@@ -133,6 +133,7 @@ function Index({ setRefetchNotification }) {
             if (params.row.properties.length > 0) {
               // setUserViewed(params.row.userData._id);
               setCurrentProperties(params.row.properties);
+              console.log(params.row.properties);
               setMode("showPropDetails");
             }
           }}

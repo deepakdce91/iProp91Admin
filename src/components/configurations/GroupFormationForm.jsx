@@ -57,6 +57,7 @@ function GroupFormationForm({
     city: "",
     builder: "",
     projects: "",
+    companyWebsiteLink : "",
     customers: [superAdminData],
   });
 
@@ -398,6 +399,7 @@ function GroupFormationForm({
         projects: editData.projects,
         thumbnail: editData.thumbnail,
         customers: editData.customers,
+        companyWebsiteLink : editData.companyWebsiteLink
       });
 
       // fetches all builders
@@ -658,6 +660,22 @@ function GroupFormationForm({
                         <option key={index} value={item} />
                       ))}
                   </datalist>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col md:flex-row -mx-3">
+              <div className="w-full px-3">
+                <div className="mb-5">
+                  <label className="text-lg font-medium">Company Website Link</label>
+                  <input
+                    autoComplete="off"
+                    name="companyWebsiteLink"
+                    className="w-full text-gray-600 mt-2 rounded-md border border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                    placeholder="Provide Link"
+                    value={addData.companyWebsiteLink}
+                    onChange={(e) => changeField("companyWebsiteLink", e.target.value)}
+                  />
                 </div>
               </div>
             </div>
