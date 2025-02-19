@@ -38,8 +38,6 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
     city: "",
     builder: "",
     project: "",
-    houseNumber: "",
-    floorNumber: "",
     tower: "",
     unit: "",
     size: "",
@@ -235,8 +233,6 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
         addData.builder !== "" &&
         addData.project !== "" &&
         addData.tower !== "" &&
-        addData.houseNumber !== "" &&
-        addData.floorNumber !== "" &&
         addData.unit !== "" &&
         addData.size !== "" &&
         addData.addedBy !== "" &&
@@ -346,8 +342,6 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
         nature: editData.nature,
         customerName : editData.customerName,
         customerNumber : editData.customerNumber,
-        houseNumber: editData.houseNumber,
-        floorNumber: editData.floorNumber,
         status: editData.status,
         isDeleted : editData.isDeleted,
         documents: {
@@ -479,45 +473,6 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
             {/* Basic property name and state  */}
             <div className="flex flex-col lg:flex-row -mx-3">
 
-            <div className="w-full px-3 lg:w-1/2">
-                <div className="mb-5">
-                  <label
-                    htmlFor="h-num"
-                    className="mb-3 block text-base font-medium"
-                  >
-                    House number
-                  </label>
-                  <input
-                    type="text"
-                    name="houseNumber"
-                    id="h-num"
-                    value={addData.houseNumber}
-                    onChange={(e) => changeField("houseNumber", e.target.value)}
-                    placeholder="House number"
-                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                  />
-                </div>
-              </div>
-
-              <div className="w-full px-3 lg:w-1/2">
-                <div className="mb-5">
-                  <label
-                    htmlFor="floorNumber"
-                    className="mb-3 block text-base font-medium"
-                  >
-                    Floor Number
-                  </label>
-                  <input
-                    type="text"
-                    name="f-num"
-                    id="floorNumber"
-                    value={addData.floorNumber}
-                    onChange={(e) => changeField("floorNumber", e.target.value)}
-                    placeholder="Name"
-                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                  />
-                </div>
-              </div>
 
               <div className="w-full px-3 lg:w-1/2">
                 <div className="mb-5">
@@ -539,16 +494,8 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
                 </div>
               </div>
 
-              
-            </div>
-
-           
-
-            {/*  City and builder */}
-            <div className="flex flex-col lg:flex-row -mx-3">
-
-            {/* state  */}
-              <div className="flex mx-3 flex-col w-full lg:w-1/2 pr-5 pb-5">
+              {/* state  */}
+              <div className="flex flex-col w-full lg:w-1/2 pr-5 pb-5">
               <label className="text-lg font-medium">
                   Select state
                 </label>
@@ -572,8 +519,18 @@ function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
                 </datalist>
               </div>
 
+              
+            </div>
+
+           
+
+            {/*  City and builder */}
+            <div className="flex flex-col lg:flex-row -mx-3">
+
+            
+
               {/* city  */}
-              <div className="flex flex-col w-full lg:w-1/2 pl-3 lg:pl-0 pr-0 md:pr-5 pb-6">
+              <div className="flex flex-col w-full lg:w-1/2 pl-3 sm:pl-0  pb-6">
               <label className="text-lg font-medium">
                   Select city
                 </label>
