@@ -61,7 +61,7 @@ function Index({ setRefetchNotification }) {
     { field: "_id", headerName: "ID", width: 80 },
     {
       field: "customerName",
-      headerName: "House No.",
+      headerName: "Customer Name",
       width: 120,
       cellClassName: "name-column--cell",
     },

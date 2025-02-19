@@ -112,10 +112,24 @@ function Index({ setRefetchNotification }) {
     {
       field: "avatarSelected",
       headerName: "Avatar",
-      flex: 1,
+      width: 100,
       valueGetter: (params) => {
         if (params.row.userData.avatar && params.row.userData.avatar !== "") {
           return params.row.userData.avatar;
+        } else {
+          return "No";
+        }
+      },
+    },
+
+    
+    {
+      field: "keepProfileDiscreet",
+      headerName: "Profile Discreet",
+      width: 120,
+      valueGetter: (params) => {
+        if (params.row.userData.keepProfileDiscreet && params.row.userData.keepProfileDiscreet !== "no") {
+          return "Yes";
         } else {
           return "No";
         }
