@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import { useTheme } from "@mui/material";
+import parse from "html-react-parser";
 
 import io from "socket.io-client";
 
@@ -53,7 +54,7 @@ function isValidURL(text) {
       "(\\#[-a-zA-Z\\d_]*)?$", // fragment locator
     "i"
   );
-  return !!urlPattern.test(text);
+  return !!urlPattern.test(parse(text));
 }
 
 function checkFileType(file) {
@@ -206,18 +207,18 @@ function IncomingMessage({
               )
             ) : isValidURL(text) ? (
               text.includes("youtu") ? (
-                <ReactPlayer controls url={text} />
+                <ReactPlayer controls url={parse(text)} />
               ) : (
                 <a
                   className="underline text-[16px]"
-                  href={text}
+                  href={parse(text)}
                   target="_blank"
                 >
-                  {text}
+                  {parse(text)}
                 </a>
               )
             ) : (
-              <p className="text-gray-700 text-[16px]">{text}</p>
+              <p className="text-gray-700 text-[16px]">{parse(text)}</p>
             )}
 
             <div className={`absolute -right-[68px] flex`}>
@@ -399,20 +400,20 @@ function OutgoingMessage({
                   </a>
                 </div>
               )
-            ) : isValidURL(text) ? (
+            ) : isValidURL(parse(text)) ? (
               text.includes("youtu") ? (
-                <ReactPlayer controls url={text} />
+                <ReactPlayer controls url={parse(text)} />
               ) : (
                 <a
                   className="underline text-[16px]"
-                  href={text}
+                  href={parse(text)}
                   target="_blank"
                 >
-                  {text}
+                  {parse(text)}
                 </a>
               )
             ) : (
-              <p className="text-gray-100 text-[16px]">{text}</p>
+              <p className="text-gray-100 text-[16px]">{parse(text)}</p>
             )}
           </div>
           <p
