@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 
-import "primereact/resources/themes/lara-light-indigo/theme.css"; // Or any other theme
-import "primereact/resources/primereact.min.css"; // Core CSS
-import "primeicons/primeicons.css"; // Icons
+import "primereact/resources/themes/lara-light-indigo/theme.css"; 
+import "primereact/resources/primereact.min.css"; 
+import "primeicons/primeicons.css"; 
 
 import Topbar from "./scenes/global/Topbar";
 import Sidebar from "./scenes/global/Sidebar";
@@ -56,6 +56,8 @@ import ContactUs from "./scenes/frontendPreview/ContactUs/Index";
 import QuestionBuilder from "./scenes/frontendPreview/QuestionBuilder/Index.jsx";
 import Articles from "./scenes/frontendPreview/Articles/Index.jsx";
 import Appointments from "./scenes/frontendPreview/Appointments/Index.jsx";
+import HeroText from "./scenes/frontendPreview/HeroText/Index.jsx";
+
 import BuyQueries from "./scenes/otherData/buyQuery/Index";
 
 // Constants for routes
@@ -93,6 +95,7 @@ const routes = {
   ownerFrom: "/ownerFrom",
 
   testimonials: "/testimonials",
+  heroText : "/heroText",
   advise: "/advise",
   mobileTiles : "/mobileTiles",
   comparisons : "/comparisons",
@@ -235,6 +238,8 @@ function App() {
                     element={<Testimonials setRefetchNotification={handleReffetchNotification}/>}
                   />
                   <Route path={routes.advise} element={<Advise />} />
+                  <Route path={routes.heroText} element={<HeroText />} />
+                  
                   <Route path={routes.mobileTiles} element={<MobileTiles />} />
                   <Route path={routes.comparisons} element={<Comparisons />} />
                   <Route path={routes.contactUs} element={<ContactUs setRefetchNotification={handleReffetchNotification}/>} />
