@@ -408,7 +408,7 @@ function OutgoingMessage({
                   className="underline text-[16px]"
                   href={parse(text)}
                   target="_blank"
-                >
+                > 
                   {parse(text)}
                 </a>
               )

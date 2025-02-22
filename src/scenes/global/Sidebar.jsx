@@ -43,6 +43,8 @@ import { BsFillPatchQuestionFill } from "react-icons/bs";
 
 import { FaLink } from "react-icons/fa";
 
+import { PiTextAaBold } from "react-icons/pi";
+
 const Item = ({ title, to, icon, selected, setSelected, badge }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -475,6 +477,14 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
               title="Question Builder"
               to="/questionBuilder"
               icon={<FaClipboardQuestion className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+            
+            <Item
+              title="Hero Text"
+              to="/heroText"
+              icon={<PiTextAaBold className="h-4 w-4" />}
               selected={selected}
               setSelected={setSelected}
             />
