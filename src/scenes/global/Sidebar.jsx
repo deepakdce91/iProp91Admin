@@ -45,6 +45,8 @@ import { FaLink } from "react-icons/fa";
 
 import { PiTextAaBold } from "react-icons/pi";
 
+import { TbCoinRupeeFilled } from "react-icons/tb";
+
 const Item = ({ title, to, icon, selected, setSelected, badge }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -328,6 +330,14 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
             />
 
             <Item
+              title="Reward Points"
+              to="/rewards"
+              icon={<TbCoinRupeeFilled className="h-5 w-5" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+            <Item
               title="State"
               to="/state"
               icon={<MdOutlineRealEstateAgent className="h-5 w-5" />}
@@ -413,7 +423,7 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
               setSelected={setSelected}
             />
 
-<Item
+            <Item
               title="Files to URL"
               to="/filesToUrl"
               icon={<FaLink className="h-4 w-4" />}
@@ -480,7 +490,7 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
               selected={selected}
               setSelected={setSelected}
             />
-            
+
             <Item
               title="Hero Text"
               to="/heroText"
@@ -560,7 +570,7 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
             />
 
             <Item
-              title="Contact Us" 
+              title="Contact Us"
               to="/contactUs"
               badge={
                 newContactUs > 0 ? (
@@ -578,10 +588,9 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
               setSelected={setSelected}
             />
 
-<Item
-              title="Buy Queries" 
+            <Item
+              title="Buy Queries"
               to="/buyQueries"
-             
               icon={<BsFillPatchQuestionFill className="h-4 w-4" />}
               selected={selected}
               setSelected={setSelected}
