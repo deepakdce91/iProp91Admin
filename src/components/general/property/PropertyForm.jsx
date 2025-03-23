@@ -12,7 +12,6 @@ import { client } from "../../../config/s3Config";
 
 import heic2any from "heic2any"; 
 
- 
 
 function PropertyForm({ editData, setModeToDisplay, userToken, userId  }) {
   const [states, setStates] = useState([]);

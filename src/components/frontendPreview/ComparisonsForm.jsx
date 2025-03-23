@@ -198,9 +198,6 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
     } else {
       if (
         addData.title !== "" &&
-        addData.topText !== "" &&
-        addData.bottomText !== "" &&
-        addData.centerImage1 !== "" &&
         addData.enable !== ""
       ) {
         if (editData) {
@@ -262,9 +259,14 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
         title: editData.title,
         topText: editData.topText,
         bottomText: editData.bottomText,
-        centerImage1: editData.centerImage1,
         enable: editData.enable,
+        centerImage1 : "",
+        centerImage2 : "",
+        redirectionLink : ""
       };
+      if (editData.centerImage2) {
+        myObj.centerImage1 = editData.centerImage1;
+      }
       if (editData.centerImage2) {
         myObj.centerImage2 = editData.centerImage2;
       }
