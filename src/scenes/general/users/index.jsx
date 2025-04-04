@@ -16,8 +16,120 @@ import ViewSafes from "../../../components/ViewPages/ViewSafes";
 import { MdClose } from "react-icons/md";
 import { MdMessage } from "react-icons/md";
 import { TbCircleDotFilled } from "react-icons/tb";
+import { PiHandCoinsFill } from "react-icons/pi";
 import DeleteModal from "../../../components/ui/DeleteModal";
 import MarkUnreadModal from "../../../components/ui/MarkUnreadModal";
+
+// New Reward Points Modal Component 
+const RewardPointsModal = ({
+  isOpen,
+  onClose,
+  currentUserId,
+  userId,
+  userToken,
+  onSuccess,
+  currentRewardPoints,
+}) => {
+  const [amount, setAmount] = useState("");
+  const [actionType, setActionType] = useState("add");
+
+  const handleSubmit = async () => {
+    if (!amount || isNaN(amount) || parseInt(amount) <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+  
+    try {
+      const endpoint =
+        actionType === "add"
+          ? `${process.env.REACT_APP_BACKEND_URL}/api/users/increaseRewardPointsDirectly?userId=${userId}`
+          : `${process.env.REACT_APP_BACKEND_URL}/api/users/decreaseRewardPointsDirectly?userId=${userId}`;
+  
+      const response = await axios.put(
+        endpoint,
+        { amount: parseInt(amount), currentUserId },
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      );
+  
+      if (response.data.success) {
+        toast.success(`Reward points ${actionType}ed successfully`);
+        onSuccess();
+        onClose();
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "An error occurred");
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg p-6 w-96">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">
+            {actionType === "add" ? "Add" : "Deduct"} Reward Points
+          </h2>
+          <button onClick={onClose}>
+            <MdClose className="h-6 w-6" />
+          </button>
+        </div>
+        <div className="mb-4">
+          <p>Current Reward Points: {currentRewardPoints}</p>
+        </div>
+        <div className="mb-4">
+          <div className="flex mb-2">
+            <button
+              className={`mr-2 px-4 py-2 rounded ${
+                actionType === "add"
+                  ? "bg-green-500 text-white"
+                  : "bg-gray-200 text-gray-700"
+              }`}
+              onClick={() => setActionType("add")}
+            >
+              Add
+            </button>
+            <button
+              className={`px-4 py-2 rounded ${
+                actionType === "deduct"
+                  ? "bg-red-500 text-white"
+                  : "bg-gray-200 text-gray-700"
+              }`}
+              onClick={() => setActionType("deduct")}
+            >
+              Deduct
+            </button>
+          </div>
+          <input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Enter amount"
+            className="w-full p-2 border rounded text-black"
+          />
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            className="mr-2 px-4 py-2 bg-gray-200 rounded"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Submit
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 function Index({ setRefetchNotification }) {
   const theme = useTheme();
@@ -27,9 +139,12 @@ function Index({ setRefetchNotification }) {
   const [userToken, setUserToken] = useState("");
 
   const [mode, setMode] = useState("display");
-  //display add edit showPropDetails showSafeDetails showGroupDetails
-
   const [allData, setAllData] = useState([]);
+
+  // New state for reward points modal
+  const [showRewardPointsModal, setShowRewardPointsModal] = useState(false);
+  const [selectedUserForRewardPoints, setSelectedUserForRewardPoints] =
+    useState(null);
 
   const [editData, setEditData] = useState();
 
@@ -39,7 +154,6 @@ function Index({ setRefetchNotification }) {
 
   const [showUnreadModal, setShowUnreadModal] = useState(false);
   const [unreadId, setUnreadId] = useState();
-
 
   const [showGroupModal, setShowGroupModal] = useState(false);
 
@@ -58,9 +172,14 @@ function Index({ setRefetchNotification }) {
         } else if (params.row.userData.isViewed === "red") {
           return <TbCircleDotFilled className="text-red-400" />;
         } else {
-          return <TbCircleDotFilled onClick={()=>{
-            handleMarkUnread(params.row.userData._id);
-          }} className="text-gray-400 cursor-pointer" />;
+          return (
+            <TbCircleDotFilled
+              onClick={() => {
+                handleMarkUnread(params.row.userData._id);
+              }}
+              className="text-gray-400 cursor-pointer"
+            />
+          );
         }
       },
     },
@@ -122,20 +241,22 @@ function Index({ setRefetchNotification }) {
       },
     },
 
-    
     {
       field: "keepProfileDiscreet",
       headerName: "Profile Discreet",
       width: 120,
       valueGetter: (params) => {
-        if (params.row.userData.keepProfileDiscreet && params.row.userData.keepProfileDiscreet !== "no") {
+        if (
+          params.row.userData.keepProfileDiscreet &&
+          params.row.userData.keepProfileDiscreet !== "no"
+        ) {
           return "Yes";
         } else {
           return "No";
         }
       },
     },
-    
+
     {
       field: "properties",
       headerName: "Properties",
@@ -221,6 +342,30 @@ function Index({ setRefetchNotification }) {
     },
 
     {
+      field: "rewardPoints",
+      headerName: "Reward Points",
+      width: 120,
+      renderCell: (params) => (
+        <div className="flex items-center">
+          <PiHandCoinsFill className="mr-2 text-yellow-500" />
+          <span>{params.row.userData.rewardPoints || 0}</span>
+          <button
+            onClick={() => {
+              setSelectedUserForRewardPoints({
+                id: params.row.userData._id,
+                currentRewardPoints: params.row.userData.rewardPoints || 0,
+              });
+              setShowRewardPointsModal(true);
+            }}
+            className="ml-2 bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600"
+          >
+            Manage
+          </button>
+        </div>
+      ),
+    },
+
+    {
       field: "action",
       headerName: "Action",
       width: 100,
@@ -231,17 +376,23 @@ function Index({ setRefetchNotification }) {
               handleEdit(params.row.userData);
               if (params.row.userData.isViewed !== "yes") {
                 toggleUserViewed(params.row.userData._id, "yes");
-                if(params.row.userData.isViewed === "no"){
+                if (params.row.userData.isViewed === "no") {
                   decreaseCounter(userId, userToken, "newUsers");
-                }}
-              }}
+                }
+              }
+            }}
             // color="primary"
             className="text-grey-400"
           >
             <EditIcon />
           </IconButton>
           <IconButton
-            onClick={() => handleDelete(params.row.userData._id,params.row.userData.isViewed)}
+            onClick={() =>
+              handleDelete(
+                params.row.userData._id,
+                params.row.userData.isViewed
+              )
+            }
             color="secondary"
           >
             <DeleteIcon />
@@ -297,7 +448,7 @@ function Index({ setRefetchNotification }) {
       });
   };
 
-  const deleteUserById = async (id,myIsViewed) => {
+  const deleteUserById = async (id, myIsViewed) => {
     // Make the DELETE request
     await axios
       .delete(
@@ -311,7 +462,7 @@ function Index({ setRefetchNotification }) {
       .then((response) => {
         if (response) {
           toast("User deleted!");
-          if(myIsViewed === "no"){
+          if (myIsViewed === "no") {
             decreaseCounter(userId, userToken, "newUsers");
           }
           setDeleteId();
@@ -363,7 +514,6 @@ function Index({ setRefetchNotification }) {
     }
   }, []);
 
-
   ///----
 
   const handleAddMore = () => {
@@ -384,7 +534,6 @@ function Index({ setRefetchNotification }) {
     setMode("edit");
   };
 
-
   const setModeToDisplay = () => {
     setMode("display");
     setEditData();
@@ -393,7 +542,7 @@ function Index({ setRefetchNotification }) {
   };
 
   // Click handler for the delete button
-  const handleDelete = (id,isViewed) => {
+  const handleDelete = (id, isViewed) => {
     setShowDeleteModal(true);
     setDeleteId(id);
     setDeleteIsViewed(isViewed);
@@ -431,8 +580,8 @@ function Index({ setRefetchNotification }) {
         console.error("Error:", error);
         toast.error("Error.");
       });
-    }
-  // ---- 
+  };
+  // ----
 
   return (
     <Box m="20px">
@@ -607,6 +756,20 @@ function Index({ setRefetchNotification }) {
           }}
           closeModal={() => {
             setShowUnreadModal(false);
+          }}
+        />
+      )}
+
+      {showRewardPointsModal && selectedUserForRewardPoints && (
+        <RewardPointsModal
+          isOpen={showRewardPointsModal}
+          onClose={() => setShowRewardPointsModal(false)}
+          currentUserId={selectedUserForRewardPoints.id}
+          userId={userId}
+          userToken={userToken}
+          currentRewardPoints={selectedUserForRewardPoints.currentRewardPoints}
+          onSuccess={() => {
+            getCompleteUserDetails(userId, userToken);
           }}
         />
       )}
