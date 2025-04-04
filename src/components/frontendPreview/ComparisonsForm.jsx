@@ -192,7 +192,18 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
     }));
   };
 
+  // New function to handle image deletion
+  const handleImageDelete = (imageField) => {
+    // Update the state to remove the image
+    setAddData((prevData) => ({
+      ...prevData,
+      [imageField]: "",
+    }));
+    toast.success(`${imageField === "centerImage1" ? "Image 1" : "Image 2"} removed successfully.`);
+  };
+
   const handleSubmit = () => {
+    console.log("addData", addData);
     if (uploadFile1 || uploadFile2) {
       toast.error("Upload file before submitting form.");
     } else {
@@ -260,18 +271,18 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
         topText: editData.topText,
         bottomText: editData.bottomText,
         enable: editData.enable,
-        centerImage1 : "",
-        centerImage2 : "",
-        redirectionLink : ""
+        centerImage1: "",
+        centerImage2: "",
+        redirectionLink: ""
       };
-      if (editData.centerImage2) {
+      if (editData.centerImage1) {
         myObj.centerImage1 = editData.centerImage1;
       }
       if (editData.centerImage2) {
         myObj.centerImage2 = editData.centerImage2;
       }
       if(editData.redirectionLink){
-        myObj.redirectionLink = editData.redirectionLink
+        myObj.redirectionLink = editData.redirectionLink;
       }
 
       setAddData(myObj);
@@ -397,9 +408,8 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                     />
                     <span className="text-xs font-light mt-2">Size : 1080 x 1080 px</span>
                   </div>
-
                 </div>
-                {addData && addData.centerImage1 && addData.centerImage1 !== "" &&(
+                {addData.centerImage1 && (
                   <div className="flex flex-col">
                     <div className="ml-1 flex lg:items-center flex-col lg:flex-row">
                       <div className="font-bold mb-2 lg:mb-0">
@@ -410,27 +420,25 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                           target="_blank"
                           className="underline"
                           href={addData.centerImage1.url}
+                          rel="noopener noreferrer"
                         >
                           {addData.centerImage1.name}
                         </a>
                       </div>
                     </div>
 
-                   {addData && addData.centerImage1 !== "" && <button
+                    <button
                       onClick={(e) => {
                         e.preventDefault();
-                        changeField("centerImage1", "");
-                        toast("Image 1 removed.")
-      
+                        handleImageDelete("centerImage1");
                       }}
-                      className=" my-2 items-center justify-center flex border border-gray-400 w-fit px-2 transform transition-transform duration-300 hover:scale-110"
+                      className="my-2 items-center justify-center flex border border-gray-400 w-fit px-2 transform transition-transform duration-300 hover:scale-110"
                     >
                       <RiDeleteBinFill className="text-red-400 h-4 w-4 mr-1" />
-                      <div className="text-">Delete Uploaded Image</div>
-                    </button>}
+                      <div>Delete Uploaded Image</div>
+                    </button>
                   </div>
                 )}
-                
               </div>
 
               <div className="w-full items-center flex-col px-3 md:w-1/2">
@@ -451,9 +459,8 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                     />
                     <span className="text-xs font-light mt-2">Size : 1080 x 1080 px</span>
                   </div>
-
                 </div>
-                {addData && addData.centerImage2 && addData.centerImage2 !== "" && (
+                {addData.centerImage2 && (
                   <div className="flex flex-col">
                     <div className="ml-1 flex lg:items-center flex-col lg:flex-row">
                       <div className="font-bold mb-2 lg:mb-0">
@@ -464,22 +471,22 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                           target="_blank"
                           className="underline"
                           href={addData.centerImage2.url}
+                          rel="noopener noreferrer"
                         >
                           {addData.centerImage2.name}
                         </a>
                       </div>
                     </div>
 
-                   <button
+                    <button
                       onClick={(e) => {
                         e.preventDefault();
-                        changeField("centerImage2", "");
-                        toast("Image 2 removed.")
+                        handleImageDelete("centerImage2");
                       }}
-                      className=" my-2 items-center justify-center flex border border-gray-400 w-fit px-2 transform transition-transform duration-300 hover:scale-110"
+                      className="my-2 items-center justify-center flex border border-gray-400 w-fit px-2 transform transition-transform duration-300 hover:scale-110"
                     >
                       <RiDeleteBinFill className="text-red-400 h-4 w-4 mr-1" />
-                      <div className="text-">Delete Uploaded Image</div>
+                      <div>Delete Uploaded Image</div>
                     </button>
                   </div>
                 )}
@@ -643,7 +650,6 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                 type="button"
                 onClick={() => {
                   handleSubmit();
-                  // console.log(addData)
                 }}
                 className={`px-8 py-3 ${
                   isUploading === true ? "bg-gray-600" : "bg-[#6A64F1]"
@@ -655,9 +661,6 @@ function ComparisonsForm({ editData, setModeToDisplay, userToken, userId }) {
                 {editData ? "Update Comparison" : "Add Comparison"}
               </button>
             </div>
-
-            {/* <Muheheh/> */}
-            {/* <Editor/> */}
           </form>
           <ToastContainer position="top-center" autoClose={2000} />
         </div>

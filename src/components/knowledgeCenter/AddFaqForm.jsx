@@ -319,6 +319,7 @@ function AddFaqForm({ editData, setModeToDisplay, userToken, userId }) {
                     <option value="knowledge-center">Knowledge Center</option>
                     <option value="nri">NRI</option>
                     <option value="site">Site</option>
+                    <option value="reward-points">Reward Points</option>
                   </select>
                 </div>
               </div>
