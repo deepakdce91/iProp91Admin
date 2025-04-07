@@ -32,10 +32,16 @@ const RewardPointsModal = ({
 }) => {
   const [amount, setAmount] = useState("");
   const [actionType, setActionType] = useState("add");
+  const [reason, setReason] = useState("");
 
   const handleSubmit = async () => {
     if (!amount || isNaN(amount) || parseInt(amount) <= 0) {
       toast.error("Please enter a valid amount");
+      return;
+    }
+
+    if (!reason.trim()) {
+      toast.error("Please provide a reason");
       return;
     }
   
@@ -47,7 +53,11 @@ const RewardPointsModal = ({
   
       const response = await axios.put(
         endpoint,
-        { amount: parseInt(amount), currentUserId },
+        { 
+          currentUserId: currentUserId, 
+          amount: parseInt(amount),
+          purpose: reason,
+        },
         {
           headers: {
             "auth-token": userToken,
@@ -56,11 +66,12 @@ const RewardPointsModal = ({
       );
   
       if (response.data.success) {
-        toast.success(`Reward points ${actionType}ed successfully`);
+        toast.success(`Reward points ${actionType === "add" ? "added" : "deducted"} successfully`);
         onSuccess();
         onClose();
       }
     } catch (error) {
+      console.error("API Error:", error);
       toast.error(error.response?.data?.message || "An error occurred");
     }
   };
@@ -79,7 +90,7 @@ const RewardPointsModal = ({
           </button>
         </div>
         <div className="mb-4">
-          <p>Current Reward Points: {currentRewardPoints}</p>
+          <p className="text-black">Current Reward Points: {currentRewardPoints}</p>
         </div>
         <div className="mb-4">
           <div className="flex mb-2">
@@ -109,13 +120,20 @@ const RewardPointsModal = ({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="Enter amount"
+            className="w-full p-2 border rounded text-black mb-3"
+          />
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Enter reason for adjustment"
             className="w-full p-2 border rounded text-black"
+            rows="3"
           />
         </div>
         <div className="flex justify-end">
           <button
             onClick={onClose}
-            className="mr-2 px-4 py-2 bg-gray-200 rounded"
+            className="mr-2 px-4 py-2 bg-gray-200 rounded text-black"
           >
             Cancel
           </button>
