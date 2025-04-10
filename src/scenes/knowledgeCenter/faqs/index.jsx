@@ -39,6 +39,12 @@ function Index() {
       cellClassName: "name-column--cell",
     },
     {
+      field: "type",
+      headerName: "Type",
+      flex: 1,
+      cellClassName: "name-column--cell",
+    },
+    {
       field: "content",
       headerName: "Content",
       flex: 1,
