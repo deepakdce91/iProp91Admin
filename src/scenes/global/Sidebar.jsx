@@ -46,6 +46,7 @@ import { FaLink } from "react-icons/fa";
 import { PiTextAaBold } from "react-icons/pi";
 
 import { TbCoinRupeeFilled } from "react-icons/tb";
+import { TiTicket } from "react-icons/ti";
 
 const Item = ({ title, to, icon, selected, setSelected, badge }) => {
   const theme = useTheme();
@@ -321,13 +322,22 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
               selected={selected}
               setSelected={setSelected}
             />
-            <Item
+            <Item 
               title="Owners From"
               to="/ownerFrom"
               icon={<FaHouseUser className="h-5 w-5" />}
               selected={selected}
               setSelected={setSelected}
             />
+
+            <Item 
+              title="Vouchers"
+              to="/vouchers"
+              icon={<TiTicket className="h-5 w-5" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+            
 
             <Item
               title="Reward Points"
