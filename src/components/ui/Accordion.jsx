@@ -222,7 +222,7 @@ export default function AccordionCustomIcon({
                       commonSafeId={commonSafeId}
                       userId={userId}
                       userToken={userToken}
-                      fieldName={item.fieldName}
+                      fieldName={item.fieldName} 
                       fieldData={safeData[item.fieldName]}
                     />
                   ) : (

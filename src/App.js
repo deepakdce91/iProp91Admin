@@ -17,6 +17,7 @@ import DocumentType from "./scenes/configurations/documentType";
 import RejectedReasons from "./scenes/configurations/rejectedReasons";
 import MoreInfoReasons from "./scenes/configurations/moreInfoReasons";
 import Rewards from "./scenes/configurations/rewards/Index.jsx";
+import Vouchers from "./scenes/configurations/vouchers/Index.jsx";
 import Property from "./scenes/general/property";
 import Users from "./scenes/general/users";
 import Login from "./scenes/auth/login";
@@ -67,6 +68,7 @@ const routes = {
   signup: "/signup",
   home: "/",
   rewards : "/rewards",
+  vouchers : "/vouchers",
   commonSafes: "/commonSafes",
   state: "/state",
   city: "/city",
@@ -182,6 +184,7 @@ function App() {
                   <Route path={routes.home} element={<Dashboard />} />
                   <Route path={routes.commonSafes} element={<CommonSafes />} />
                   <Route path={routes.rewards} element={<Rewards />} />
+                  <Route path={routes.vouchers} element={<Vouchers />} />
                   <Route path={routes.state} element={<State />} />
                   <Route path={routes.city} element={<City />} />
                   <Route path={routes.builders} element={<Builders />} />
