@@ -97,14 +97,47 @@ function Index({ setRefetchNotification }) {
     }
   };
 
+  // Function to process coordinates field
+  const processCoordinatesField = (value) => {
+    if (!value) return [0, 0]; // Default coordinates
+    
+    try {
+      // If it's already a JSON string, parse it
+      if (typeof value === 'string' && value.startsWith('[')) {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed) && parsed.length === 2) {
+          return [Number(parsed[0]), Number(parsed[1])];
+        }
+      }
+      
+      // If it's a comma-separated string
+      if (typeof value === 'string' && value.includes(',')) {
+        const parts = value.split(',').map(part => parseFloat(part.trim())).filter(num => !isNaN(num));
+        if (parts.length === 2) {
+          return parts;
+        }
+      }
+      
+      // If it's invalid or missing, return default
+      return [0, 0];
+    } catch (e) {
+      console.error('Error processing coordinates field:', e);
+      return [0, 0];
+    }
+  };
+
   // Function to map Excel columns to schema fields
   const mapRowToSchema = (row, headers) => {
     const mappedData = {};
     headers.forEach((header, index) => {
       const normalizedHeader = header.toLowerCase();
       if (row[index] !== undefined) {
+        // Handle coordinates field
+        if (normalizedHeader === 'coordinates') {
+          mappedData[normalizedHeader] = processCoordinatesField(row[index]);
+        }
         // Handle media fields
-        if (['images', 'videos', 'floorplan'].includes(normalizedHeader)) {
+        else if (['images', 'videos', 'floorplan'].includes(normalizedHeader)) {
           mappedData[normalizedHeader] = processMediaField(row[index]);
         } else {
           mappedData[normalizedHeader] = row[index].toString();
@@ -371,28 +404,6 @@ function Index({ setRefetchNotification }) {
         toast.error("Some ERROR occured.");
       });
   };
-
-  // const fetchProperty = async (id) => {
-  //   // Make the DELETE request
-  //   await axios
-  //     .get(
-  //       `${process.env.REACT_APP_BACKEND_URL}/api/projectsDataMaster/fetchProject/${id}?userId=${userId}`,
-  //       {
-  //         headers: {
-  //           "auth-token": userToken,
-  //         },
-  //       }
-  //     )
-  //     .then((response) => {
-  //       if (response) {
-  //         setEditData(response.data);
-  //       }
-  //     })
-  //     .catch((error) => {
-  //       console.error("Error:", error);
-  //       toast.error("Some ERROR occured.");
-  //     });
-  // };
 
   const fetchAllProjectsDataMaster = (userId, userToken) => {
     axios

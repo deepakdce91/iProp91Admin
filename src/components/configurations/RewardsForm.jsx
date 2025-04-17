@@ -12,12 +12,18 @@ function RewardsForm({ editData, userId, userToken, closeForm }) {
 
   const [addData, setAddData] = useState({
     name: "",
-    description : "",
+    description: "",
     discountType: "", // percentage, fixed_amount, free_item
     type: "addition",
     amount: 0,
-    enabled: "yes"
+    enabled: "yes",
+    rewardType: "exclusive-iprop", // exclusive-iprop or third-party
+    couponCodeType: "single", // single or range
+    couponCode: [], // Array of coupon codes
+    numberOfRedemptions: 1
   });
+
+  const [coupons, setCoupons] = useState("");
 
   const changeName = (value) => {
     setAddData((prevData) => ({
@@ -32,7 +38,6 @@ function RewardsForm({ editData, userId, userToken, closeForm }) {
       description: value,
     }));
   };
-
 
   const changeDiscountType = (value) => {
     setAddData((prevData) => ({
@@ -62,13 +67,59 @@ function RewardsForm({ editData, userId, userToken, closeForm }) {
     }));
   };
 
+  const changeRewardType = (value) => {
+    setAddData((prevData) => ({
+      ...prevData,
+      rewardType: value,
+    }));
+  };
+
+  const changeCouponCodeType = (value) => {
+    setAddData((prevData) => ({
+      ...prevData,
+      couponCodeType: value,
+      couponCode: value === "single" ? [prevData.name] : prevData.couponCode
+    }));
+  };
+
+  const changeNumberOfRedemptions = (value) => {
+    setAddData((prevData) => ({
+      ...prevData,
+      numberOfRedemptions: value,
+    }));
+  };
+
+  const handleCouponCodesChange = (value) => {
+    setCoupons(value);
+    // Split the input by commas, newlines, or spaces and filter out empty strings
+    const codeArray = value.split(/[\s,]+/).filter(code => code.trim() !== "");
+    setAddData((prevData) => ({
+      ...prevData,
+      couponCode: codeArray,
+    }));
+  };
+
   const handleSubmit = (addData) => {
+    // Prepare data before submission
+    const submissionData = { ...addData };
+    
+    // Set couponCode based on couponCodeType
+    if (submissionData.couponCodeType === "single") {
+      submissionData.couponCode = [submissionData.name];
+    }
+    
     if (addData.name !== "" && addData.amount !== 0 && addData.discountType !== "" && addData.type !== "") {
+      // Additional validation for range coupon codes
+      if (addData.couponCodeType === "range" && addData.couponCode.length === 0) {
+        toast.error("Please enter coupon codes.");
+        return;
+      }
+      
       if (editData) {
         axios
           .put(
             `${process.env.REACT_APP_BACKEND_URL}/api/rewards/updateReward/${editData._id}?userId=${userId}`,
-            addData, {
+            submissionData, {
               headers: {
                 "auth-token": userToken
               },
@@ -88,7 +139,7 @@ function RewardsForm({ editData, userId, userToken, closeForm }) {
           });
       } else {
         axios
-          .post(`${process.env.REACT_APP_BACKEND_URL}/api/rewards/addReward?userId=${userId}`, addData, {
+          .post(`${process.env.REACT_APP_BACKEND_URL}/api/rewards/addReward?userId=${userId}`, submissionData, {
             headers: {
               "auth-token": userToken
             },
@@ -98,11 +149,17 @@ function RewardsForm({ editData, userId, userToken, closeForm }) {
               toast("Reward added!");
               setAddData({
                 name: "",
+                description: "",
                 type: "addition",
                 discountType: "",
                 amount: 0,
-                enabled: "yes"
+                enabled: "yes",
+                rewardType: "exclusive-iprop",
+                couponCodeType: "single",
+                couponCode: [],
+                numberOfRedemptions: 1
               });
+              setCoupons("");
 
               setTimeout(() => {
                 closeForm();
@@ -115,7 +172,7 @@ function RewardsForm({ editData, userId, userToken, closeForm }) {
           });
       }
     } else {
-      toast.error("Fill all the fields.");
+      toast.error("Fill all the required fields.");
     }
   };
 
@@ -124,11 +181,20 @@ function RewardsForm({ editData, userId, userToken, closeForm }) {
       setAddData({
         name: editData.name,
         type: editData.type,
-        description: editData.description,
+        description: editData.description || "",
         discountType: editData.discountType,
         amount: editData.amount,
-        enabled: editData.enabled,
+        enabled: editData.enabled || "yes",
+        rewardType: editData.rewardType || "exclusive-iprop",
+        couponCodeType: editData.couponCodeType || "single",
+        couponCode: editData.couponCode || [],
+        numberOfRedemptions: editData.numberOfRedemptions || 1
       });
+      
+      // Set coupons string for textarea when editing
+      if (editData.couponCode && editData.couponCode.length > 0 && editData.couponCodeType === "range") {
+        setCoupons(editData.couponCode.join("\n"));
+      }
     }
   }, [editData]);
 
@@ -191,7 +257,7 @@ function RewardsForm({ editData, userId, userToken, closeForm }) {
                     htmlFor="name"
                     className="mb-3 block text-base font-medium"
                   >
-                    Reward Name
+                    Reward Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -234,10 +300,99 @@ function RewardsForm({ editData, userId, userToken, closeForm }) {
               <div className="w-full md:w-1/2 px-3">
                 <div className="mb-5">
                   <label
+                    htmlFor="rewardType"
+                    className="mb-3 block text-base font-medium"
+                  >
+                    Reward Type
+                  </label>
+                  <select
+                    name="rewardType"
+                    id="rewardType"
+                    value={addData.rewardType}
+                    onChange={(e) => changeRewardType(e.target.value)}
+                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  >
+                    <option value="exclusive-iprop">Exclusive iProp</option>
+                    <option value="third-party">Third Party</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="w-full md:w-1/2 px-3">
+                <div className="mb-5">
+                  <label
+                    htmlFor="couponCodeType"
+                    className="mb-3 block text-base font-medium"
+                  >
+                    Coupon Code Type
+                  </label>
+                  <select
+                    name="couponCodeType"
+                    id="couponCodeType"
+                    value={addData.couponCodeType}
+                    onChange={(e) => changeCouponCodeType(e.target.value)}
+                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  >
+                    <option value="single">Single (Uses Reward Name)</option>
+                    <option value="range">Range (Multiple Codes)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {addData.couponCodeType === "range" && (
+              <div className="flex flex-wrap -mx-3">
+                <div className="w-full px-3">
+                  <div className="mb-5">
+                    <label
+                      htmlFor="couponCodes"
+                      className="mb-3 block text-base font-medium"
+                    >
+                      Coupon Codes <span className="text-red-500">*</span>
+                      <span className="text-sm text-gray-500 ml-2">(Separate by commas, spaces or new lines)</span>
+                    </label>
+                    <textarea
+                      name="couponCodes"
+                      id="couponCodes"
+                      value={coupons}
+                      onChange={(e) => handleCouponCodesChange(e.target.value)}
+                      placeholder="Enter coupon codes here"
+                      className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                      rows="4"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-wrap -mx-3">
+              <div className="w-full md:w-1/2 px-3">
+                <div className="mb-5">
+                  <label
+                    htmlFor="numberOfRedemptions"
+                    className="mb-3 block text-base font-medium"
+                  >
+                    Number of Redemptions
+                  </label>
+                  <input
+                    type="number"
+                    name="numberOfRedemptions"
+                    id="numberOfRedemptions"
+                    min="1"
+                    value={addData.numberOfRedemptions}
+                    onChange={(e) => changeNumberOfRedemptions(e.target.value)}
+                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  />
+                </div>
+              </div>
+              
+              <div className="w-full md:w-1/2 px-3">
+                <div className="mb-5">
+                  <label
                     htmlFor="amount"
                     className="mb-3 block text-base font-medium"
                   >
-                    Amount
+                    Amount <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
@@ -250,14 +405,16 @@ function RewardsForm({ editData, userId, userToken, closeForm }) {
                   />
                 </div>
               </div>
-              
+            </div>
+
+            <div className="flex flex-wrap -mx-3">
               <div className="w-full md:w-1/2 px-3">
                 <div className="mb-5">
                   <label
                     htmlFor="discountType"
                     className="mb-3 block text-base font-medium"
                   >
-                    Discount Type
+                    Discount Type <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="discountType"
@@ -273,16 +430,14 @@ function RewardsForm({ editData, userId, userToken, closeForm }) {
                   </select>
                 </div>
               </div>
-            </div>
-
-            <div className="flex flex-wrap -mx-3">
+              
               <div className="w-full md:w-1/2 px-3">
                 <div className="mb-5">
                   <label
                     htmlFor="type"
                     className="mb-3 block text-base font-medium"
                   >
-                    Type
+                    Type <span className="text-red-500">*</span>
                   </label>
                   <select
                     name="type"
@@ -297,10 +452,14 @@ function RewardsForm({ editData, userId, userToken, closeForm }) {
                   </select>
                 </div>
               </div>
-              
-              <div className="w-full md:w-1/2 px-3">
+            </div>
+
+            <div className="flex flex-wrap -mx-3">
+              <div className="w-full px-3">
                 <div className="mb-5">
-                  <label className="mb-3 block text-base font-medium">
+                  <label
+                    className="mb-3 block text-base font-medium"
+                  >
                     Enable reward?
                   </label>
                   <div className="flex items-center space-x-6 py-3">

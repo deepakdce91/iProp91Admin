@@ -143,6 +143,26 @@ function Index() {
       .catch((error) => {
         console.error("Error:", error);
       });
+
+      // // ------
+      // axios
+      // .get(
+      //   `${process.env.REACT_APP_BACKEND_URL}/api/rewards/fetchUniqueRewardNames?userId=${userId}`,
+      //   {
+      //     headers: {
+      //       "auth-token": userToken,
+      //     },
+      //   }
+      // )
+      // .then((response) => {
+      //   // if (response.data.length === 0) {
+      //   //   setCanSetInitialRewards(true);
+      //   // }
+      //   console.log(response.data.uniqueNames);
+      // })
+      // .catch((error) => {
+      //   console.error("Error:", error);
+      // });
   };
 
   const SetInitialRewards = (userId, userToken) => {
