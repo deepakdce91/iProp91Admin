@@ -47,6 +47,7 @@ import { PiTextAaBold } from "react-icons/pi";
 
 import { TbCoinRupeeFilled } from "react-icons/tb";
 import { TiTicket } from "react-icons/ti";
+import { LiaThListSolid } from "react-icons/lia";
 
 const Item = ({ title, to, icon, selected, setSelected, badge }) => {
   const theme = useTheme();
@@ -343,6 +344,14 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
               title="Reward Points"
               to="/rewards"
               icon={<TbCoinRupeeFilled className="h-5 w-5" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
+            <Item
+              title="Rewards Ledger"
+              to="/globalRewardsLedger"
+              icon={<LiaThListSolid className="h-5 w-5" />}
               selected={selected}
               setSelected={setSelected}
             />

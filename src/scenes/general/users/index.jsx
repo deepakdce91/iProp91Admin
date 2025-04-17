@@ -1,5 +1,5 @@
 import { Box, IconButton, useTheme } from "@mui/material";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "../../../theme";
 import EditIcon from "@mui/icons-material/Edit";
@@ -20,7 +20,6 @@ import { PiHandCoinsFill } from "react-icons/pi";
 import DeleteModal from "../../../components/ui/DeleteModal";
 import MarkUnreadModal from "../../../components/ui/MarkUnreadModal";
 
-// New Reward Points Modal Component 
 const RewardPointsModal = ({
   isOpen,
   onClose,
@@ -33,6 +32,58 @@ const RewardPointsModal = ({
   const [amount, setAmount] = useState("");
   const [actionType, setActionType] = useState("add");
   const [reason, setReason] = useState("");
+  const [comments, setComments] = useState("");
+  const [reasonSuggestions, setReasonSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  
+  // Ref for the dropdown container
+  const dropdownRef = useRef(null);
+
+  // Fetch reason suggestions when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchReasonSuggestions();
+    }
+  }, [isOpen]);
+
+  // Handle clicks outside the dropdown
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    }
+
+    // Add event listener
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      // Clean up event listener
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownRef]);
+
+  const fetchReasonSuggestions = async () => {
+    try {
+      const response = await axios.get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/rewards/fetchUniqueRewardNames?userId=${userId}`,
+        {
+          headers: {
+            "auth-token": userToken,
+          },
+        }
+      );
+      if (response.data.uniqueNames) {
+        setReasonSuggestions(response.data.uniqueNames);
+      }
+    } catch (error) {
+      console.error("Error fetching reason suggestions:", error);
+    }
+  };
+
+  const handleReasonSelect = (selectedReason) => {
+    setReason(selectedReason);
+    setShowSuggestions(false);
+  };
 
   const handleSubmit = async () => {
     if (!amount || isNaN(amount) || parseInt(amount) <= 0) {
@@ -51,12 +102,14 @@ const RewardPointsModal = ({
           ? `${process.env.REACT_APP_BACKEND_URL}/api/users/increaseRewardPointsDirectly?userId=${userId}`
           : `${process.env.REACT_APP_BACKEND_URL}/api/users/decreaseRewardPointsDirectly?userId=${userId}`;
   
+          console.log("comments", comments);
       const response = await axios.put(
         endpoint,
         { 
           currentUserId: currentUserId, 
           amount: parseInt(amount),
           purpose: reason,
+          comments: comments, // Only send comments if it's not empty
         },
         {
           headers: {
@@ -122,10 +175,59 @@ const RewardPointsModal = ({
             placeholder="Enter amount"
             className="w-full p-2 border rounded text-black mb-3"
           />
+          
+          {/* Reason input with dropdown */}
+          <div className="relative mb-3" ref={dropdownRef}>
+            <input
+              type="text"
+              value={reason}
+              onChange={(e) => {
+                setReason(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={(e) => {
+                // Delay hiding to allow click on suggestion to register
+                setTimeout(() => {
+                  if (!dropdownRef.current?.contains(document.activeElement)) {
+                    setShowSuggestions(false);
+                  }
+                }, 200);
+              }}
+              placeholder="Enter reason for adjustment"
+              className="w-full p-2 border rounded text-black"
+            />
+            
+            {/* Dropdown for suggestions */}
+            {showSuggestions && reasonSuggestions.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-white border rounded shadow-lg max-h-60 overflow-y-auto">
+                {reasonSuggestions
+                  .filter((suggestion) => 
+                    suggestion.toLowerCase().includes(reason.toLowerCase())
+                  )
+                  .map((suggestion, index) => (
+                    <div
+                      key={index}
+                      className="p-2 hover:bg-gray-100 cursor-pointer text-black"
+                      onMouseDown={(e) => {
+                        // Using onMouseDown instead of onClick prevents the blur event from firing first
+                        e.preventDefault();
+                        handleReasonSelect(suggestion);
+                      }}
+                    >
+                      {suggestion}
+                    </div>
+                  ))
+                }
+              </div>
+            )}
+          </div>
+          
+          {/* Additional Comments field */}
           <textarea
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Enter reason for adjustment"
+            value={comments}
+            onChange={(e) => setComments(e.target.value)}
+            placeholder="Additional comments (optional)"
             className="w-full p-2 border rounded text-black"
             rows="3"
           />
@@ -793,6 +895,6 @@ function Index({ setRefetchNotification }) {
       )}
     </Box>
   );
-}
+} 
 
 export default Index;
