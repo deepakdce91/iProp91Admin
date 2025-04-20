@@ -48,6 +48,7 @@ import { PiTextAaBold } from "react-icons/pi";
 import { TbCoinRupeeFilled } from "react-icons/tb";
 import { TiTicket } from "react-icons/ti";
 import { LiaThListSolid } from "react-icons/lia";
+import { RiWhatsappFill } from "react-icons/ri";
 
 const Item = ({ title, to, icon, selected, setSelected, badge }) => {
   const theme = useTheme();
@@ -438,6 +439,13 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
               title="Email Templates"
               to="/emailTemplates"
               icon={<MdOutlineAttachEmail className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+            <Item
+              title="Whatsapp Templates"
+              to="/whatsappTemplates"
+              icon={<RiWhatsappFill className="h-4 w-4" />}
               selected={selected}
               setSelected={setSelected}
             />
