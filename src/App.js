@@ -35,6 +35,7 @@ import ReportedMessages from "./scenes/configurations/reportedMessages";
 import CommonSafes from "./scenes/configurations/CommonSafes/Index.jsx";
 
 import EmailTemplates from "./scenes/configurations/emailTemplates/Index.jsx";
+import WhatsappTemplates from "./scenes/configurations/whatsappTemplates/Index.jsx"; 
 import FilesToUrl from "./scenes/configurations/filesToUrl/Index.jsx";
 
 import Faqs from "./scenes/knowledgeCenter/faqs";
@@ -81,6 +82,7 @@ const routes = {
   rejectedReasons: "/rejectedReasons",
   moreInfoReasons: "/moreInfoReasons",
   emailTemplates : "/emailTemplates",
+  whatsappTemplates : "/whatsappTemplates",
   filesToUrl : "filesToUrl",
 
   groupFormation: "/groupFormation",
@@ -223,6 +225,10 @@ function App() {
                   <Route
                     path={routes.emailTemplates}
                     element={<EmailTemplates />}
+                  /> 
+                  <Route
+                    path={routes.whatsappTemplates}
+                    element={<WhatsappTemplates />}
                   /> 
                   <Route
                     path={routes.filesToUrl}
