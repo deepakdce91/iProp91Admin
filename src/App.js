@@ -64,6 +64,7 @@ import Appointments from "./scenes/frontendPreview/Appointments/Index.jsx";
 import HeroText from "./scenes/frontendPreview/HeroText/Index.jsx";
 
 import BuyQueries from "./scenes/otherData/buyQuery/Index";
+import WaitingList from "./scenes/otherData/waitingList/Index.jsx";
 
 // Constants for routes
 const routes = {
@@ -112,7 +113,7 @@ const routes = {
   articles: "/articles",
   appointments : "/appointments",
   buyQueries : "/buyQueries",
-
+  waitingList : "/waitingList"
 };
 
 function App() {
@@ -262,6 +263,8 @@ function App() {
                   <Route path={routes.articles} element={<Articles />} />
                   <Route path={routes.appointments} element={<Appointments setRefetchNotification={handleReffetchNotification}/>} />
                   <Route path={routes.buyQueries} element={<BuyQueries/>} />
+
+                  <Route path={routes.waitingList} element={<WaitingList/>} />
                 </>
               )}
             </Routes>

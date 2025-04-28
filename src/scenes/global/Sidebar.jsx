@@ -33,6 +33,7 @@ import { FaClipboardQuestion } from "react-icons/fa6";
 import { MdOutlineAttachEmail } from "react-icons/md";
 import axios from "axios";
 
+import { LuCalendarClock } from "react-icons/lu";
 import { HiClipboardList } from "react-icons/hi";
 import { GrArticle } from "react-icons/gr";
 import { BsSafe2Fill } from "react-icons/bs";
@@ -622,6 +623,15 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
               selected={selected}
               setSelected={setSelected}
             />
+
+          <Item
+              title="Waiting List"
+              to="/waitingList"
+              icon={<LuCalendarClock className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
           </Box>
         </Menu>
       </ProSidebar>
