@@ -51,6 +51,11 @@ import { TiTicket } from "react-icons/ti";
 import { LiaThListSolid } from "react-icons/lia";
 import { RiWhatsappFill } from "react-icons/ri";
 
+import { FcAbout } from "react-icons/fc";
+import { MdPrivacyTip } from "react-icons/md";
+import { IoIosListBox } from "react-icons/io";
+
+
 const Item = ({ title, to, icon, selected, setSelected, badge }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -624,6 +629,28 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
               setSelected={setSelected}
             />
 
+<Item
+              title="About Us"
+              to="/aboutUs"
+              icon={<FcAbout className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+            <Item
+              title="Privacy Policy"
+              to="/privacyPolicy"
+              icon={<MdPrivacyTip className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+            <Item
+              title="Terms and Conditions"
+              to="/termsAndConditions"
+              icon={<IoIosListBox className="h-4 w-4" />}
+              selected={selected}
+              setSelected={setSelected}
+            />
+
           <Item
               title="Waiting List"
               to="/waitingList"
@@ -631,6 +658,8 @@ const Sidebar = ({ userId, userToken, refetchNotification }) => {
               selected={selected}
               setSelected={setSelected}
             />
+
+
 
           </Box>
         </Menu>

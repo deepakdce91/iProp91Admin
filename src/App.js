@@ -66,6 +66,10 @@ import HeroText from "./scenes/frontendPreview/HeroText/Index.jsx";
 import BuyQueries from "./scenes/otherData/buyQuery/Index";
 import WaitingList from "./scenes/otherData/waitingList/Index.jsx";
 
+import AboutUs from "./scenes/otherData/aboutUs/Index.jsx";
+import PrivacyPolicy from "./scenes/otherData/privacyPolicy/Index.jsx";
+import TermsAndConditions from "./scenes/otherData/termsAndConditions/Index.jsx";
+
 // Constants for routes
 const routes = {
   login: "/login",
@@ -113,6 +117,11 @@ const routes = {
   articles: "/articles",
   appointments : "/appointments",
   buyQueries : "/buyQueries",
+
+  aboutUs: "/aboutUs",
+  privacyPolicy: "/privacyPolicy",
+  termsAndConditions: "/termsAndConditions",
+
   waitingList : "/waitingList"
 };
 
@@ -263,6 +272,10 @@ function App() {
                   <Route path={routes.articles} element={<Articles />} />
                   <Route path={routes.appointments} element={<Appointments setRefetchNotification={handleReffetchNotification}/>} />
                   <Route path={routes.buyQueries} element={<BuyQueries/>} />
+
+                  <Route path={routes.aboutUs} element={<AboutUs/>} />
+                  <Route path={routes.privacyPolicy} element={<PrivacyPolicy/>} />
+                  <Route path={routes.termsAndConditions} element={<TermsAndConditions/>} />
 
                   <Route path={routes.waitingList} element={<WaitingList/>} />
                 </>
