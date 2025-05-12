@@ -34,6 +34,12 @@ function Index() {
         width: 45,
         valueGetter: (params) => params.api.getRowIndex(params.id) + 1, // Start numbering from 1
       },
+      {
+        field: "title",
+        headerName: "Title",
+        width : 150,
+        cellClassName: "name-column--cell",
+      },
     {
       field: "name",
       headerName: "Reward Name",
@@ -152,7 +158,7 @@ function Index() {
       //     headers: {
       //       "auth-token": userToken,
       //     },
-      //   }
+      //   } 
       // )
       // .then((response) => {
       //   // if (response.data.length === 0) {

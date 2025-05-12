@@ -12,6 +12,7 @@ function RewardsForm({ editData, userId, userToken, closeForm }) {
 
   const [addData, setAddData] = useState({
     name: "",
+    title: "",
     description: "",
     discountType: "", // percentage, fixed_amount, free_item
     type: "addition",
@@ -29,6 +30,13 @@ function RewardsForm({ editData, userId, userToken, closeForm }) {
     setAddData((prevData) => ({
       ...prevData,
       name: value,
+    }));
+  };
+
+  const changeTitle = (value) => {
+    setAddData((prevData) => ({
+      ...prevData,
+      title: value,
     }));
   };
 
@@ -108,7 +116,7 @@ function RewardsForm({ editData, userId, userToken, closeForm }) {
       submissionData.couponCode = [submissionData.name];
     }
     
-    if (addData.name !== "" && addData.amount !== 0 && addData.discountType !== "" && addData.type !== "") {
+    if (addData.name !== "" && addData.title !== "" && addData.amount !== 0 && addData.discountType !== "" && addData.type !== "") {
       // Additional validation for range coupon codes
       if (addData.couponCodeType === "range" && addData.couponCode.length === 0) {
         toast.error("Please enter coupon codes.");
@@ -149,6 +157,7 @@ function RewardsForm({ editData, userId, userToken, closeForm }) {
               toast("Reward added!");
               setAddData({
                 name: "",
+                title: "",
                 description: "",
                 type: "addition",
                 discountType: "",
@@ -180,6 +189,7 @@ function RewardsForm({ editData, userId, userToken, closeForm }) {
     if (editData) {
       setAddData({
         name: editData.name,
+        title: editData.title || "",
         type: editData.type,
         description: editData.description || "",
         discountType: editData.discountType,
@@ -267,6 +277,29 @@ function RewardsForm({ editData, userId, userToken, closeForm }) {
                     value={addData.name}
                     onChange={(e) => changeName(e.target.value)}
                     placeholder="Reward Name"
+                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap -mx-3">
+              <div className="w-full px-3">
+                <div className="mb-5">
+                  <label
+                    htmlFor="title"
+                    className="mb-3 block text-base font-medium"
+                  >
+                    Reward Title <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    id="title"
+                    autoComplete="off"
+                    value={addData.title}
+                    onChange={(e) => changeTitle(e.target.value)}
+                    placeholder="Reward Title"
                     className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                   />
                 </div>
@@ -451,7 +484,7 @@ function RewardsForm({ editData, userId, userToken, closeForm }) {
                     <option value="redemption">Redemption</option>
                   </select>
                 </div>
-              </div>
+              </div> 
             </div>
 
             <div className="flex flex-wrap -mx-3">
