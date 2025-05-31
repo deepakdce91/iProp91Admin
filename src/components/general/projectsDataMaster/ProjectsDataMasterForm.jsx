@@ -14,6 +14,7 @@ import {
   sortArrayByName,
 } from "../../../MyFunctions";
 import CustomDropdown from "../../ui/CustomDropdown";
+import { Add } from "@mui/icons-material";
 
 function ProjectsForm({
   editData,
@@ -50,6 +51,8 @@ function ProjectsForm({
     minimumPrice: "",
     maximumPrice: "",
     bhk: "",
+    longitude: "",
+    latitude: "",
 
     houseNumber: "",
     floorNumber: "",
@@ -135,7 +138,7 @@ function ProjectsForm({
               path: publicUrl.url,
             },
           }));
-        }
+        } 
       }
       setIsUploading(false);
       toast.success("Thumbnail uploaded successfully");
@@ -356,13 +359,23 @@ function ProjectsForm({
       return;
     }
 
+    // setAddData((prevData) => ({
+    //   ...prevData,
+    //   longitute: parseFloat(prevData.longitude) || 0,
+    //   latitude: parseFloat(prevData.latitude) || 0,
+    // }));
+
+    const localAddData = addData;
+    localAddData.longitude = parseFloat(localAddData.longitude) || 0;
+    localAddData.latitude = parseFloat(localAddData.latitude) || 0;
+
     const endpoint = editData
       ? `${process.env.REACT_APP_BACKEND_URL}/api/projectsDataMaster/updateProject/${editData._id}?userId=${userId}`
       : `${process.env.REACT_APP_BACKEND_URL}/api/projectsDataMaster/addProject?userId=${userId}`;
 
     const method = editData ? "put" : "post";
 
-    axios[method](endpoint, addData, {
+    axios[method](endpoint, localAddData, {
       headers: {
         "auth-token": userToken,
       },
@@ -400,7 +413,11 @@ function ProjectsForm({
     fetchAllStates();
 
     if (editData) {
-      setAddData(editData);
+      setAddData({
+        ...editData,
+        latitude: editData.coordinates[0] || 0,
+        longitude: editData.coordinates[1] || 0,
+      });
     }
   }, [editData]);
 
@@ -641,6 +658,44 @@ function ProjectsForm({
                   value={addData.size}
                   onChange={(e) => changeField("size", e.target.value)}
                   className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                />
+              </div>
+
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="latitude"
+                  className="mb-3 block text-base font-medium"
+                >
+                  Latitude
+                </label>
+                <input
+                  readOnly={displayMode ? true : false}
+                  type="Number"
+                  name="latitude"
+                  id="latitude"
+                  value={addData.latitude}
+                  onChange={(e) => changeField("latitude", e.target.value)}
+                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  placeholder="Enter latitude coordinate"
+                />
+              </div>
+
+              <div className="mb-5 w-full lg:w-[45%]">
+                <label
+                  htmlFor="longitude"
+                  className="mb-3 block text-base font-medium"
+                >
+                  Longitude
+                </label>
+                <input
+                  readOnly={displayMode ? true : false}
+                  type="Number"
+                  name="longitude"
+                  id="longitude"
+                  value={addData.longitude}
+                  onChange={(e) => changeField("longitude", e.target.value)}
+                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                  placeholder="Enter longitude coordinate"
                 />
               </div>
 
