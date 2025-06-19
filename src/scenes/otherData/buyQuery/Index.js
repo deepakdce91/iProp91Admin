@@ -38,6 +38,21 @@ function Index({ setRefetchNotification }) {
       width: 120,
     },
     {
+      field: "name",
+      headerName: "Name",
+      width: 120,
+    },
+    {
+      field: "phoneNumber",
+      headerName: "Mobile",
+      width: 120,
+    },
+    {
+      field: "email",
+      headerName: "Email",
+      width: 120,
+    },
+    {
       field: "city",
       headerName: "City",
       width: 120,
