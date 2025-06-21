@@ -9,12 +9,46 @@ import { supabase } from "../../../config/supabase";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { client } from "../../../config/s3Config";
 
-import {
-  removeSpaces,
-  sortArrayByName,
-} from "../../../MyFunctions";
+import { removeSpaces, sortArrayByName } from "../../../MyFunctions";
 import CustomDropdown from "../../ui/CustomDropdown";
 import { Add } from "@mui/icons-material";
+
+const allAmenities = [
+  { name: "Power Back Up", icon: "Lightbulb", category: "Essential Services" },
+  { name: "Water Storage", icon: "Droplet", category: "Essential Services" },
+  {
+    name: "Rain Water Harvesting",
+    icon: "CloudRain",
+    category: "Essential Services",
+  },
+  { name: "Lift", icon: "ArrowRight", category: "Essential Services" },
+  { name: "Intercom Facility", icon: "Phone", category: "Essential Services" },
+  {
+    name: "Maintenance Staff",
+    icon: "CheckCircle2",
+    category: "Essential Services",
+  },
+  { name: "Swimming Pool", icon: "GlassWaterIcon", category: "Recreation" },
+  { name: "Pool", icon: "GlassWaterIcon", category: "Recreation" },
+  { name: "Indoor Games Room", icon: "Gamepad2", category: "Recreation" },
+  { name: "Kids play area", icon: "Baby", category: "Recreation" },
+  { name: "Multipurpose Hall", icon: "PlaySquare", category: "Recreation" },
+  { name: "Club House", icon: "Building", category: "Recreation" },
+  { name: "Kids Club", icon: "Baby", category: "Recreation" },
+  { name: "Waste Disposal", icon: "Trash2", category: "Convenience" },
+  { name: "Vaastu Compliant", icon: "Compass", category: "Convenience" },
+  { name: "Bank & ATM", icon: "CreditCard", category: "Convenience" },
+  { name: "Security", icon: "Shield", category: "Security" },
+  {
+    name: "Fire Fighting Equipment",
+    icon: "FireExtinguisher",
+    category: "Security",
+  },
+  { name: "Gymnasium", icon: "Dumbbell", category: "Health & Fitness" },
+  { name: "Library", icon: "Book", category: "Health & Fitness" },
+  { name: "Visitor Parking", icon: "Car", category: "Parking" },
+  { name: "Reserved Parking", icon: "Car", category: "Parking" },
+];
 
 function ProjectsForm({
   editData,
@@ -23,6 +57,9 @@ function ProjectsForm({
   userId,
   displayMode,
 }) {
+  const [amenitiesDropdownOpen, setAmenitiesDropdownOpen] = useState(false);
+  const [amenitiesFilter, setAmenitiesFilter] = useState("");
+
   const [isUploading, setIsUploading] = useState(false);
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
@@ -42,7 +79,7 @@ function ProjectsForm({
     project: "",
     overview: "",
     address: "",
-    sector : "",
+    sector: "",
     pincode: "",
     status: "",
     type: "",
@@ -78,11 +115,29 @@ function ProjectsForm({
     transportationHubs: [],
     educationalInstitutions: [],
     images: [],
-    videos : [],
+    videos: [],
     floorPlan: [],
     enable: "true",
     isViewed: "no",
   });
+
+  const handleAmenitySelect = (amenityName) => {
+    if (!addData.amenities.includes(amenityName)) {
+      setAddData((prev) => ({
+        ...prev,
+        amenities: [...prev.amenities, amenityName],
+      }));
+    }
+    setAmenitiesFilter("");
+    setAmenitiesDropdownOpen(false);
+  };
+
+  // Filter amenities based on search and exclude already selected ones
+  const filteredAmenities = allAmenities.filter(
+    (amenity) =>
+      amenity.name.toLowerCase().includes(amenitiesFilter.toLowerCase()) &&
+      !addData.amenities.includes(amenity.name)
+  );
 
   const getPublicUrlFromSupabase = (path) => {
     const { data, error } = supabase.storage
@@ -138,7 +193,7 @@ function ProjectsForm({
               path: publicUrl.url,
             },
           }));
-        } 
+        }
       }
       setIsUploading(false);
       toast.success("Thumbnail uploaded successfully");
@@ -151,32 +206,33 @@ function ProjectsForm({
 
   // Multiple file upload function with path handling
   const handleFileUpload = async (e, type) => {
-
     const files = Array.from(e.target.files);
     const maxFiles = {
       images: 15,
       floorPlan: 5,
-      videos: 5
+      videos: 5,
     }[type];
-  
-    const maxSizeInMB = type === 'videos' ? 100 : 5; // 100MB for videos, 5MB for images
+
+    const maxSizeInMB = type === "videos" ? 100 : 5; // 100MB for videos, 5MB for images
     const currentFiles = addData[type];
-  
+
     if (currentFiles.length + files.length > maxFiles) {
       toast.error(`Maximum ${maxFiles} files allowed for ${type}`);
       return;
     }
-  
+
     // Check file sizes
-    const oversizedFiles = files.filter(file => file.size > maxSizeInMB * 1024 * 1024);
+    const oversizedFiles = files.filter(
+      (file) => file.size > maxSizeInMB * 1024 * 1024
+    );
     if (oversizedFiles.length > 0) {
       toast.error(`Some files exceed the ${maxSizeInMB}MB size limit`);
       return;
     }
-  
+
     setIsUploading(true);
     toast(`Uploading ${type}...`);
-  
+
     try {
       const uploadPromises = files.map(async (file) => {
         const cloudFilePath = await uploadFileToCloud(file, type);
@@ -189,15 +245,15 @@ function ProjectsForm({
         }
         return null;
       });
-  
+
       const uploadedFiles = await Promise.all(uploadPromises);
       const validFiles = uploadedFiles.filter((file) => file !== null);
-  
+
       setAddData((prev) => ({
         ...prev,
         [type]: [...prev[type], ...validFiles],
       }));
-  
+
       setIsUploading(false);
       toast.success(`${type} uploaded successfully`);
     } catch (error) {
@@ -699,8 +755,6 @@ function ProjectsForm({
                 />
               </div>
 
-              
-
               <div className="mb-5 w-full lg:w-[45%]">
                 <label
                   htmlFor="overview"
@@ -922,9 +976,8 @@ function ProjectsForm({
                   <option value="5">5</option>
                   <option value="5+">5+</option>
                   <option value="studio_appartment">Studio Appartment</option>
-                  <option value="plot">Plot</option>    
+                  <option value="plot">Plot</option>
                 </select>
-               
               </div>
 
               <div className="mb-5 w-full lg:w-[45%]">
@@ -1047,37 +1100,118 @@ function ProjectsForm({
                   field: "educationalInstitutions",
                   label: "Educational Institutions",
                 },
-              ].map(({ field, label }) => (
-                <div key={field} className="mb-5 w-full lg:w-[45%]">
-                  <label className="mb-3 block text-base font-medium">
-                    {label}
-                  </label>
-                  <input
-                    readOnly={displayMode ? true : false}
-                    type="text"
-                    placeholder={`Press Enter to add ${label}`}
-                    onKeyPress={(e) => handleChipInput(e, field)}
-                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                  />
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {addData[field].map((item, index) => (
-                      <div
-                        key={index}
-                        className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center"
-                      >
-                        <span>{item}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveChip(index, field)}
-                          className="ml-2 text-blue-800 hover:text-blue-900"
-                        >
-                          ×
-                        </button>
+              ].map(({ field, label }) => {
+                if (field === "amenities") {
+                  return (
+                    <div id="amenities" className="mb-5 w-full lg:w-[45%]">
+                      <label className="mb-3 block text-base font-medium">
+                        Amenities
+                      </label>
+                      {!displayMode && (
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Search and select amenities..."
+                            value={amenitiesFilter}
+                            onChange={(e) => {
+                              setAmenitiesFilter(e.target.value);
+                              setAmenitiesDropdownOpen(true);
+                            }}
+                            onFocus={() => setAmenitiesDropdownOpen(true)}
+                            className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                          />
+
+                          {amenitiesDropdownOpen &&
+                            filteredAmenities.length > 0 && (
+                              <div className="absolute z-10 w-full mt-1 bg-white border text-black border-gray-300 rounded-md max-h-60 overflow-y-auto shadow-lg">
+                                {filteredAmenities.map((amenity, index) => (
+                                  <div
+                                    key={index}
+                                    onClick={() =>
+                                      handleAmenitySelect(amenity.name)
+                                    }
+                                    className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                  >
+                                    <div className="flex justify-between items-center">
+                                      <span className="font-medium">
+                                        {amenity.name}
+                                      </span>
+                                      {/* <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
+                                        {amenity.category}
+                                      </span> */}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                          {/* Click outside to close dropdown */}
+                          {amenitiesDropdownOpen && (
+                            <div
+                              className="fixed inset-0 z-5"
+                              onClick={() => setAmenitiesDropdownOpen(false)}
+                            />
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {addData.amenities.map((item, index) => (
+                          <div
+                            key={index}
+                            className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center"
+                          >
+                            <span>{item}</span>
+                            {!displayMode && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleRemoveChip(index, "amenities")
+                                }
+                                className="ml-2 text-blue-800 hover:text-blue-900"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                    </div>
+                  );
+                } else{
+                  return (
+                    <div key={field} className="mb-5 w-full lg:w-[45%]">
+                      <label className="mb-3 block text-base font-medium">
+                        {label}
+                      </label>
+                      <input
+                        readOnly={displayMode ? true : false}
+                        type="text"
+                        placeholder={`Press Enter to add ${label}`}
+                        onKeyPress={(e) => handleChipInput(e, field)}
+                        className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                      />
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {addData[field].map((item, index) => (
+                          <div
+                            key={index}
+                            className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center"
+                          >
+                            <span>{item}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveChip(index, field)}
+                              className="ml-2 text-blue-800 hover:text-blue-900"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+              })}
 
               {/* File Uploads */}
               <div className="mb-5 w-[95%]">
@@ -1120,44 +1254,44 @@ function ProjectsForm({
               </div>
 
               {/* Video Uploads */}
-<div className="mb-5 w-[95%]">
-  <label className="mb-3 block text-base font-medium">
-    Property Videos (Max 5)
-  </label>
-  {!displayMode && (
-    <input
-      readOnly={displayMode ? true : false}
-      type="file"
-      multiple
-      accept="video/*"
-      onChange={(e) => handleFileUpload(e, "videos")}
-      className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-      disabled={isUploading || addData.videos.length >= 5}
-    />
-  )}
-  <div className="text-sm text-gray-500 mt-1">
-    {5 - addData.videos.length} slots remaining
-  </div>
-  {addData.videos.length > 0 && (
-    <div className="flex flex-wrap gap-4 mt-4">
-      {addData.videos.map((file, index) => (
-        <div
-          key={index}
-          className="flex items-center border p-2 rounded"
-        >
-          <span className="truncate max-w-xs">{file.name}</span>
-          <button
-            type="button"
-            onClick={() => handleRemoveFile(index, "videos")}
-            className="ml-2 text-red-500 hover:text-red-700"
-          >
-            ×
-          </button>
-        </div>
-      ))}
-    </div>
-  )}
-</div>
+              <div className="mb-5 w-[95%]">
+                <label className="mb-3 block text-base font-medium">
+                  Property Videos (Max 5)
+                </label>
+                {!displayMode && (
+                  <input
+                    readOnly={displayMode ? true : false}
+                    type="file"
+                    multiple
+                    accept="video/*"
+                    onChange={(e) => handleFileUpload(e, "videos")}
+                    className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                    disabled={isUploading || addData.videos.length >= 5}
+                  />
+                )}
+                <div className="text-sm text-gray-500 mt-1">
+                  {5 - addData.videos.length} slots remaining
+                </div>
+                {addData.videos.length > 0 && (
+                  <div className="flex flex-wrap gap-4 mt-4">
+                    {addData.videos.map((file, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center border p-2 rounded"
+                      >
+                        <span className="truncate max-w-xs">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFile(index, "videos")}
+                          className="ml-2 text-red-500 hover:text-red-700"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div className="mb-5  w-[95%]">
                 <label className="mb-3 block text-base font-medium">
