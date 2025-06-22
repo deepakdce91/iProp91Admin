@@ -6,6 +6,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import DownloadIcon from "@mui/icons-material/Download";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -126,21 +127,133 @@ function Index({ setRefetchNotification }) {
     }
   };
 
+  // Function to process array fields (comma-separated values)
+  const processArrayField = (value) => {
+    if (!value) return [];
+    
+    try {
+      // If it's already a JSON string, parse it
+      if (typeof value === 'string' && value.startsWith('[')) {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          return parsed;
+        }
+      }
+      
+      // If it's a comma-separated string
+      if (typeof value === 'string' && value.includes(',')) {
+        return value.split(',').map(item => item.trim()).filter(item => item);
+      }
+      
+      // If it's a single value
+      if (typeof value === 'string' && value.trim()) {
+        return [value.trim()];
+      }
+      
+      return [];
+    } catch (e) {
+      console.error('Error processing array field:', e);
+      return [];
+    }
+  };
+
   // Function to map Excel columns to schema fields
   const mapRowToSchema = (row, headers) => {
     const mappedData = {};
     headers.forEach((header, index) => {
-      const normalizedHeader = header.toLowerCase();
-      if (row[index] !== undefined) {
+      const normalizedHeader = header.toLowerCase().replace(/\s+/g, '');
+      if (row[index] !== undefined && row[index] !== '') {
+        const value = row[index].toString().trim();
+        
         // Handle coordinates field
         if (normalizedHeader === 'coordinates') {
-          mappedData[normalizedHeader] = processCoordinatesField(row[index]);
+          mappedData['coordinates'] = processCoordinatesField(value);
         }
         // Handle media fields
         else if (['images', 'videos', 'floorplan'].includes(normalizedHeader)) {
-          mappedData[normalizedHeader] = processMediaField(row[index]);
-        } else {
-          mappedData[normalizedHeader] = row[index].toString();
+          mappedData[normalizedHeader] = processMediaField(value);
+        }
+        // Handle array fields
+        else if ([
+          'appartmenttype', 'appartmentsubtype', 'features', 'amenities', 
+          'commercialhubs', 'hospitals', 'hotels', 'shoppingcentres', 
+          'transportationhubs', 'educationalinstitutions'
+        ].includes(normalizedHeader)) {
+          mappedData[normalizedHeader === 'appartmenttype' ? 'appartmentType' : 
+                     normalizedHeader === 'appartmentsubtype' ? 'appartmentSubType' :
+                     normalizedHeader === 'commercialhubs' ? 'commercialHubs' :
+                     normalizedHeader === 'shoppingcentres' ? 'shoppingCentres' :
+                     normalizedHeader === 'transportationhubs' ? 'transportationHubs' :
+                     normalizedHeader === 'educationalinstitutions' ? 'educationalInstitutions' :
+                     normalizedHeader] = processArrayField(value);
+        }
+        // Handle boolean fields
+        else if (['istitledeedverified', 'enable'].includes(normalizedHeader)) {
+          const fieldName = normalizedHeader === 'istitledeedverified' ? 'isTitleDeedVerified' : 'enable';
+          mappedData[fieldName] = value.toLowerCase() === 'yes' || value.toLowerCase() === 'true' ? 
+                                  (normalizedHeader === 'istitledeedverified' ? 'yes' : 'true') : 
+                                  (normalizedHeader === 'istitledeedverified' ? 'no' : 'false');
+        }
+        // Handle camelCase conversions
+        else if (normalizedHeader === 'propertyid') {
+          mappedData['propertyId'] = value;
+        }
+        else if (normalizedHeader === 'listingid') {
+          mappedData['listingId'] = value;
+        }
+        else if (normalizedHeader === 'housenumber') {
+          mappedData['houseNumber'] = value;
+        }
+        else if (normalizedHeader === 'floornumber') {
+          mappedData['floorNumber'] = value;
+        }
+        else if (normalizedHeader === 'availablefor') {
+          mappedData['availableFor'] = value;
+        }
+        else if (normalizedHeader === 'minimumprice') {
+          mappedData['minimumPrice'] = value;
+        }
+        else if (normalizedHeader === 'maximumprice') {
+          mappedData['maximumPrice'] = value;
+        }
+        else if (normalizedHeader === 'numberoffloors') {
+          mappedData['numberOfFloors'] = value;
+        }
+        else if (normalizedHeader === 'numberofbedrooms') {
+          mappedData['numberOfBedrooms'] = value;
+        }
+        else if (normalizedHeader === 'numberofbathrooms') {
+          mappedData['numberOfBathrooms'] = value;
+        }
+        else if (normalizedHeader === 'numberofwashrooms') {
+          mappedData['numberOfWashrooms'] = value;
+        }
+        else if (normalizedHeader === 'numberofparkings') {
+          mappedData['numberOfParkings'] = value;
+        }
+        // Handle direct mapping fields
+        else {
+          const directMappings = {
+            'state': 'state',
+            'city': 'city',
+            'builder': 'builder',
+            'project': 'project',
+            'tower': 'tower',
+            'unit': 'unit',
+            'size': 'size',
+            'overview': 'overview',
+            'address': 'address',
+            'sector': 'sector',
+            'pincode': 'pincode',
+            'status': 'status',
+            'type': 'type',
+            'category': 'category',
+            'bhk': 'bhk'
+          };
+          
+          if (directMappings[normalizedHeader]) {
+            mappedData[directMappings[normalizedHeader]] = value;
+          }
         }
       }
     });
@@ -159,6 +272,195 @@ function Index({ setRefetchNotification }) {
       }
     }
     return true;
+  };
+
+  // Function to download dummy Excel template
+  const downloadDummyExcel = () => {
+    // Define all accepted headers for the upload feature based on PDM schema
+    const headers = [
+      // Required fields
+      'State',
+      'City',
+      'Builder',
+      'Project',
+      
+      // Basic property details
+      'PropertyId',
+      'ListingId',
+      'Coordinates',
+      'HouseNumber',
+      'FloorNumber',
+      'Tower',
+      'Unit',
+      'Size',
+      'Overview',
+      'Address',
+      'Sector',
+      'Pincode',
+      'Status',
+      'Type',
+      'AvailableFor',
+      'Category',
+      'MinimumPrice',
+      'MaximumPrice',
+      'BHK',
+      'NumberOfFloors',
+      'NumberOfBedrooms',
+      'NumberOfBathrooms',
+      'NumberOfWashrooms',
+      'NumberOfParkings',
+      'IsTitleDeedVerified',
+      
+      // Array fields (comma-separated values)
+      'AppartmentType',
+      'AppartmentSubType',
+      'Features',
+      'Amenities',
+      'CommercialHubs',
+      'Hospitals',
+      'Hotels',
+      'ShoppingCentres',
+      'TransportationHubs',
+      'EducationalInstitutions',
+      
+      // Media fields
+      'Images',
+      'Videos',
+      'FloorPlan',
+      
+      // Settings
+      'Enable'
+    ];
+
+    // Create sample data rows to show format
+    const sampleData = [
+      [
+        // Required fields
+        'Maharashtra',
+        'Mumbai',
+        'ABC Builders',
+        'Dream Heights',
+        
+        // Basic property details
+        'PROP001',
+        'none',
+        '[19.0760, 72.8777]',
+        '101',
+        '10',
+        'Tower A',
+        'A-101',
+        '1200 sq ft',
+        'Luxury 2BHK apartment with modern amenities and beautiful city views',
+        '123 Sample Street, Andheri West, Mumbai',
+        'Andheri West',
+        '400053',
+        'Under Construction',
+        'Residential',
+        'sale',
+        'new_projects',
+        '5000000',
+        '5500000',
+        '2BHK',
+        '20',
+        '2',
+        '2',
+        '1',
+        '1',
+        'yes',
+        
+        // Array fields (comma-separated)
+        'Luxury,Premium',
+        'High-rise,Modern',
+        'Balcony,Modern Kitchen,Spacious Rooms',
+        'Swimming Pool,Gym,Garden,Security,Lift',
+        'BKC,Lower Parel,Powai',
+        'Kokilaben Hospital,Nanavati Hospital',
+        'JW Marriott,Taj Hotel',
+        'Phoenix Mills,Palladium Mall',
+        'Andheri Station,Airport',
+        'IIT Bombay,NMIMS',
+        
+        // Media fields
+        'https://example.com/image1.jpg,https://example.com/image2.jpg',
+        'https://example.com/video1.mp4',
+        'https://example.com/floorplan1.pdf',
+        
+        // Settings
+        'true'
+      ],
+      [
+        // Required fields
+        'Karnataka',
+        'Bangalore',
+        'XYZ Developers',
+        'Tech Park Residency',
+        
+        // Basic property details
+        'PROP002',
+        'none',
+        '[12.9716, 77.5946]',
+        '201',
+        '2',
+        'Block B',
+        'B-201',
+        '2000 sq ft',
+        'Spacious 3BHK villa in prime location with garden and parking',
+        '456 Tech Street, Electronic City, Bangalore',
+        'Electronic City',
+        '560100',
+        'Ready to Move',
+        'Residential',
+        'both',
+        'verified_owner',
+        '8000000',
+        '8500000',
+        '3BHK',
+        '2',
+        '3',
+        '3',
+        '2',
+        '2',
+        'no',
+        
+        // Array fields (comma-separated)
+        'Villa,Independent',
+        'Duplex,Garden Facing',
+        'Garden,Parking,Terrace,Study Room',
+        'Clubhouse,Security,Power Backup,Water Supply',
+        'Electronic City,Silk Board,Koramangala',
+        'Manipal Hospital,Apollo Hospital',
+        'Taj Yeshwantpur,Sheraton Hotel',
+        'Forum Mall,Brigade Road',
+        'Electronic City Metro,Silk Board',
+        'IISc,Christ University',
+        
+        // Media fields
+        'https://example.com/image3.jpg,https://example.com/image4.jpg',
+        '',
+        'https://example.com/floorplan2.pdf',
+        
+        // Settings
+        'true'
+      ]
+    ];
+
+    // Create workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheetData = [headers, ...sampleData];
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+
+    // Set column widths for better readability
+    const columnWidths = headers.map(() => ({ wch: 20 }));
+    worksheet['!cols'] = columnWidths;
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Projects Template');
+
+    // Generate and download the file
+    const fileName = `Projects_Data_Master_Template_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+
+    toast.success('Dummy Excel template downloaded successfully!');
   };
 
   // Function to handle file upload
@@ -555,25 +857,35 @@ function Index({ setRefetchNotification }) {
           }
         />
 
-<Box display="flex" gap={2}>
+        <Box display="flex" gap={2}>
           {mode === "display" && (
-            <div className="flex items-center">
-              <input
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleFileUpload}
-                className="hidden"
-                id="excel-upload"
-                disabled={isUploading}
-              />
-              <label 
-                htmlFor="excel-upload" 
-                className={`border-2 border-green-600 rounded-lg px-3 py-2 text-green-400 cursor-pointer hover:bg-green-600 hover:text-green-200 flex items-center gap-2 ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            <>
+              <div className="flex items-center">
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="excel-upload"
+                  disabled={isUploading}
+                />
+                <label 
+                  htmlFor="excel-upload" 
+                  className={`border-2 border-green-600 rounded-lg px-3 py-2 text-green-400 cursor-pointer hover:bg-green-600 hover:text-green-200 flex items-center gap-2 ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <UploadFileIcon />
+                  {isUploading ? 'Uploading...' : 'Upload Excel'}
+                </label>
+              </div>
+              
+              <div 
+                className="border-2 border-purple-600 rounded-lg px-3 py-2 text-purple-400 cursor-pointer hover:bg-purple-600 hover:text-purple-200 flex items-center gap-2"
+                onClick={downloadDummyExcel}
               >
-                <UploadFileIcon />
-                {isUploading ? 'Uploading...' : 'Upload Excel'}
-              </label>
-            </div>
+                <DownloadIcon />
+                Download Template
+              </div>
+            </>
           )}
           
           {mode === "display" ? (
