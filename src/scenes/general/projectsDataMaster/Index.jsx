@@ -464,73 +464,151 @@ function Index({ setRefetchNotification }) {
   };
 
   // Function to handle file upload
-  const handleFileUpload = async (event) => {
-    const file = event.target.files[0];
-    setIsUploading(true);
-    setUploadError("");
+  // Function to handle file upload with transpose support
+const handleFileUpload = async (event) => {
+  const file = event.target.files[0];
+  setIsUploading(true);
+  setUploadError("");
 
-    try {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+  try {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
-        if (jsonData.length < 2) {
-          setUploadError("Excel file must contain headers and at least one data row");
-          setIsUploading(false);
-          return;
-        }
+      if (jsonData.length < 2) {
+        setUploadError("Excel file must contain headers and at least one data row");
+        setIsUploading(false);
+        return;
+      }
 
-        const headers = jsonData[0].map(header => header.toString().trim());
-        const rows = jsonData.slice(1);
-        let successCount = 0;
-        let errorCount = 0;
+      // Define expected headers for validation
+      const expectedHeaders = [
+        'state', 'city', 'builder', 'project', 'propertyid', 'listingid', 'coordinates',
+        'housenumber', 'floornumber', 'tower', 'unit', 'size', 'overview', 'address',
+        'sector', 'pincode', 'status', 'type', 'availablefor', 'category', 'minimumprice',
+        'maximumprice', 'bhk', 'numberoffloors', 'numberofbedrooms', 'numberofbathrooms',
+        'numberofwashrooms', 'numberofparkings', 'istitledeedverified', 'appartmenttype',
+        'appartmentsubtype', 'features', 'amenities', 'commercialhubs', 'hospitals',
+        'hotels', 'shoppingcentres', 'transportationhubs', 'educationalinstitutions',
+        'images', 'videos', 'floorplan', 'enable'
+      ];
 
-        for (let row of rows) {
-          if (!validateRow(row, headers)) {
-            errorCount++;
-            continue;
+      let headers, rows, isTransposed = false;
+
+      // Check if headers are in first row (normal format)
+      const firstRowHeaders = jsonData[0].map(header => 
+        header ? header.toString().toLowerCase().replace(/\s+/g, '') : ''
+      );
+      const firstRowMatches = firstRowHeaders.filter(header => 
+        expectedHeaders.includes(header)
+      ).length;
+
+      // Check if headers are in first column (transposed format)
+      const firstColumnHeaders = jsonData.map(row => 
+        row[0] ? row[0].toString().toLowerCase().replace(/\s+/g, '') : ''
+      );
+      const firstColumnMatches = firstColumnHeaders.filter(header => 
+        expectedHeaders.includes(header)
+      ).length;
+
+      // Determine format based on which has more matches
+      if (firstColumnMatches > firstRowMatches && firstColumnMatches >= 4) {
+        // Transposed format - headers in first column
+        isTransposed = true;
+        headers = firstColumnHeaders;
+        
+        // Transform data: each column (except first) becomes a row
+        rows = [];
+        const numColumns = Math.max(...jsonData.map(row => row.length));
+        
+        for (let colIndex = 1; colIndex < numColumns; colIndex++) {
+          const row = [];
+          for (let rowIndex = 0; rowIndex < jsonData.length; rowIndex++) {
+            row.push(jsonData[rowIndex][colIndex] || '');
           }
-
-          const mappedData = mapRowToSchema(row, headers);
-          
-          try {
-            await axios.post(
-              `${process.env.REACT_APP_BACKEND_URL}/api/projectsDataMaster/addProject?userId=${userId}`,
-              mappedData,
-              {
-                headers: {
-                  "auth-token": userToken,
-                }
-              }
-            );
-            successCount++;
-          } catch (error) {
-            errorCount++;
-            console.error("Error adding row:", error);
-          }
-        }
-
-        toast.success(`Successfully added ${successCount} projects`);
-        setRefetchNotification();
-        if (errorCount > 0) {
-          toast.warning(`${errorCount} projects failed validation or upload`);
+          rows.push(row);
         }
         
-        fetchAllProjectsDataMaster(userId, userToken);
-      };
+        console.log('Detected transposed format');
+      } else if (firstRowMatches >= 4) {
+        // Normal format - headers in first row
+        headers = firstRowHeaders;
+        rows = jsonData.slice(1);
+        console.log('Detected normal format');
+      } else {
+        setUploadError("Could not detect valid headers in first row or first column. Please ensure your Excel file contains the required fields (State, City, Builder, Project).");
+        setIsUploading(false);
+        return;
+      }
 
-      reader.readAsArrayBuffer(file);
-    } catch (error) {
-      console.error("Error processing file:", error);
-      setUploadError("Error processing file");
-    } finally {
-      setIsUploading(false);
-      event.target.value = null; // Reset file input
-    }
-  };
+      if (rows.length === 0) {
+        setUploadError("No data rows found");
+        setIsUploading(false);
+        return;
+      }
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (let row of rows) {
+        // Skip empty rows
+        if (row.every(cell => !cell || cell.toString().trim() === '')) {
+          continue;
+        }
+
+        if (!validateRow(row, headers)) {
+          errorCount++;
+          console.log('Validation failed for row:', row);
+          continue;
+        }
+
+        const mappedData = mapRowToSchema(row, headers);
+        
+        try {
+          await axios.post(
+            `${process.env.REACT_APP_BACKEND_URL}/api/projectsDataMaster/addProject?userId=${userId}`,
+            mappedData,
+            {
+              headers: {
+                "auth-token": userToken,
+              }
+            }
+          );
+          successCount++;
+        } catch (error) {
+          errorCount++;
+          console.error("Error adding row:", error);
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`Successfully added ${successCount} projects${isTransposed ? ' (transposed format detected)' : ''}`);
+        setRefetchNotification();
+        fetchAllProjectsDataMaster(userId, userToken);
+      }
+      
+      if (errorCount > 0) {
+        toast.warning(`${errorCount} projects failed validation or upload`);
+      }
+
+      if (successCount === 0 && errorCount === 0) {
+        toast.info("No valid data rows found to process");
+      }
+    };
+
+    reader.readAsArrayBuffer(file);
+  } catch (error) {
+    console.error("Error processing file:", error);
+    setUploadError("Error processing file: " + error.message);
+    toast.error("Error processing file");
+  } finally {
+    setIsUploading(false);
+    event.target.value = null; // Reset file input
+  }
+};
 
   const columns = [
     {
