@@ -100,7 +100,6 @@ function ProjectsForm({
     numberOfFloors: "",
     numberOfBedrooms: "",
     numberOfBathrooms: "",
-    numberOfWashrooms: "",
     numberOfParkings: "",
     isTitleDeedVerified: "",
 
@@ -468,14 +467,14 @@ function ProjectsForm({
   useEffect(() => {
     fetchAllStates();
 
-    if (editData) {
-      setAddData({
+    if (editData && editData.coordinates && editData.coordinates.length > 0) {
+   setAddData({
         ...editData,
-        latitude: editData.coordinates[0] || 0,
-        longitude: editData.coordinates[1] || 0,
+        latitude: editData.coordinates[0] || "0",
+        longitude: editData.coordinates[1] || "0",
       });
     }
-  }, [editData]);
+  }, [editData]); 
 
   return (
     <Box
@@ -1045,27 +1044,6 @@ function ProjectsForm({
 
               <div className="mb-5 w-full lg:w-[45%]">
                 <label
-                  htmlFor="numberOfWashrooms"
-                  className="mb-3 block text-base font-medium"
-                >
-                  Number Of Washrooms
-                </label>
-                <input
-                  readOnly={displayMode ? true : false}
-                  type="number"
-                  min={0}
-                  name="numberOfWashrooms"
-                  id="numberOfWashrooms"
-                  value={addData.numberOfWashrooms}
-                  onChange={(e) =>
-                    changeField("numberOfWashrooms", e.target.value)
-                  }
-                  className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                />
-              </div>
-
-              <div className="mb-5 w-full lg:w-[45%]">
-                <label
                   htmlFor="numberOfParkings"
                   className="mb-3 block text-base font-medium"
                 >
@@ -1103,7 +1081,7 @@ function ProjectsForm({
               ].map(({ field, label }) => {
                 if (field === "amenities") {
                   return (
-                    <div id="amenities" className="mb-5 w-full lg:w-[45%]">
+                    <div key={field} id="amenities" className="mb-5 w-full lg:w-[45%]">
                       <label className="mb-3 block text-base font-medium">
                         Amenities
                       </label>
