@@ -13,7 +13,7 @@ import { removeSpaces, sortArrayByName } from "../../../MyFunctions";
 import CustomDropdown from "../../ui/CustomDropdown";
 import { Add } from "@mui/icons-material";
 
-const allAmenities = [
+const allAmenities = [ 
   { name: "Power Back Up", icon: "Lightbulb", category: "Essential Services" },
   { name: "Water Storage", icon: "Droplet", category: "Essential Services" },
   {
@@ -50,6 +50,57 @@ const allAmenities = [
   { name: "Reserved Parking", icon: "Car", category: "Parking" },
 ];
 
+// Suggested values for multiple input fields
+const suggestedValues = {
+  appartmentType: [
+    "Studio",
+    "Penthouse", "Villa", "Duplex", "Triplex", "Row House", 
+    "Farm House", "Bungalow", "Plot"
+  ],
+  appartmentSubType: [
+    "Standard", "Premium", "Luxury", "Ultra Luxury", "Affordable",
+    "Low Rise", "Mid Rise", "High Rise", "Gated Community", 
+    "Independent Floor", "Serviced Apartment"
+  ],
+  features: [
+    "Modular Kitchen", "Wooden Flooring", "Vitrified Tiles", 
+    "False Ceiling", "Walk-in Closet", "Balcony", 
+    "Central AC", "Jacuzzi", "Study Room", "Pooja Room",
+    "Home Theater", "Private Garden", "Private Pool"
+  ],
+  commercialHubs: [
+    "Shopping Mall", "Business Park", "IT Park", "Office Complex",
+    "Retail Plaza", "Commercial Street", "High Street", 
+    "Central Business District", "Industrial Area"
+  ],
+  hospitals: [
+    "Multi-specialty Hospital", "General Hospital", "Specialty Hospital",
+    "Clinic", "Diagnostic Center", "Dental Clinic", "Eye Hospital",
+    "Maternity Hospital", "Children's Hospital"
+  ],
+  hotels: [
+    "5 Star Hotel", "4 Star Hotel", "3 Star Hotel", "Budget Hotel",
+    "Boutique Hotel", "Resort", "Service Apartment", "Hostel",
+    "Guest House", "Homestay"
+  ],
+  shoppingCentres: [
+    "Department Store", "Supermarket", "Hypermarket", "Mall",
+    "Plaza", "Bazaar", "Convenience Store", "Specialty Store",
+    "Showroom", "Outlet"
+  ],
+  transportationHubs: [
+    "Metro Station", "Bus Station", "Railway Station", "Airport",
+    "Taxi Stand", "Auto Stand", "Ferry Terminal", "Subway Station",
+    "BRT Station", "Monorail Station"
+  ],
+  educationalInstitutions: [
+    "International School", "CBSE School", "ICSE School", 
+    "State Board School", "Play School", "College", 
+    "University", "Coaching Center", "Vocational Training",
+    "Language School", "Special Education"
+  ]
+};
+
 function ProjectsForm({
   editData,
   setModeToDisplay,
@@ -59,8 +110,11 @@ function ProjectsForm({
 }) {
   const [amenitiesDropdownOpen, setAmenitiesDropdownOpen] = useState(false);
   const [amenitiesFilter, setAmenitiesFilter] = useState("");
-
   const [isUploading, setIsUploading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState({});
+  const [filterText, setFilterText] = useState({});
+  
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
@@ -138,6 +192,35 @@ function ProjectsForm({
       !addData.amenities.includes(amenity.name)
   );
 
+  // Handle select for other multiple value fields
+  const handleSelect = (field, value) => {
+    if (!addData[field].includes(value)) {
+      setAddData((prev) => ({
+        ...prev,
+        [field]: [...prev[field], value],
+      }));
+    }
+    setFilterText(prev => ({...prev, [field]: ""}));
+    setDropdownOpen(prev => ({...prev, [field]: false}));
+  };
+
+  // Filter suggestions based on search and exclude already selected ones
+  const getFilteredSuggestions = (field) => {
+    const currentFilter = filterText[field] || "";
+    return suggestedValues[field].filter(
+      (item) =>
+        item.toLowerCase().includes(currentFilter.toLowerCase()) &&
+        !addData[field].includes(item)
+    );
+  };
+
+  const toggleDropdown = (field) => {
+    setDropdownOpen(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
+
   const getPublicUrlFromSupabase = (path) => {
     const { data, error } = supabase.storage
       .from(process.env.REACT_APP_SITE_BUCKET)
@@ -154,7 +237,6 @@ function ProjectsForm({
 
   const uploadFileToCloud = async (myFile, type) => {
     const myFileName = removeSpaces(myFile.name);
-    // Add videos to the possible paths
     const myPath = `Projects/${type}/${myFileName}`;
     try {
       const uploadParams = {
@@ -212,7 +294,7 @@ function ProjectsForm({
       videos: 5,
     }[type];
 
-    const maxSizeInMB = type === "videos" ? 100 : 5; // 100MB for videos, 5MB for images
+    const maxSizeInMB = type === "videos" ? 100 : 5;
     const currentFiles = addData[type];
 
     if (currentFiles.length + files.length > maxFiles) {
@@ -220,7 +302,6 @@ function ProjectsForm({
       return;
     }
 
-    // Check file sizes
     const oversizedFiles = files.filter(
       (file) => file.size > maxSizeInMB * 1024 * 1024
     );
@@ -262,7 +343,6 @@ function ProjectsForm({
     }
   };
 
-  // Function to handle thumbnail removal
   const handleRemoveThumbnail = () => {
     setAddData((prev) => ({
       ...prev,
@@ -270,7 +350,6 @@ function ProjectsForm({
     }));
   };
 
-  // Function to handle file removal with path
   const handleRemoveFile = (index, type) => {
     setAddData((prev) => ({
       ...prev,
@@ -278,58 +357,58 @@ function ProjectsForm({
     }));
   };
 
-  const fetchCitiesByState = (currentStateCode) => {
-    axios
-      .get(
+  const fetchCitiesByState = async (currentStateCode) => {
+    try {
+      const response = await axios.get(
         `https://api.countrystatecity.in/v1/countries/IN/states/${currentStateCode}/cities`,
         {
           headers: {
             "X-CSCAPI-KEY": process.env.REACT_APP_CSC_API,
           },
         }
-      )
-      .then((response) => {
-        setCities(sortArrayByName(response.data));
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
+      );
+      setCities(sortArrayByName(response.data));
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching cities:", error);
+      return [];
+    }
   };
 
-  const fetchBuildersByCity = (city) => {
-    axios
-      .get(
+  const fetchBuildersByCity = async (city) => {
+    try {
+      const response = await axios.get(
         `${process.env.REACT_APP_BACKEND_URL}/api/builders/fetchbuildersbycity/${city}?userId=${userId}`,
         {
           headers: {
             "auth-token": userToken,
           },
         }
-      )
-      .then((response) => {
-        setBuilders(response.data);
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
+      );
+      setBuilders(response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching builders:", error);
+      return [];
+    }
   };
 
-  const fetchProjectByBuilder = (builder) => {
-    axios
-      .get(
+  const fetchProjectByBuilder = async (builder) => {
+    try {
+      const response = await axios.get(
         `${process.env.REACT_APP_BACKEND_URL}/api/projects/fetchprojectbybuilder/${builder}?userId=${userId}`,
         {
           headers: {
             "auth-token": userToken,
           },
         }
-      )
-      .then((response) => {
-        setProjects(response.data);
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
+      );
+      setProjects(response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching projects:", error);
+      return [];
+    }
   };
 
   const handleChipInput = (e, field) => {
@@ -361,18 +440,14 @@ function ProjectsForm({
     const value = e.target.value;
 
     if (e.target.name === "state" && value) {
-      if (value && value.length > 0) {
-        const selectedValue = value;
-        const item = states.find((state) => state.name === selectedValue);
-        if (item) {
-          fetchCitiesByState(item.iso2);
-        }
+      const item = states.find((state) => state.name === value);
+      if (item) {
+        fetchCitiesByState(item.iso2);
       }
     }
     if (e.target.name === "city" && value) {
       fetchBuildersByCity(value);
     }
-
     if (e.target.name === "builder" && value) {
       fetchProjectByBuilder(value);
     }
@@ -385,19 +460,14 @@ function ProjectsForm({
     }));
 
     if (field === "state" && value) {
-      if (value && value.length > 0) {
-        const selectedValue = value;
-        const item = states.find((state) => state.name === selectedValue);
-        if (item) {
-          fetchCitiesByState(item.iso2);
-        }
+      const item = states.find((state) => state.name === value);
+      if (item) {
+        fetchCitiesByState(item.iso2);
       }
     }
-
     if (field === "city" && value) {
       fetchBuildersByCity(value);
     }
-
     if (field === "builder" && value) {
       fetchProjectByBuilder(value);
     }
@@ -414,13 +484,7 @@ function ProjectsForm({
       return;
     }
 
-    // setAddData((prevData) => ({
-    //   ...prevData,
-    //   longitute: parseFloat(prevData.longitude) || 0,
-    //   latitude: parseFloat(prevData.latitude) || 0,
-    // }));
-
-    const localAddData = addData;
+    const localAddData = { ...addData };
     localAddData.longitude = parseFloat(localAddData.longitude) || 0;
     localAddData.latitude = parseFloat(localAddData.latitude) || 0;
 
@@ -449,32 +513,128 @@ function ProjectsForm({
       });
   };
 
-  const fetchAllStates = () => {
-    axios
-      .get(`https://api.countrystatecity.in/v1/countries/IN/states`, {
-        headers: {
-          "X-CSCAPI-KEY": process.env.REACT_APP_CSC_API,
-        },
-      })
-      .then((response) => {
-        setStates(sortArrayByName(response.data));
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
+  const fetchAllStates = async () => {
+    try {
+      const response = await axios.get(
+        `https://api.countrystatecity.in/v1/countries/IN/states`,
+        {
+          headers: {
+            "X-CSCAPI-KEY": process.env.REACT_APP_CSC_API,
+          },
+        }
+      );
+      setStates(sortArrayByName(response.data));
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching states:", error);
+      return [];
+    }
   };
 
-  useEffect(() => {
-    fetchAllStates();
+  // Initialize edit data properly
+  const initializeEditData = async (data) => {
+    if (!data || isInitialized) return;
 
-    if (editData && editData.coordinates && editData.coordinates.length > 0) {
-   setAddData({
-        ...editData,
-        latitude: editData.coordinates[0] || "0",
-        longitude: editData.coordinates[1] || "0",
-      });
+    try {
+      console.log("Initializing edit data:", data);
+      
+      // Set basic data first
+      const initialData = {
+        ...data,
+        // Handle coordinates
+        latitude: (data.coordinates && data.coordinates[0]) ? data.coordinates[0].toString() : "",
+        longitude: (data.coordinates && data.coordinates[1]) ? data.coordinates[1].toString() : "",
+        // Ensure arrays are properly initialized
+        appartmentType: Array.isArray(data.appartmentType) ? data.appartmentType : [],
+        appartmentSubType: Array.isArray(data.appartmentSubType) ? data.appartmentSubType : [],
+        features: Array.isArray(data.features) ? data.features : [],
+        amenities: Array.isArray(data.amenities) ? data.amenities : [],
+        commercialHubs: Array.isArray(data.commercialHubs) ? data.commercialHubs : [],
+        hospitals: Array.isArray(data.hospitals) ? data.hospitals : [],
+        hotels: Array.isArray(data.hotels) ? data.hotels : [],
+        shoppingCentres: Array.isArray(data.shoppingCentres) ? data.shoppingCentres : [],
+        transportationHubs: Array.isArray(data.transportationHubs) ? data.transportationHubs : [],
+        educationalInstitutions: Array.isArray(data.educationalInstitutions) ? data.educationalInstitutions : [],
+        images: Array.isArray(data.images) ? data.images : [],
+        videos: Array.isArray(data.videos) ? data.videos : [],
+        floorPlan: Array.isArray(data.floorPlan) ? data.floorPlan : [],
+        // Handle string fields
+        propertyId: data.propertyId || "none",
+        listingId: data.listingId || "none",
+        state: data.state || "",
+        city: data.city || "",
+        builder: data.builder || "",
+        project: data.project || "",
+        overview: data.overview || "",
+        address: data.address || "",
+        sector: data.sector || "",
+        pincode: data.pincode || "",
+        status: data.status || "",
+        type: data.type || "",
+        availableFor: data.availableFor || "",
+        category: data.category || "",
+        minimumPrice: data.minimumPrice || "",
+        maximumPrice: data.maximumPrice || "",
+        bhk: data.bhk || "",
+        houseNumber: data.houseNumber || "",
+        floorNumber: data.floorNumber || "",
+        tower: data.tower || "",
+        unit: data.unit || "",
+        size: data.size || "",
+        numberOfFloors: data.numberOfFloors || "",
+        numberOfBedrooms: data.numberOfBedrooms || "",
+        numberOfBathrooms: data.numberOfBathrooms || "",
+        numberOfParkings: data.numberOfParkings || "",
+        isTitleDeedVerified: data.isTitleDeedVerified || "",
+        thumbnail: data.thumbnail || "",
+        enable: data.enable !== undefined ? data.enable.toString() : "true",
+        isViewed: data.isViewed || "no",
+      };
+
+      setAddData(initialData);
+
+      // Fetch dependent data if needed
+      if (data.state) {
+        const statesData = await fetchAllStates();
+        const stateItem = statesData.find(state => state.name === data.state);
+        if (stateItem && data.city) {
+          await fetchCitiesByState(stateItem.iso2);
+          if (data.builder) {
+            await fetchBuildersByCity(data.city);
+            if (data.project) {
+              await fetchProjectByBuilder(data.builder);
+            }
+          }
+        }
+      }
+
+      setIsInitialized(true);
+    } catch (error) {
+      console.error("Error initializing edit data:", error);
     }
-  }, [editData]); 
+  };
+
+  // Main useEffect for initialization
+  useEffect(() => {
+    const initialize = async () => {
+      // Always fetch states first
+      await fetchAllStates();
+      
+      // If we have edit data, initialize it
+      if (editData && !isInitialized) {
+        await initializeEditData(editData);
+      }
+    };
+
+    initialize();
+  }, [editData, isInitialized]);
+
+  // Reset initialization when editData changes
+  useEffect(() => {
+    if (editData) {
+      setIsInitialized(false);
+    }
+  }, [editData]);
 
   return (
     <Box
@@ -504,7 +664,6 @@ function ProjectsForm({
           <form>
             <div className="flex flex-wrap gap-4">
               {/* Basic Information */}
-
               <div className="mb-5 w-full lg:w-[45%]">
                 <label
                   htmlFor="thumbnail"
@@ -524,15 +683,19 @@ function ProjectsForm({
                 {addData.thumbnail && (
                   <div className="flex items-center border p-2 rounded mt-2">
                     <span className="truncate max-w-xs">
-                      {addData.thumbnail.name}
+                      {typeof addData.thumbnail === 'object' 
+                        ? addData.thumbnail.name 
+                        : addData.thumbnail}
                     </span>
-                    <button
-                      type="button"
-                      onClick={handleRemoveThumbnail}
-                      className="ml-2 text-red-500 hover:text-red-700"
-                    >
-                      ×
-                    </button>
+                    {!displayMode && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveThumbnail}
+                        className="ml-2 text-red-500 hover:text-red-700"
+                      >
+                        ×
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -572,6 +735,7 @@ function ProjectsForm({
                   className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
                 />
               </div>
+
               <div className="mb-5 w-full lg:w-[45%]">
                 <CustomDropdown
                   label="Select State *"
@@ -585,6 +749,7 @@ function ProjectsForm({
                   name="state"
                 />
               </div>
+
               <div className="mb-5 w-full lg:w-[45%]">
                 <CustomDropdown
                   label="Select City *"
@@ -598,6 +763,7 @@ function ProjectsForm({
                   name="city"
                 />
               </div>
+
               <div className="mb-5 w-full lg:w-[45%]">
                 <CustomDropdown
                   label="Select Builder *"
@@ -611,8 +777,8 @@ function ProjectsForm({
                   name="builder"
                 />
               </div>
+
               <div className="mb-5 w-full lg:w-[45%]">
-                {/* Project Dropdown */}
                 <CustomDropdown
                   label="Select Project *"
                   options={projects?.filter(
@@ -626,6 +792,7 @@ function ProjectsForm({
                 />
               </div>
 
+              {/* Rest of your form fields remain the same... */}
               <div className="mb-5 w-full lg:w-[45%]">
                 <label
                   htmlFor="houseNumber"
@@ -1114,9 +1281,6 @@ function ProjectsForm({
                                       <span className="font-medium">
                                         {amenity.name}
                                       </span>
-                                      {/* <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">
-                                        {amenity.category}
-                                      </span> */}
                                     </div>
                                   </div>
                                 ))}
@@ -1156,19 +1320,74 @@ function ProjectsForm({
                       </div>
                     </div>
                   );
-                } else{
+                } else {
                   return (
                     <div key={field} className="mb-5 w-full lg:w-[45%]">
                       <label className="mb-3 block text-base font-medium">
                         {label}
                       </label>
-                      <input
-                        readOnly={displayMode ? true : false}
-                        type="text"
-                        placeholder={`Press Enter to add ${label}`}
-                        onKeyPress={(e) => handleChipInput(e, field)}
-                        className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
-                      />
+                      {!displayMode && (
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder={`Type or select ${label.toLowerCase()}`}
+                            value={filterText[field] || ""}
+                            onChange={(e) => {
+                              setFilterText(prev => ({
+                                ...prev,
+                                [field]: e.target.value
+                              }));
+                            }}
+                            onKeyPress={(e) => {
+                              if (e.key === "Enter" && e.target.value) {
+                                const value = e.target.value.trim();
+                                if (!addData[field].includes(value)) {
+                                  setAddData((prev) => ({
+                                    ...prev,
+                                    [field]: [...prev[field], value],
+                                  }));
+                                }
+                                e.target.value = "";
+                                setFilterText(prev => ({
+                                  ...prev,
+                                  [field]: ""
+                                }));
+                              }
+                            }}
+                            onFocus={() => toggleDropdown(field)}
+                            className="w-full rounded-md border text-gray-600 border-[#e0e0e0] py-3 px-6 text-base font-medium outline-none focus:border-[#6A64F1] focus:shadow-md"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => toggleDropdown(field)}
+                            className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                          >
+                            <Add />
+                          </button>
+
+                          {dropdownOpen[field] && (
+                            <div className="absolute z-10 w-full mt-1 bg-white border text-black border-gray-300 rounded-md max-h-60 overflow-y-auto shadow-lg">
+                              {getFilteredSuggestions(field).map((item, index) => (
+                                <div
+                                  key={index}
+                                  onClick={() => handleSelect(field, item)}
+                                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                >
+                                  {item}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Click outside to close dropdown */}
+                          {dropdownOpen[field] && (
+                            <div
+                              className="fixed inset-0 z-5"
+                              onClick={() => toggleDropdown(field)}
+                            />
+                          )}
+                        </div>
+                      )}
                       <div className="flex flex-wrap gap-2 mt-2">
                         {addData[field].map((item, index) => (
                           <div
@@ -1176,13 +1395,15 @@ function ProjectsForm({
                             className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center"
                           >
                             <span>{item}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveChip(index, field)}
-                              className="ml-2 text-blue-800 hover:text-blue-900"
-                            >
-                              ×
-                            </button>
+                            {!displayMode && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveChip(index, field)}
+                                className="ml-2 text-blue-800 hover:text-blue-900"
+                              >
+                                ×
+                              </button>
+                            )}
                           </div>
                         ))}
                       </div>

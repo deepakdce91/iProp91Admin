@@ -465,142 +465,229 @@ function Index({ setRefetchNotification }) {
 
   // Function to handle file upload
   // Function to handle file upload with transpose support
+ // Function to handle file upload with transpose support and multiple sheets
+// Function to handle file upload with transpose support and partial uploads
+// Function to handle file upload with transpose support and multiple sheets
+// Function to handle file upload with transpose support and multiple sheets
 const handleFileUpload = async (event) => {
   const file = event.target.files[0];
   setIsUploading(true);
   setUploadError("");
 
+  // Show uploading toast
+  const uploadingToastId = toast.info("Uploading Excel file...", {
+    autoClose: false,
+    closeOnClick: false,
+    closeButton: false
+  });
+
   try {
     const reader = new FileReader();
     reader.onload = async (e) => {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+      try {
+        // Dismiss uploading toast and show processing toast
+        toast.dismiss(uploadingToastId);
+        const processingToastId = toast.info("Processing Excel data...", {
+          autoClose: false,
+          closeOnClick: false,
+          closeButton: false
+        });
 
-      if (jsonData.length < 2) {
-        setUploadError("Excel file must contain headers and at least one data row");
-        setIsUploading(false);
-        return;
-      }
-
-      // Define expected headers for validation
-      const expectedHeaders = [
-        'state', 'city', 'builder', 'project', 'propertyid', 'listingid', 'coordinates',
-        'housenumber', 'floornumber', 'tower', 'unit', 'size', 'overview', 'address',
-        'sector', 'pincode', 'status', 'type', 'availablefor', 'category', 'minimumprice',
-        'maximumprice', 'bhk', 'numberoffloors', 'numberofbedrooms', 'numberofbathrooms',
-        'numberofwashrooms', 'numberofparkings', 'istitledeedverified', 'appartmenttype',
-        'appartmentsubtype', 'features', 'amenities', 'commercialhubs', 'hospitals',
-        'hotels', 'shoppingcentres', 'transportationhubs', 'educationalinstitutions',
-        'images', 'videos', 'floorplan', 'enable'
-      ];
-
-      let headers, rows, isTransposed = false;
-
-      // Check if headers are in first row (normal format)
-      const firstRowHeaders = jsonData[0].map(header => 
-        header ? header.toString().toLowerCase().replace(/\s+/g, '') : ''
-      );
-      const firstRowMatches = firstRowHeaders.filter(header => 
-        expectedHeaders.includes(header)
-      ).length;
-
-      // Check if headers are in first column (transposed format)
-      const firstColumnHeaders = jsonData.map(row => 
-        row[0] ? row[0].toString().toLowerCase().replace(/\s+/g, '') : ''
-      );
-      const firstColumnMatches = firstColumnHeaders.filter(header => 
-        expectedHeaders.includes(header)
-      ).length;
-
-      // Determine format based on which has more matches
-      if (firstColumnMatches > firstRowMatches && firstColumnMatches >= 4) {
-        // Transposed format - headers in first column
-        isTransposed = true;
-        headers = firstColumnHeaders;
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
         
-        // Transform data: each column (except first) becomes a row
-        rows = [];
-        const numColumns = Math.max(...jsonData.map(row => row.length));
-        
-        for (let colIndex = 1; colIndex < numColumns; colIndex++) {
-          const row = [];
-          for (let rowIndex = 0; rowIndex < jsonData.length; rowIndex++) {
-            row.push(jsonData[rowIndex][colIndex] || '');
+        let totalSuccessCount = 0;
+        let totalErrorCount = 0;
+        let totalSkippedCount = 0;
+        let processedSheets = 0;
+
+        // Process all sheets in the workbook
+        for (const sheetName of workbook.SheetNames) {
+          console.log(`Processing sheet: ${sheetName}`);
+          
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+          if (jsonData.length < 1) {
+            console.log(`Skipping empty sheet: ${sheetName}`);
+            continue;
           }
-          rows.push(row);
-        }
-        
-        console.log('Detected transposed format');
-      } else if (firstRowMatches >= 4) {
-        // Normal format - headers in first row
-        headers = firstRowHeaders;
-        rows = jsonData.slice(1);
-        console.log('Detected normal format');
-      } else {
-        setUploadError("Could not detect valid headers in first row or first column. Please ensure your Excel file contains the required fields (State, City, Builder, Project).");
-        setIsUploading(false);
-        return;
-      }
 
-      if (rows.length === 0) {
-        setUploadError("No data rows found");
-        setIsUploading(false);
-        return;
-      }
+          // Define expected headers for validation (more flexible matching)
+          const expectedHeaders = [
+            'state', 'city', 'builder', 'project', 'propertyid', 'listingid', 'coordinates',
+            'housenumber', 'floornumber', 'tower', 'unit', 'size', 'overview', 'address',
+            'sector', 'pincode', 'status', 'type', 'availablefor', 'category', 'minimumprice',
+            'maximumprice', 'bhk', 'numberoffloors', 'numberofbedrooms', 'numberofbathrooms',
+            'numberofwashrooms', 'numberofparkings', 'istitledeedverified', 'appartmenttype',
+            'appartmentsubtype', 'features', 'amenities', 'commercialhubs', 'hospitals',
+            'hotels', 'shoppingcentres', 'transportationhubs', 'educationalinstitutions',
+            'images', 'videos', 'floorplan', 'enable'
+          ];
 
-      let successCount = 0;
-      let errorCount = 0;
+          // Helper function for flexible header matching
+          const normalizeHeader = (header) => {
+            if (!header) return '';
+            return header.toString().toLowerCase()
+              .replace(/\s+/g, '')
+              .replace(/[-_]/g, '')
+              .replace(/[^a-z0-9]/g, '');
+          };
 
-      for (let row of rows) {
-        // Skip empty rows
-        if (row.every(cell => !cell || cell.toString().trim() === '')) {
-          continue;
-        }
+          let headers, rows, isTransposed = false;
 
-        if (!validateRow(row, headers)) {
-          errorCount++;
-          console.log('Validation failed for row:', row);
-          continue;
-        }
+          // Check if headers are in first row (normal format)
+          const firstRowHeaders = jsonData[0] ? jsonData[0].map(header => normalizeHeader(header)) : [];
+          const firstRowMatches = firstRowHeaders.filter(header => 
+            header && expectedHeaders.some(expected => {
+              const normalizedExpected = normalizeHeader(expected);
+              return normalizedExpected.includes(header) || header.includes(normalizedExpected);
+            })
+          ).length;
 
-        const mappedData = mapRowToSchema(row, headers);
-        
-        try {
-          await axios.post(
-            `${process.env.REACT_APP_BACKEND_URL}/api/projectsDataMaster/addProject?userId=${userId}`,
-            mappedData,
-            {
-              headers: {
-                "auth-token": userToken,
+          // Check if headers are in first column (transposed format)
+          const firstColumnHeaders = jsonData.map(row => normalizeHeader(row[0] || ''));
+          const firstColumnMatches = firstColumnHeaders.filter(header => 
+            header && expectedHeaders.some(expected => {
+              const normalizedExpected = normalizeHeader(expected);
+              return normalizedExpected.includes(header) || header.includes(normalizedExpected);
+            })
+          ).length;
+
+          // More lenient detection - only need at least 1 matching header
+          if (firstColumnMatches > firstRowMatches && firstColumnMatches >= 1) {
+            // Transposed format - headers in first column
+            isTransposed = true;
+            headers = jsonData.map(row => row[0] || '');
+            
+            // Transform data: each column (except first) becomes a row
+            rows = [];
+            const numColumns = Math.max(...jsonData.map(row => row.length), 1);
+            
+            for (let colIndex = 1; colIndex < numColumns; colIndex++) {
+              const row = [];
+              for (let rowIndex = 0; rowIndex < jsonData.length; rowIndex++) {
+                row.push(jsonData[rowIndex][colIndex] || '');
               }
+              // Add all rows, even if they seem empty - we'll handle defaults
+              rows.push(row);
             }
-          );
-          successCount++;
-        } catch (error) {
-          errorCount++;
-          console.error("Error adding row:", error);
+            
+            console.log(`Sheet ${sheetName}: Detected transposed format with ${firstColumnMatches} matching headers`);
+          } else if (firstRowMatches >= 1 || jsonData.length > 0) {
+            // Normal format - headers in first row, or no clear headers but has data
+            if (firstRowMatches >= 1) {
+              headers = jsonData[0];
+              rows = jsonData.slice(1);
+              console.log(`Sheet ${sheetName}: Detected normal format with ${firstRowMatches} matching headers`);
+            } else {
+              // No clear headers detected, treat first row as data
+              headers = [];
+              rows = jsonData;
+              console.log(`Sheet ${sheetName}: No clear headers detected, processing all rows as data`);
+            }
+          } else {
+            console.log(`Sheet ${sheetName}: No data found, skipping`);
+            continue;
+          }
+
+          if (rows.length === 0) {
+            console.log(`Sheet ${sheetName}: No data rows found`);
+            continue;
+          }
+
+          let successCount = 0;
+          let errorCount = 0;
+          let skippedCount = 0;
+
+          for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+            const row = rows[rowIndex];
+            
+            // Skip completely empty rows
+            if (row.every(cell => !cell || cell.toString().trim() === '')) {
+              skippedCount++;
+              continue;
+            }
+
+            const mappedData = mapRowToSchemaVeryLenient(row, headers);
+            
+            // Always add default values for required fields if missing
+            if (!mappedData.state) mappedData.state = "None";
+            if (!mappedData.city) mappedData.city = "None";
+            if (!mappedData.builder) mappedData.builder = "None";
+            if (!mappedData.project) mappedData.project = "None";
+
+            try {
+              await axios.post(
+                `${process.env.REACT_APP_BACKEND_URL}/api/projectsDataMaster/addProject?userId=${userId}`,
+                mappedData,
+                {
+                  headers: {
+                    "auth-token": userToken,
+                  }
+                }
+              );
+              successCount++;
+            } catch (error) {
+              errorCount++;
+              console.error(`Error adding row ${rowIndex + 1} from sheet ${sheetName}:`, error);
+            }
+          }
+
+          totalSuccessCount += successCount;
+          totalErrorCount += errorCount;
+          totalSkippedCount += skippedCount;
+          processedSheets++;
+
+          console.log(`Sheet ${sheetName} processed: ${successCount} success, ${errorCount} errors, ${skippedCount} skipped`);
         }
-      }
 
-      if (successCount > 0) {
-        toast.success(`Successfully added ${successCount} projects${isTransposed ? ' (transposed format detected)' : ''}`);
-        setRefetchNotification();
-        fetchAllProjectsDataMaster(userId, userToken);
-      }
-      
-      if (errorCount > 0) {
-        toast.warning(`${errorCount} projects failed validation or upload`);
-      }
+        // Dismiss processing toast
+        toast.dismiss(processingToastId);
 
-      if (successCount === 0 && errorCount === 0) {
-        toast.info("No valid data rows found to process");
+        // Provide detailed feedback for all sheets
+        if (totalSuccessCount > 0) {
+          const message = `Successfully added ${totalSuccessCount} projects from ${processedSheets} sheet(s)`;
+          toast.success(message);
+          setRefetchNotification();
+          fetchAllProjectsDataMaster(userId, userToken);
+        }
+        
+        if (totalErrorCount > 0) {
+          toast.warning(`${totalErrorCount} projects failed to upload due to server errors`);
+        }
+
+        if (totalSkippedCount > 0) {
+          toast.info(`${totalSkippedCount} rows were skipped (empty rows)`);
+        }
+
+        if (totalSuccessCount === 0 && totalErrorCount === 0 && totalSkippedCount === 0) {
+          toast.info("No valid data found to process in any sheet");
+        }
+
+        if (processedSheets === 0) {
+          toast.warning("No sheets with data found in the Excel file");
+        }
+
+      } catch (processingError) {
+        // Dismiss any active toasts
+        toast.dismiss();
+        console.error("Error processing Excel data:", processingError);
+        setUploadError("Error processing Excel data: " + processingError.message);
+        toast.error("Error processing Excel data");
       }
+    };
+
+    reader.onerror = () => {
+      // Dismiss uploading toast on file read error
+      toast.dismiss(uploadingToastId);
+      toast.error("Error reading file");
     };
 
     reader.readAsArrayBuffer(file);
   } catch (error) {
+    // Dismiss any active toasts
+    toast.dismiss();
     console.error("Error processing file:", error);
     setUploadError("Error processing file: " + error.message);
     toast.error("Error processing file");
@@ -608,6 +695,180 @@ const handleFileUpload = async (event) => {
     setIsUploading(false);
     event.target.value = null; // Reset file input
   }
+};
+
+// Updated mapping function - very lenient field matching with inclusion-based matching
+const mapRowToSchemaVeryLenient = (row, headers) => {
+  const mappedData = {};
+  
+  const normalizeHeader = (header) => {
+    if (!header) return '';
+    return header.toString().toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/[-_]/g, '')
+      .replace(/[^a-z0-9]/g, '');
+  };
+
+  // Flexible field mapping with multiple possible matches using inclusion
+  const fieldMappings = {
+    // Basic required fields
+    'state': ['state', 'statename', 'st'],
+    'city': ['city', 'cityname', 'town'],
+    'builder': ['builder', 'buildername', 'developer', 'dev'],
+    'project': ['project', 'projectname', 'proj'],
+    
+    // Property details with flexible matching
+    'propertyId': ['propertyid', 'propid', 'property', 'pid', 'id'],
+    'listingId': ['listingid', 'listing', 'lid', 'list'],
+    'coordinates': ['coordinates', 'coord', 'location', 'latlng', 'lat', 'lng'],
+    'houseNumber': ['housenumber', 'houseno', 'house', 'unitno', 'no'],
+    'floorNumber': ['floornumber', 'floor', 'floorno'],
+    'tower': ['tower', 'block', 'building', 'bldg'],
+    'unit': ['unit', 'apartment', 'flat', 'apt'],
+    'size': ['size', 'area', 'sqft', 'squarefeet', 'sq'],
+    'overview': ['overview', 'description', 'desc', 'details'],
+    'address': ['address', 'fulladdress', 'location', 'addr'],
+    'sector': ['sector', 'area', 'locality', 'zone'],
+    'pincode': ['pincode', 'pin', 'zipcode', 'postalcode', 'zip'],
+    'status': ['status', 'projectstatus', 'state'],
+    'type': ['type', 'propertytype', 'proptype'],
+    'availableFor': ['availablefor', 'available', 'purpose', 'for'],
+    'category': ['category', 'cat', 'categ'],
+    'minimumPrice': ['minimumprice', 'minprice', 'startingprice', 'min', 'start'],
+    'maximumPrice': ['maximumprice', 'maxprice', 'endingprice', 'max', 'end'],
+    'bhk': ['bhk', 'bedroom', 'bedrooms', 'bed'],
+    'numberOfFloors': ['numberoffloors', 'floors', 'totalfloors', 'flr'],
+    'numberOfBedrooms': ['numberofbedrooms', 'bedrooms', 'beds', 'bed'],
+    'numberOfBathrooms': ['numberofbathrooms', 'bathrooms', 'baths', 'bath'],
+    'numberOfWashrooms': ['numberofwashrooms', 'washrooms', 'wash'],
+    'numberOfParkings': ['numberofparkings', 'parkings', 'parking', 'park'],
+    'isTitleDeedVerified': ['istitledeedverified', 'titleverified', 'verified', 'title'],
+    
+    // Array fields
+    'appartmentType': ['appartmenttype', 'apartmenttype', 'propertysubtype', 'apptype'],
+    'appartmentSubType': ['appartmentsubtype', 'apartmentsubtype', 'subtype'],
+    'features': ['features', 'feature', 'feat'],
+    'amenities': ['amenities', 'amenity', 'amen'],
+    'commercialHubs': ['commercialhubs', 'commercial', 'businesshubs', 'business'],
+    'hospitals': ['hospitals', 'hospital', 'medical', 'health'],
+    'hotels': ['hotels', 'hotel', 'hospitality'],
+    'shoppingCentres': ['shoppingcentres', 'shoppingcenters', 'malls', 'shopping', 'mall'],
+    'transportationHubs': ['transportationhubs', 'transport', 'metro', 'station', 'transit'],
+    'educationalInstitutions': ['educationalinstitutions', 'education', 'schools', 'colleges', 'school', 'college'],
+    
+    // Media fields
+    'images': ['images', 'image', 'photos', 'pictures', 'pic', 'img'],
+    'videos': ['videos', 'video', 'vid'],
+    'floorPlan': ['floorplan', 'floorplans', 'plan', 'layout'],
+    
+    // Settings
+    'enable': ['enable', 'enabled', 'active', 'status', 'show']
+  };
+
+  // If no headers provided, try to match based on position or treat as generic data
+  if (!headers || headers.length === 0) {
+    // Fallback: map first few columns to basic fields
+    const defaultMapping = ['state', 'city', 'builder', 'project', 'propertyId', 'type', 'bhk', 'minimumPrice'];
+    row.forEach((value, index) => {
+      if (index < defaultMapping.length && value && value.toString().trim()) {
+        mappedData[defaultMapping[index]] = value.toString().trim();
+      }
+    });
+    return mappedData;
+  }
+
+  headers.forEach((header, index) => {
+    if (row[index] === undefined || row[index] === '') return;
+    
+    const normalizedHeader = normalizeHeader(header);
+    const value = row[index].toString().trim();
+    
+    if (!normalizedHeader || !value) return;
+
+    // Find matching field using inclusion-based matching
+    let matchedField = null;
+    let bestMatchScore = 0;
+    
+    for (const [schemaField, possibleHeaders] of Object.entries(fieldMappings)) {
+      for (const possible of possibleHeaders) {
+        const normalizedPossible = normalizeHeader(possible);
+        let score = 0;
+        
+        // Perfect match
+        if (normalizedPossible === normalizedHeader) {
+          score = 100;
+        }
+        // Header includes possible or vice versa
+        else if (normalizedHeader.includes(normalizedPossible)) {
+          score = 80;
+        }
+        else if (normalizedPossible.includes(normalizedHeader)) {
+          score = 70;
+        }
+        // Partial overlap
+        else if (normalizedHeader.length > 2 && normalizedPossible.length > 2) {
+          const overlap = [...normalizedHeader].filter(char => normalizedPossible.includes(char)).length;
+          if (overlap > Math.min(normalizedHeader.length, normalizedPossible.length) * 0.6) {
+            score = 50;
+          }
+        }
+        
+        if (score > bestMatchScore) {
+          bestMatchScore = score;
+          matchedField = schemaField;
+        }
+      }
+    }
+    
+    // Also try direct partial matching if no field mapping worked
+    if (!matchedField || bestMatchScore < 50) {
+      for (const [schemaField] of Object.entries(fieldMappings)) {
+        const normalizedSchema = normalizeHeader(schemaField);
+        if (normalizedHeader.includes(normalizedSchema) || normalizedSchema.includes(normalizedHeader)) {
+          if (!matchedField) {
+            matchedField = schemaField;
+            break;
+          }
+        }
+      }
+    }
+    
+    if (!matchedField) {
+      console.log(`Could not match field: ${header} (normalized: ${normalizedHeader})`);
+      return;
+    }
+    
+    try {
+      // Apply appropriate processing based on field type
+      if (matchedField === 'coordinates') {
+        mappedData[matchedField] = processCoordinatesField(value);
+      } else if (['images', 'videos', 'floorPlan'].includes(matchedField)) {
+        mappedData[matchedField] = processMediaField(value);
+      } else if ([
+        'appartmentType', 'appartmentSubType', 'features', 'amenities', 
+        'commercialHubs', 'hospitals', 'hotels', 'shoppingCentres', 
+        'transportationHubs', 'educationalInstitutions'
+      ].includes(matchedField)) {
+        mappedData[matchedField] = processArrayField(value);
+      } else if (['isTitleDeedVerified', 'enable'].includes(matchedField)) {
+        if (matchedField === 'isTitleDeedVerified') {
+          mappedData[matchedField] = ['yes', 'true', '1', 'verified'].includes(value.toLowerCase()) ? 'yes' : 'no';
+        } else {
+          mappedData[matchedField] = ['yes', 'true', '1', 'active', 'enabled'].includes(value.toLowerCase()) ? 'true' : 'false';
+        }
+      } else {
+        // Direct mapping for simple fields
+        mappedData[matchedField] = value;
+      }
+      
+      console.log(`Mapped ${header} -> ${matchedField}: ${value}`);
+    } catch (error) {
+      console.error(`Error processing field ${matchedField}:`, error);
+      // Skip this field if processing fails
+    }
+  });
+  
+  return mappedData;
 };
 
   const columns = [
